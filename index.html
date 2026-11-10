@@ -1,0 +1,2129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f0c1b">
+    <meta name="description" content="Оракул — бот для автоматического фарма Fortnite. Авто-фарм, статистика, Mini App в Telegram. Бесплатное демо.">
+    <title>Оракул — Бот для фарма Fortnite</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔮</text></svg>">
+    <style>
+        /* ===== Переменные ===== */
+        :root {
+            --bg-color: #0f0c1b;
+            --card-bg: rgba(26, 21, 40, 0.8);
+            --text-main: #e0d8f0;
+            --text-muted: #9a8cb8;
+            --accent: #8a2be2;
+            --accent-hover: #9d4edd;
+            --accent-2: #c77dff;
+            --glow: rgba(138, 43, 226, 0.4);
+            --grid-color: rgba(138, 43, 226, 0.1);
+            --radius: 20px;
+        }
+
+        /* ===== База ===== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: auto; /* прокруткой управляет JS-лента */
+            -webkit-text-size-adjust: 100%;
+            overflow-x: clip;
+            scroll-padding-top: 76px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        ::selection {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        img, svg { max-width: 100%; display: block; }
+
+        a { color: var(--accent-2); }
+
+        /* ===== Неоновая сетка на фоне (с пульсацией) ===== */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -2;
+            mask-image: radial-gradient(circle at 50% 40%, black 30%, transparent 80%);
+            -webkit-mask-image: radial-gradient(circle at 50% 40%, black 30%, transparent 80%);
+            animation: gridPulse 8s ease-in-out infinite alternate,
+                       gridDrift 24s linear infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes gridPulse {
+            0%   { opacity: 0.45; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes gridDrift {
+            0%   { background-position: 0 0, 0 0; }
+            100% { background-position: 50px 50px, 50px 50px; }
+        }
+
+        /* ===== Кастомный курсор: свечение + шар (два слоя) ===== */
+        /* Слой свечения смешивается с фоном, а не перекрывает текст */
+        .cursor-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 400px;
+            height: 400px;
+            margin: -200px 0 0 -200px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+            will-change: transform;
+            background: radial-gradient(
+                circle,
+                rgba(157, 78, 221, 0.3) 0%,
+                rgba(138, 43, 226, 0.16) 32%,
+                rgba(138, 43, 226, 0.06) 58%,
+                transparent 78%
+            );
+            filter: blur(18px);
+            -webkit-filter: blur(18px);
+            /* Аддитивное смешивание: свет «налипает» на фон, текст остаётся читаемым */
+            mix-blend-mode: screen;
+        }
+
+        /* Где поддерживается — более чистый аддитивный режим */
+        @supports (mix-blend-mode: plus-lighter) {
+            .cursor-glow { mix-blend-mode: plus-lighter; }
+        }
+
+        .cursor-glow.is-on { opacity: 1; }
+
+        .cursor-orb {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 34px;
+            height: 34px;
+            margin: -17px 0 0 -17px;
+            font-size: 26px;
+            line-height: 34px;
+            text-align: center;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0;
+            filter: drop-shadow(0 0 10px rgba(199, 125, 255, 0.85)) drop-shadow(0 0 26px rgba(138, 43, 226, 0.7));
+            transition: opacity 0.3s ease;
+            will-change: transform;
+            user-select: none;
+            /* Наклон шара — задаётся в transform из JS (вместе с позицией) */
+        }
+
+        .cursor-orb.is-on { opacity: 1; }
+
+        /* Скрываем системный курсор только там, где включён кастомный */
+        html.has-cursor,
+        html.has-cursor * {
+            cursor: none !important;
+        }
+
+        /* ===== Навигация ===== */
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            background: rgba(15, 12, 27, 0.65);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .nav::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(
+                260px circle at var(--mx, 50%) var(--my, 50%),
+                rgba(138, 43, 226, 0.42),
+                transparent 70%
+            );
+            opacity: 0;
+            transition: opacity 0.35s ease;
+            pointer-events: none;
+        }
+
+        .nav:hover::before { opacity: 1; }
+
+        .nav-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: #fff;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+        }
+
+        .logo .orb {
+            position: relative;
+            display: inline-block;
+            font-size: 1.4rem;
+            line-height: 1;
+            transform: translate(calc(var(--ox, 0) * 10px), calc(var(--oy, 0) * 6px));
+            transition: transform 0.18s ease-out, filter 0.3s ease;
+            filter: drop-shadow(0 0 8px var(--accent));
+            will-change: transform;
+        }
+
+        .logo .orb:hover {
+            filter: drop-shadow(0 0 18px var(--accent-2)) drop-shadow(0 0 30px var(--accent));
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 22px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.25s ease;
+        }
+
+        .nav-links a:hover { color: #fff; }
+
+        /* ===== Hero ===== */
+        .hero {
+            min-height: calc(100vh - 60px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 60px 20px 80px;
+            position: relative;
+            overflow: clip;
+        }
+
+        /* Единственное свечение-ореол за контентом */
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(700px, 130vw);
+            aspect-ratio: 1;
+            background: radial-gradient(circle, var(--glow) 0%, transparent 62%);
+            z-index: 0;
+            pointer-events: none;
+            animation: glowBreath 6s ease-in-out infinite;
+        }
+
+        @keyframes glowBreath {
+            0%, 100% { opacity: 0.75; transform: translate(-50%, -50%) scale(1); }
+            50%      { opacity: 1;    transform: translate(-50%, -50%) scale(1.08); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ===== Большой магический шар ===== */
+        .orb-wrap {
+            position: relative;
+            display: inline-flex;
+            margin-bottom: 18px;
+            perspective: 600px;
+        }
+
+        .hero-orb {
+            position: relative;
+            display: inline-block;
+            font-size: clamp(4rem, 12vw, 6.5rem);
+            line-height: 1;
+            user-select: none;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            transform:
+                translate3d(calc(var(--tx, 0) * 1px), calc(var(--ty, 0) * 1px), 0)
+                rotateY(calc(var(--ty, 0) * 0.35deg))
+                rotateX(calc(var(--tx, 0) * -0.35deg))
+                scale(var(--s, 1));
+            transition: transform 0.18s ease-out, filter 0.3s ease;
+            filter: drop-shadow(0 0 28px var(--accent)) drop-shadow(0 0 60px var(--glow));
+            will-change: transform;
+        }
+
+        .hero-orb .orb-emoji {
+            display: inline-block;
+            animation: orbFloat 5s ease-in-out infinite;
+        }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translateY(0); }
+            50%      { transform: translateY(-14px); }
+        }
+
+        /* Аура шара */
+        .hero-orb::before {
+            content: '';
+            position: absolute;
+            inset: -45%;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(199, 125, 255, 0.42), rgba(138, 43, 226, 0.18) 45%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+            animation: auraPulse 3.2s ease-in-out infinite;
+        }
+
+        @keyframes auraPulse {
+            0%, 100% { opacity: 0.55; transform: scale(0.92); }
+            50%      { opacity: 0.95; transform: scale(1.08); }
+        }
+
+        .hero-orb .rays {
+            position: absolute;
+            inset: -55%;
+            border-radius: 50%;
+            background: repeating-conic-gradient(
+                from 0deg,
+                rgba(199, 125, 255, 0.55) 0deg 2deg,
+                transparent 2deg 22deg
+            );
+            mask-image: radial-gradient(circle, transparent 42%, black 58%, transparent 78%);
+            -webkit-mask-image: radial-gradient(circle, transparent 42%, black 58%, transparent 78%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            animation: raysSpin 14s linear infinite;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        @keyframes raysSpin { to { transform: rotate(360deg); } }
+
+        .hero-orb.is-active,
+        .hero-orb:hover {
+            filter: drop-shadow(0 0 38px var(--accent-2)) drop-shadow(0 0 90px var(--accent));
+        }
+
+        .hero-orb.is-active .rays,
+        .hero-orb:hover .rays { opacity: 1; }
+
+        /* Рябь и искры при клике */
+        .ripple {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 40px;
+            height: 40px;
+            margin: -20px 0 0 -20px;
+            border-radius: 50%;
+            border: 2px solid rgba(199, 125, 255, 0.85);
+            box-shadow: 0 0 20px var(--accent-2), inset 0 0 12px var(--glow);
+            pointer-events: none;
+            z-index: 2;
+            animation: rippleOut 0.9s ease-out forwards;
+        }
+
+        @keyframes rippleOut {
+            0%   { opacity: 0.9; transform: scale(0.4); }
+            100% { opacity: 0;   transform: scale(5); }
+        }
+
+        .spark {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 6px;
+            height: 6px;
+            margin: -3px 0 0 -3px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 0 10px var(--accent-2), 0 0 20px var(--accent);
+            pointer-events: none;
+            z-index: 2;
+            animation: sparkOut 0.8s ease-out forwards;
+        }
+
+        @keyframes sparkOut {
+            0%   { opacity: 1; transform: translate(0, 0) scale(1); }
+            100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.2); }
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--accent-2);
+            background: rgba(138, 43, 226, 0.12);
+            border: 1px solid rgba(138, 43, 226, 0.35);
+            margin-bottom: 22px;
+        }
+
+        /* Заголовок: полупрозрачный, при наведении — яркий */
+        .hero h1 {
+            font-size: clamp(2.4rem, 7vw, 4rem);
+            line-height: 1.1;
+            margin-bottom: 20px;
+            font-weight: 800;
+            filter: drop-shadow(0 0 22px var(--glow));
+            opacity: 0.32;
+            transition: opacity 0.45s ease, filter 0.45s ease;
+            cursor: default;
+        }
+
+        /* Градиент — на каждой букве (background-clip не наследуется на span) */
+        .hero h1 .ch {
+            background: linear-gradient(90deg, #ffffff, #b388ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+        }
+
+        .hero h1:hover,
+        .hero h1:focus-visible {
+            opacity: 1;
+            filter: drop-shadow(0 0 30px var(--accent-2));
+        }
+
+        /* ===== Буквы, которые разбегаются от курсора ===== */
+        .letter-play .ch {
+            display: inline-block;
+            transform-origin: 50% 60%;
+            will-change: transform;
+            transition: text-shadow 0.25s ease;
+        }
+
+        .letter-play .ch.is-lit {
+            text-shadow: 0 0 18px var(--accent-2), 0 0 34px var(--glow);
+        }
+
+        /* У градиентных букв text-shadow не виден — светим через filter */
+        .hero h1 .ch.is-lit {
+            text-shadow: none;
+            filter: drop-shadow(0 0 12px rgba(199, 125, 255, 0.95)) drop-shadow(0 0 26px rgba(138, 43, 226, 0.7));
+        }
+
+        .hero p {
+            font-size: clamp(1rem, 2.4vw, 1.2rem);
+            color: var(--text-muted);
+            max-width: 620px;
+            margin: 0 auto 40px;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        /* ===== Кнопки ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 15px 40px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            font-family: inherit;
+            text-decoration: none;
+            color: #fff;
+            background-color: var(--accent);
+            border-radius: 30px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 15px var(--glow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(
+                120px circle at var(--mx, 50%) var(--my, 50%),
+                rgba(255, 255, 255, 0.28),
+                transparent 65%
+            );
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .btn:hover::before { opacity: 1; }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -120%;
+            width: 60%;
+            height: 100%;
+            background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+            transform: skewX(-20deg);
+            transition: left 0.6s ease;
+            pointer-events: none;
+        }
+
+        .btn:hover::after { left: 140%; }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+            box-shadow: 0 0 28px var(--accent), 0 8px 30px rgba(138, 43, 226, 0.35);
+            transform: translateY(-2px);
+        }
+
+        .btn:active { transform: translateY(0) scale(0.98); }
+
+        .btn:focus-visible {
+            outline: 2px solid var(--accent-2);
+            outline-offset: 3px;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid rgba(199, 125, 255, 0.45);
+            box-shadow: none;
+            color: var(--text-main);
+        }
+
+        .btn-outline:hover {
+            background: rgba(138, 43, 226, 0.15);
+            border-color: var(--accent-2);
+            box-shadow: 0 0 22px var(--glow);
+        }
+
+        .btn-sm {
+            padding: 10px 24px;
+            font-size: 0.9rem;
+        }
+
+        .hero-note {
+            margin-top: 22px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            opacity: 0.85;
+        }
+
+        /* ===== Секции ===== */
+        .section {
+            padding: 80px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .section.tight { padding-top: 0; }
+
+        .section h2 {
+            font-size: clamp(1.8rem, 4.5vw, 2.5rem);
+            margin-bottom: 14px;
+            color: #fff;
+            font-weight: 800;
+        }
+
+        .section .subtitle {
+            color: var(--text-muted);
+            max-width: 560px;
+            margin: 0 auto 50px;
+            font-size: 1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 28px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 38px 28px;
+            border-radius: var(--radius);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-align: left;
+        }
+
+        .card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(
+                340px circle at var(--mx, 50%) var(--my, 50%),
+                rgba(138, 43, 226, 0.2),
+                transparent 65%
+            );
+            opacity: 0;
+            transition: opacity 0.35s ease;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .card:hover::after { opacity: 1; }
+
+        .card > * { position: relative; z-index: 1; }
+
+        .card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(138, 43, 226, 0.5);
+            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), 0 0 24px rgba(138, 43, 226, 0.18);
+        }
+
+        .card .icon {
+            font-size: 2.6rem;
+            margin-bottom: 18px;
+            line-height: 1;
+            display: inline-block;
+            filter: drop-shadow(0 0 12px var(--glow));
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), filter 0.35s ease;
+        }
+
+        .card:hover .icon {
+            transform: translateY(-4px) scale(1.12) rotate(-5deg);
+            filter: drop-shadow(0 0 18px var(--accent-2));
+        }
+
+        .card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .card p strong { color: var(--text-main); }
+
+        .step-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            margin-bottom: 20px;
+            font-weight: 800;
+            font-size: 1.05rem;
+            color: #fff;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            box-shadow: 0 0 18px var(--glow);
+            transition: box-shadow 0.35s ease, transform 0.35s ease;
+        }
+
+        .card:hover .step-num {
+            box-shadow: 0 0 26px var(--accent-2);
+            transform: scale(1.06);
+        }
+
+        /* ===== Секреты: флип-карточки ===== */
+        .secrets {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 26px;
+        }
+
+        .flip {
+            display: block;
+            width: 100%;
+            perspective: 1100px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font: inherit;
+            color: inherit;
+            padding: 0;
+            text-align: center;
+            min-height: 230px;
+            outline: none;
+        }
+
+        .flip-inner {
+            display: block;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 230px;
+            transform-style: preserve-3d;
+            transition: transform 0.75s cubic-bezier(0.4, 0.1, 0.2, 1);
+        }
+
+        .flip.flipped .flip-inner,
+        .flip:focus-visible .flip-inner { transform: rotateY(180deg); }
+
+        .flip:focus-visible .flip-inner { box-shadow: 0 0 0 2px var(--accent-2); border-radius: var(--radius); }
+
+        .flip-face {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 30px 22px;
+            border-radius: var(--radius);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            background-color: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .flip-face.front {
+            box-shadow: inset 0 0 40px rgba(138, 43, 226, 0.12);
+        }
+
+        .flip-face.front .q {
+            font-size: 2rem;
+            filter: drop-shadow(0 0 14px var(--glow));
+        }
+
+        .flip-face.front .ask {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.4;
+        }
+
+        .flip-face.front .hint {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .flip-face.back {
+            transform: rotateY(180deg);
+            background:
+                radial-gradient(circle at 50% 0%, rgba(138, 43, 226, 0.3), transparent 70%),
+                rgba(30, 22, 48, 0.95);
+            border-color: rgba(138, 43, 226, 0.45);
+            box-shadow: 0 0 30px rgba(138, 43, 226, 0.22);
+        }
+
+        .flip-face.back .a {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #fff;
+            text-shadow: 0 0 16px var(--accent);
+        }
+
+        .flip-face.back .desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .flip:hover .flip-face.front {
+            border-color: rgba(138, 43, 226, 0.5);
+        }
+
+        /* ===== Финальный призыв ===== */
+        .cta {
+            max-width: 900px;
+            margin: 0 auto 90px;
+            padding: 56px 28px;
+            border-radius: 28px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            background:
+                radial-gradient(circle at 50% 0%, rgba(138, 43, 226, 0.28), transparent 70%),
+                var(--card-bg);
+            border: 1px solid rgba(138, 43, 226, 0.35);
+            box-shadow: 0 0 60px rgba(138, 43, 226, 0.15);
+            overflow: hidden;
+        }
+
+        .cta::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(
+                380px circle at var(--mx, 50%) var(--my, 50%),
+                rgba(157, 78, 221, 0.22),
+                transparent 70%
+            );
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+
+        .cta:hover::before { opacity: 1; }
+
+        .cta > * { position: relative; z-index: 1; }
+
+        .cta h2 {
+            font-size: clamp(1.6rem, 4.5vw, 2.2rem);
+            margin-bottom: 14px;
+            color: #fff;
+        }
+
+        .cta p {
+            color: var(--text-muted);
+            max-width: 520px;
+            margin: 0 auto 32px;
+        }
+
+        /* ===== Кнопка звука ===== */
+        .sound-toggle {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 900;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+            background: rgba(26, 21, 40, 0.9);
+            border: 1px solid rgba(138, 43, 226, 0.45);
+            border-radius: 999px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 0 18px rgba(138, 43, 226, 0.25);
+            transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+        }
+
+        .sound-toggle:hover {
+            border-color: var(--accent-2);
+            box-shadow: 0 0 26px var(--glow);
+            transform: translateY(-1px);
+        }
+
+        .sound-toggle:focus-visible {
+            outline: 2px solid var(--accent-2);
+            outline-offset: 2px;
+        }
+
+        .sound-toggle .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent-2);
+            box-shadow: 0 0 10px var(--accent-2);
+        }
+
+        .sound-toggle[aria-pressed="false"] .dot {
+            background: #6b6480;
+            box-shadow: none;
+        }
+
+        /* ===== Мобильное меню ===== */
+        .menu-toggle {
+            display: none;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1.3rem;
+            line-height: 1;
+            padding: 7px 12px;
+            cursor: pointer;
+        }
+
+        /* ===== Футер ===== */
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(
+                320px circle at var(--mx, 50%) var(--my, 50%),
+                rgba(138, 43, 226, 0.2),
+                transparent 70%
+            );
+            opacity: 0;
+            transition: opacity 0.35s ease;
+            pointer-events: none;
+        }
+
+        footer:hover::before { opacity: 1; }
+
+        footer > * { position: relative; z-index: 1; }
+
+        footer p + p { margin-top: 10px; }
+
+        footer a {
+            color: var(--accent-2);
+            text-decoration: none;
+            transition: color 0.2s ease, text-shadow 0.2s ease;
+        }
+
+        footer a:hover {
+            color: #fff;
+            text-shadow: 0 0 12px var(--accent-2);
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 20px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ===== Появление при скролле ===== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(26px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+
+        .reveal.is-visible {
+            opacity: 1;
+            transform: none;
+        }
+
+        /* ===== Адаптив ===== */
+        @media (max-width: 860px) {
+            .nav-links { display: none; }
+            .menu-toggle { display: inline-block; }
+
+            .nav.open .nav-links {
+                display: flex;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0;
+                padding: 10px 20px 18px;
+                background: rgba(15, 12, 27, 0.97);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            }
+
+            .nav.open .nav-links a {
+                padding: 12px 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+                font-size: 1rem;
+            }
+
+            .nav.open .nav-links a:last-child { border-bottom: none; }
+
+            /* Кастомный курсор только для устройств с мышью */
+            .cursor-orb, .cursor-glow { display: none; }
+        }
+
+        @media (max-width: 768px) {
+            html { scroll-padding-top: 68px; }
+
+            .hero {
+                min-height: auto;
+                padding: 48px 16px 64px;
+            }
+
+            .hero h1 { margin-bottom: 16px; }
+
+            .hero p { margin-bottom: 30px; }
+
+            .hero-actions { flex-direction: column; width: 100%; max-width: 340px; }
+
+            .btn {
+                width: 100%;
+                padding: 16px 24px;
+            }
+
+            .section {
+                padding: 60px 16px;
+            }
+
+            .section.tight { padding-top: 0; }
+
+            .section .subtitle { margin-bottom: 36px; }
+
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 18px;
+            }
+
+            .card {
+                padding: 28px 22px;
+                text-align: center;
+            }
+
+            .secrets {
+                grid-template-columns: 1fr 1fr;
+                gap: 14px;
+            }
+
+            .flip, .flip-inner { min-height: 190px; }
+
+            .flip-face { padding: 20px 14px; }
+
+            .flip-face.front .ask { font-size: 0.92rem; }
+
+            .flip-face.back .a { font-size: 1rem; }
+
+            .flip-face.back .desc { font-size: 0.78rem; }
+
+            .cta {
+                margin-bottom: 60px;
+                padding: 40px 20px;
+                border-radius: 22px;
+            }
+
+            body::before { background-size: 34px 34px; }
+
+            .sound-toggle {
+                right: 12px;
+                bottom: 12px;
+                padding: 9px 14px;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .hero h1 { font-size: 2rem; }
+            .btn { font-size: 0.98rem; }
+            .secrets { grid-template-columns: 1fr; }
+        }
+
+        /* ===== Уважаем настройку "меньше движения" ===== */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001ms !important;
+            }
+            .reveal { opacity: 1; transform: none; }
+            .cursor-orb, .cursor-glow { display: none; }
+            .hero-orb .orb-emoji { animation: none !important; }
+            .flip-inner { transition: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Кастомный курсор -->
+    <div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
+    <div class="cursor-orb" id="cursorOrb" aria-hidden="true">🔮</div>
+
+    <!-- Навигация -->
+    <header class="nav" id="nav">
+        <div class="nav-inner">
+            <a class="logo" href="#top">
+                <span class="orb" id="logoOrb" aria-hidden="true">🔮</span>
+                <span>Оракул</span>
+            </a>
+            <button class="menu-toggle" id="menuToggle" aria-label="Открыть меню" aria-expanded="false">☰</button>
+            <nav class="nav-links">
+                <a href="#features" data-scroll>Возможности</a>
+                <a href="#secrets" data-scroll>Секреты</a>
+                <a href="#install" data-scroll>Установка</a>
+                <a class="btn btn-sm" href="https://github.com/AlexanderPo22/Orakul_demo/releases/download/3.7.0/Orakul-Installer.exe" data-download>Скачать</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero" id="top">
+        <div class="hero-content">
+            <div class="orb-wrap">
+                <div class="hero-orb clickable" id="heroOrb" role="button" tabindex="0" aria-label="Магический шар — нажми">
+                    <span class="rays" aria-hidden="true"></span><span class="orb-emoji" aria-hidden="true">🔮</span>
+                </div>
+            </div>
+            <span class="badge">v3.7.0 · Mini App</span>
+            <h1>Оракул</h1>
+            <p>Твой личный бот для автоматического фарма Fortnite. Собирай награды, следи за статистикой и управляй всем прямо из Telegram.</p>
+            <div class="hero-actions">
+                <a class="btn" href="https://github.com/AlexanderPo22/Orakul_demo/releases/download/3.7.0/Orakul-Installer.exe" data-download>
+                    ⬇️ Скачать бесплатное демо
+                </a>
+                <a class="btn btn-outline" href="https://github.com/AlexanderPo22/Orakul_demo">Посмотреть на GitHub</a>
+            </div>
+            <p class="hero-note">Windows · установщик <strong>Orakul-Installer.exe</strong> · бесплатно</p>
+        </div>
+    </section>
+
+    <!-- Возможности -->
+    <section class="section" id="features">
+        <h2 class="reveal">Что умеет Оракул?</h2>
+        <p class="subtitle reveal">Всё, что нужно для удобного и предсказуемого фарма — в одном месте.</p>
+        <div class="grid">
+            <div class="card reveal spotlight">
+                <div class="icon" aria-hidden="true">🎁</div>
+                <h3>Авто-фарм</h3>
+                <p>Бот сам заходит в матчи, ищет лут и собирает награды. Ты просто наблюдаешь.</p>
+            </div>
+            <div class="card reveal spotlight">
+                <div class="icon" aria-hidden="true">📊</div>
+                <h3>Статистика и дашборд</h3>
+                <p>Красивые графики, история матчей и учёт всех наград. Всё в реальном времени.</p>
+            </div>
+            <div class="card reveal spotlight">
+                <div class="icon" aria-hidden="true">🌐</div>
+                <h3>Mini App</h3>
+                <p>Открывай дашборд прямо в Telegram с телефона. Удобно и без лишних ссылок.</p>
+            </div>
+            <div class="card reveal spotlight">
+                <div class="icon" aria-hidden="true">🤖</div>
+                <h3>Управление из Telegram</h3>
+                <p>Запуск, пауза и настройки — прямо из чата с ботом. Никаких сложных консолей.</p>
+            </div>
+            <div class="card reveal spotlight">
+                <div class="icon" aria-hidden="true">⚡</div>
+                <h3>Быстрая установка</h3>
+                <p>Один установщик для Windows: скачай, вставь токен — и бот готов к работе.</p>
+            </div>
+            <div class="card reveal spotlight">
+                <div class="icon" aria-hidden="true">🛡️</div>
+                <h3>Открытый код</h3>
+                <p>Проект доступен на GitHub — можно посмотреть, как всё устроено, и предложить идеи.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Секреты -->
+    <section class="section tight" id="secrets">
+        <h2 class="reveal">Секреты Оракула</h2>
+        <p class="subtitle reveal">Нажми на карточку — и узнаешь, что скрывается за ней.</p>
+        <div class="secrets">
+            <button class="flip reveal" type="button" aria-pressed="false">
+                <span class="flip-inner">
+                    <span class="flip-face front">
+                        <span class="q" aria-hidden="true">🌀</span>
+                        <span class="ask">Что случается с ботом в центре бури?</span>
+                        <span class="hint">Нажми, чтобы узнать</span>
+                    </span>
+                    <span class="flip-face back">
+                        <span class="a">Танец в буре!</span>
+                        <span class="desc">Кружит в самом центре — и выходит с наградой.</span>
+                    </span>
+                </span>
+            </button>
+            <button class="flip reveal" type="button" aria-pressed="false">
+                <span class="flip-inner">
+                    <span class="flip-face front">
+                        <span class="q" aria-hidden="true">🏃</span>
+                        <span class="ask">Что бот говорит, когда ты его выключаешь?</span>
+                        <span class="hint">Нажми, чтобы узнать</span>
+                    </span>
+                    <span class="flip-face back">
+                        <span class="a">Эстафета принята. Я присмотрю.</span>
+                        <span class="desc">Уходит тихо — и обещает вернуться к следующему матчу.</span>
+                    </span>
+                </span>
+            </button>
+            <button class="flip reveal" type="button" aria-pressed="false">
+                <span class="flip-inner">
+                    <span class="flip-face front">
+                        <span class="q" aria-hidden="true">🌙</span>
+                        <span class="ask">Что будет, если оставить Оракула на ночь?</span>
+                        <span class="hint">Нажми, чтобы узнать</span>
+                    </span>
+                    <span class="flip-face back">
+                        <span class="a">Он нафармит столько, что утром не поверишь.</span>
+                        <span class="desc">Пока ты спишь — он работает.</span>
+                    </span>
+                </span>
+            </button>
+            <button class="flip reveal" type="button" aria-pressed="false">
+                <span class="flip-inner">
+                    <span class="flip-face front">
+                        <span class="q" aria-hidden="true">💎</span>
+                        <span class="ask">Где Оракул хранит твои данные?</span>
+                        <span class="hint">Нажми, чтобы узнать</span>
+                    </span>
+                    <span class="flip-face back">
+                        <span class="a">Только у тебя, на ПК.</span>
+                        <span class="desc">Локально, без облака и лишних глаз.</span>
+                    </span>
+                </span>
+            </button>
+        </div>
+    </section>
+
+    <!-- Установка -->
+    <section class="section tight" id="install">
+        <h2 class="reveal">Установка за 3 шага</h2>
+        <p class="subtitle reveal">От скачивания до первого матча — пара минут.</p>
+        <div class="grid">
+            <div class="card reveal spotlight">
+                <div class="step-num">1</div>
+                <h3>Скачай установщик</h3>
+                <p>Нажми кнопку и запусти <strong>Orakul-Installer.exe</strong>.</p>
+            </div>
+            <div class="card reveal spotlight">
+                <div class="step-num">2</div>
+                <h3>Введи токен</h3>
+                <p>Получи токен у <strong>@BotFather</strong> и вставь его в мастер установки.</p>
+            </div>
+            <div class="card reveal spotlight">
+                <div class="step-num">3</div>
+                <h3>Запусти бота</h3>
+                <p>Готово! Бот появится на рабочем столе. Запускай и фарми.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Финальный призыв -->
+    <section class="cta reveal">
+        <h2>Попробуй Оракула бесплатно</h2>
+        <p>Скачай демо-версию, установи и оцени авто-фарм с дашбордом прямо в Telegram.</p>
+        <a class="btn" href="https://github.com/AlexanderPo22/Orakul_demo/releases/download/3.7.0/Orakul-Installer.exe" data-download>
+            ⬇️ Скачать бесплатное демо
+        </a>
+    </section>
+
+    <!-- Футер -->
+    <footer id="footer">
+        <p>Оракул v3.7.0 «Mini App» · Сделано с 💜 для Fortnite</p>
+        <p class="footer-links">
+            <a href="https://github.com/AlexanderPo22/Orakul_demo">GitHub</a>
+            <a href="https://github.com/AlexanderPo22/Orakul_demo/releases">Релизы</a>
+            <a href="https://github.com/AlexanderPo22/Orakul_demo/issues">Сообщить о проблеме</a>
+        </p>
+    </footer>
+
+    <!-- Переключатель звука -->
+    <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="true">
+        <span class="dot" aria-hidden="true"></span>
+        <span id="soundLabel">🔊 Звук вкл</span>
+    </button>
+
+    <script>
+        (function () {
+            'use strict';
+
+            var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+            // ===== Мобильное меню =====
+            var nav = document.getElementById('nav');
+            var toggle = document.getElementById('menuToggle');
+
+            function closeMenu() {
+                nav.classList.remove('open');
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.textContent = '☰';
+            }
+
+            toggle.addEventListener('click', function () {
+                var isOpen = nav.classList.toggle('open');
+                toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                toggle.textContent = isOpen ? '✕' : '☰';
+            });
+
+            nav.querySelectorAll('.nav-links a').forEach(function (link) {
+                link.addEventListener('click', closeMenu);
+            });
+
+            // ===== Плавная прокрутка страницы (инерционная лента) =====
+            var smoothScroll = null;
+
+            (function enableSmoothScroll() {
+                if (reduceMotion || !finePointer) return;
+
+                var target = window.pageYOffset;
+                var current = window.pageYOffset;
+                var running = false;
+                var ownScroll = false;
+
+                var maxScroll = function () {
+                    return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+                };
+
+                var clamp = function (v) {
+                    return Math.max(0, Math.min(maxScroll(), v));
+                };
+
+                window.addEventListener('scroll', function () {
+                    if (ownScroll) { ownScroll = false; return; }
+                    target = window.pageYOffset;
+                    current = target;
+                }, { passive: true });
+
+                var loop = function () {
+                    current += (target - current) * 0.16;
+                    if (Math.abs(target - current) < 0.4) {
+                        current = target;
+                        running = false;
+                        ownScroll = true;
+                        window.scrollTo(0, current);
+                        return;
+                    }
+                    ownScroll = true;
+                    window.scrollTo(0, current);
+                    requestAnimationFrame(loop);
+                };
+
+                var go = function (to) {
+                    target = clamp(to);
+                    current = window.pageYOffset;
+                    if (!running) {
+                        running = true;
+                        requestAnimationFrame(loop);
+                    }
+                };
+
+                window.addEventListener('wheel', function (e) {
+                    var el = e.target;
+                    while (el && el !== document.body && el !== document.documentElement) {
+                        var style = window.getComputedStyle(el);
+                        if (/(auto|scroll)/.test(style.overflowY) && el.scrollHeight > el.clientHeight + 1) {
+                            return;
+                        }
+                        el = el.parentElement;
+                    }
+                    if (e.ctrlKey) return;
+
+                    e.preventDefault();
+
+                    var delta = e.deltaY;
+                    if (e.deltaMode === 1) {
+                        delta *= 32;
+                    } else if (e.deltaMode === 2) {
+                        delta *= window.innerHeight;
+                    }
+                    delta = Math.max(-260, Math.min(260, delta));
+                    go(target + delta);
+                }, { passive: false });
+
+                window.addEventListener('keydown', function (e) {
+                    var tag = (e.target && e.target.tagName) || '';
+                    if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag)) return;
+                    var vh = window.innerHeight;
+                    var handled = true;
+                    switch (e.key) {
+                        case 'PageDown': go(window.pageYOffset + vh * 0.9); break;
+                        case 'PageUp':   go(window.pageYOffset - vh * 0.9); break;
+                        case 'Home':     go(0); break;
+                        case 'End':      go(maxScroll()); break;
+                        case ' ':
+                            if (e.shiftKey) go(window.pageYOffset - vh * 0.9);
+                            else go(window.pageYOffset + vh * 0.9);
+                            break;
+                        default: handled = false;
+                    }
+                    if (handled) e.preventDefault();
+                });
+
+                smoothScroll = go;
+            })();
+
+            // ===== Якорная навигация =====
+            function scrollToTarget(target) {
+                var navH = nav.offsetHeight;
+                var y = target.getBoundingClientRect().top + window.pageYOffset - navH - 8;
+                if (typeof smoothScroll === 'function') {
+                    smoothScroll(y);
+                } else {
+                    window.scrollTo({ top: y, behavior: reduceMotion ? 'auto' : 'smooth' });
+                }
+            }
+
+            document.querySelectorAll('[data-scroll]').forEach(function (link) {
+                link.addEventListener('click', function (e) {
+                    var id = link.getAttribute('href');
+                    var target = id && id.charAt(0) === '#' ? document.querySelector(id) : null;
+                    if (!target) return;
+                    e.preventDefault();
+                    closeMenu();
+                    scrollToTarget(target);
+                    if (history.replaceState) history.replaceState(null, '', id);
+                });
+            });
+
+            var logo = document.querySelector('.logo');
+            if (logo) {
+                logo.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    if (typeof smoothScroll === 'function') smoothScroll(0);
+                    else window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            }
+
+            // ===== Появление блоков при скролле =====
+            var revealItems = document.querySelectorAll('.reveal');
+
+            if ('IntersectionObserver' in window) {
+                var observer = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry, i) {
+                        if (entry.isIntersecting) {
+                            var el = entry.target;
+                            el.style.transitionDelay = (i * 70) + 'ms';
+                            el.classList.add('is-visible');
+                            observer.unobserve(el);
+                        }
+                    });
+                }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+                revealItems.forEach(function (el) { observer.observe(el); });
+            } else {
+                revealItems.forEach(function (el) { el.classList.add('is-visible'); });
+            }
+
+            // ===== Буквы заголовков: разбегаются от курсора =====
+            (function letterPlay() {
+                if (!finePointer || reduceMotion) return;
+
+                // Заголовки, с которыми «играем»
+                var headings = document.querySelectorAll('.hero h1, .section h2, .cta h2');
+                if (!headings.length) return;
+
+                var items = [];
+                var RADIUS = 105;       // зона влияния курсора, px
+                var PUSH = 15;          // максимальное смещение буквы, px
+
+                // Разбиваем текст на буквы, сохраняя пробелы между словами
+                function split(el) {
+                    if (el.querySelector('.ch')) return;
+                    var text = el.textContent;
+                    var frag = document.createDocumentFragment();
+                    Array.prototype.slice.call(el.childNodes).forEach(function (n) {
+                        if (n.nodeType === 3) el.removeChild(n);
+                    });
+                    for (var i = 0; i < text.length; i++) {
+                        var c = text.charAt(i);
+                        if (c === ' ' || c === '\n' || c === '\t') {
+                            frag.appendChild(document.createTextNode(' '));
+                        } else {
+                            var s = document.createElement('span');
+                            s.className = 'ch';
+                            s.textContent = c;
+                            frag.appendChild(s);
+                        }
+                    }
+                    el.appendChild(frag);
+                    el.classList.add('letter-play');
+                }
+
+                function measure(item) {
+                    var r = item.el.getBoundingClientRect();
+                    item.rect = r;
+                    item.chars.forEach(function (ch) {
+                        var cr = ch.el.getBoundingClientRect();
+                        // Базовый центр буквы относительно заголовка
+                        ch.bx = cr.left - r.left + cr.width / 2;
+                        ch.by = cr.top - r.top + cr.height / 2;
+                    });
+                }
+
+                Array.prototype.forEach.call(headings, function (el) {
+                    split(el);
+                    var chars = Array.prototype.map.call(el.querySelectorAll('.ch'), function (c) {
+                        return { el: c, bx: 0, by: 0, x: 0, y: 0, lit: false };
+                    });
+                    if (!chars.length) return;
+                    var item = { el: el, chars: chars, rect: null };
+                    items.push(item);
+                    measure(item);
+                });
+
+                // Позиция курсора (в координатах окна)
+                var ptr = { x: -9999, y: -9999, active: false };
+                var ticking = false;
+
+                function frame() {
+                    ticking = false;
+                    var stillMoving = false;
+
+                    for (var i = 0; i < items.length; i++) {
+                        var item = items[i];
+                        var r = item.el.getBoundingClientRect();
+                        // Пропускаем заголовки далеко за пределами экрана
+                        if (r.bottom < -120 || r.top > window.innerHeight + 120) continue;
+
+                        for (var j = 0; j < item.chars.length; j++) {
+                            var ch = item.chars[j];
+                            // Текущий центр буквы в координатах окна
+                            var cx = r.left + ch.bx + ch.x;
+                            var cy = r.top + ch.by + ch.y;
+
+                            var tx = 0, ty = 0, lit = false;
+                            if (ptr.active) {
+                                var dx = cx - ptr.x;
+                                var dy = cy - ptr.y;
+                                var dist = Math.sqrt(dx * dx + dy * dy);
+                                if (dist < RADIUS && dist > 0.01) {
+                                    var force = 1 - dist / RADIUS;      // 0..1
+                                    force = force * force;              // мягкий край зоны
+                                    var push = PUSH * force;
+                                    tx = (dx / dist) * push;
+                                    ty = (dy / dist) * push;
+                                    lit = force > 0.12;
+                                }
+                            }
+
+                            // Плавное «доезжание» к цели
+                            ch.x += (tx - ch.x) * 0.2;
+                            ch.y += (ty - ch.y) * 0.2;
+
+                            if (Math.abs(tx - ch.x) > 0.08 || Math.abs(ty - ch.y) > 0.08) {
+                                stillMoving = true;
+                            } else {
+                                ch.x = tx; ch.y = ty;
+                            }
+
+                            var t = 'translate3d(' + ch.x.toFixed(2) + 'px,' + ch.y.toFixed(2) + 'px,0)';
+                            if (ch.el.style.transform !== t) ch.el.style.transform = t;
+
+                            if (lit !== ch.lit) {
+                                ch.lit = lit;
+                                ch.el.classList.toggle('is-lit', lit);
+                            }
+                        }
+                    }
+
+                    // Продолжаем, только пока буквы не «доехали» до целей
+                    if (stillMoving) requestAnimationFrame(frame);
+                }
+
+                function kick() {
+                    if (!ticking) { ticking = true; requestAnimationFrame(frame); }
+                }
+
+                window.addEventListener('pointermove', function (e) {
+                    if (e.pointerType === 'touch') return;
+                    ptr.x = e.clientX;
+                    ptr.y = e.clientY;
+                    ptr.active = true;
+                    kick();
+                }, { passive: true });
+
+                document.addEventListener('mouseleave', function () {
+                    ptr.active = false;
+                    ptr.x = ptr.y = -9999;
+                    kick();
+                });
+
+                // Пересчёт базовых позиций при изменении размера/шрифтов
+                var resizeTimer = null;
+                window.addEventListener('resize', function () {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(function () {
+                        items.forEach(measure);
+                    }, 150);
+                });
+            })();
+
+            // ===== Spotlight: свечение под курсором =====
+            var spotlightEls = Array.prototype.slice.call(
+                document.querySelectorAll('.spotlight, .nav, footer, .cta, .btn')
+            );
+
+            spotlightEls.forEach(function (el) {
+                el.addEventListener('pointermove', function (e) {
+                    if (e.pointerType === 'touch') return;
+                    var r = el.getBoundingClientRect();
+                    el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+                    el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+                }, { passive: true });
+            });
+
+            // ===== Звуки (WebAudio, без внешних файлов) =====
+            var soundOn = true;
+            var audioCtx = null;
+            var masterGain = null;
+
+            function getCtx() {
+                if (!audioCtx) {
+                    var AC = window.AudioContext || window.webkitAudioContext;
+                    if (!AC) return null;
+                    audioCtx = new AC();
+                    masterGain = audioCtx.createGain();
+                    masterGain.gain.value = soundOn ? 1 : 0;
+                    masterGain.connect(audioCtx.destination);
+                }
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                return audioCtx;
+            }
+
+            // Короткий тон с мягкой огибающей
+            function tone(ctx, freq, start, dur, type, gainPeak) {
+                var osc = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc.type = type || 'sine';
+                osc.frequency.setValueAtTime(freq, start);
+                gain.gain.setValueAtTime(0.0001, start);
+                gain.gain.exponentialRampToValueAtTime(gainPeak || 0.16, start + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+                osc.connect(gain).connect(masterGain);
+                osc.start(start);
+                osc.stop(start + dur + 0.02);
+            }
+
+            // ===== Фоновый «магический» гул =====
+            var ambientStarted = false;
+
+            function startAmbient() {
+                if (ambientStarted) return;
+                var ctx = getCtx();
+                if (!ctx) return;
+                ambientStarted = true;
+
+                var now = ctx.currentTime;
+                var bus = ctx.createGain();
+                bus.gain.setValueAtTime(0.0001, now);
+                // Плавно проявляем гул, чтобы он не «щёлкнул»
+                bus.gain.exponentialRampToValueAtTime(0.055, now + 3.5);
+                bus.connect(masterGain);
+
+                // Низкий фильтр — глухой, тёплый тембр
+                var lp = ctx.createBiquadFilter();
+                lp.type = 'lowpass';
+                lp.frequency.value = 260;
+                lp.Q.value = 0.6;
+                lp.connect(bus);
+
+                // Два расстроенных низких тона — «дыхание» комнаты
+                var freqs = [55, 82.5, 110];
+                freqs.forEach(function (f, i) {
+                    var osc = ctx.createOscillator();
+                    var g = ctx.createGain();
+                    osc.type = i === 2 ? 'triangle' : 'sine';
+                    osc.frequency.value = f + (Math.random() * 0.6 - 0.3);
+                    g.gain.value = i === 2 ? 0.22 : 0.4;
+                    osc.connect(g).connect(lp);
+                    osc.start(now);
+                });
+
+                // Медленная «волна» фильтра — гул слегка дышит
+                var lfo = ctx.createOscillator();
+                var lfoGain = ctx.createGain();
+                lfo.type = 'sine';
+                lfo.frequency.value = 0.06;
+                lfoGain.gain.value = 70;
+                lfo.connect(lfoGain).connect(lp.frequency);
+                lfo.start(now);
+
+                // Едва слышный воздушный шум поверх гула
+                var noiseLen = ctx.sampleRate * 3;
+                var noiseBuf = ctx.createBuffer(1, noiseLen, ctx.sampleRate);
+                var nd = noiseBuf.getChannelData(0);
+                for (var i = 0; i < noiseLen; i++) nd[i] = (Math.random() * 2 - 1) * 0.35;
+                var air = ctx.createBufferSource();
+                air.buffer = noiseBuf;
+                air.loop = true;
+                var airFilter = ctx.createBiquadFilter();
+                airFilter.type = 'lowpass';
+                airFilter.frequency.value = 420;
+                var airGain = ctx.createGain();
+                airGain.gain.value = 0.05;
+                air.connect(airFilter).connect(airGain).connect(bus);
+                air.start(now);
+            }
+
+            // ===== Магическое потрескивание =====
+            var lastCrackle = 0;
+
+            function playCrackle(strength) {
+                if (!soundOn) return;
+                var ctx = getCtx();
+                if (!ctx) return;
+
+                var now = ctx.currentTime;
+                if (now - lastCrackle < 0.07) return; // защита от «пулемёта»
+                lastCrackle = now;
+
+                var dur = 0.02 + Math.random() * 0.03;
+                var len = Math.max(64, Math.floor(ctx.sampleRate * dur));
+                var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+                var d = buf.getChannelData(0);
+                for (var i = 0; i < len; i++) {
+                    d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2);
+                }
+
+                var src = ctx.createBufferSource();
+                src.buffer = buf;
+
+                var bp = ctx.createBiquadFilter();
+                bp.type = 'bandpass';
+                bp.frequency.value = 2600 + Math.random() * 3200;
+                bp.Q.value = 3 + Math.random() * 6;
+
+                var g = ctx.createGain();
+                g.gain.value = 0.03 * (strength == null ? 1 : strength);
+
+                src.connect(bp).connect(g).connect(masterGain);
+                src.start(now);
+            }
+
+            // Запускаем гул после первого действия пользователя (требование браузеров)
+            ['pointerdown', 'keydown', 'touchstart'].forEach(function (evt) {
+                document.addEventListener(evt, startAmbient, { once: true, passive: true });
+            });
+
+            // Потрескивание при скролле — тихое, «магическое»
+            var lastScrollCrackle = 0;
+            var prevScrollY = window.pageYOffset;
+            window.addEventListener('scroll', function () {
+                var y = window.pageYOffset;
+                if (Math.abs(y - prevScrollY) < 4) return;
+                prevScrollY = y;
+                var now = Date.now();
+                if (now - lastScrollCrackle < 130) return;
+                lastScrollCrackle = now;
+                if (Math.random() < 0.55) playCrackle(0.45);
+            }, { passive: true });
+
+            // Переворот карточки: короткий «клик» + магический звон.
+            // Разный звон при открытии (выше) и закрытии (ниже) карточки.
+            function playFlip(opening) {
+                if (!soundOn) return;
+                var ctx = getCtx();
+                if (!ctx) return;
+                var now = ctx.currentTime;
+                var up = opening !== false;
+
+                // 1. Сухой клик переворота — шумовой всплеск
+                var bufferSize = Math.floor(ctx.sampleRate * 0.035);
+                var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                var data = buffer.getChannelData(0);
+                for (var i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 3);
+                }
+                var noise = ctx.createBufferSource();
+                noise.buffer = buffer;
+                var noiseFilter = ctx.createBiquadFilter();
+                noiseFilter.type = 'bandpass';
+                noiseFilter.frequency.value = 2400;
+                noiseFilter.Q.value = 0.9;
+                var noiseGain = ctx.createGain();
+                noiseGain.gain.value = 0.09;
+                noise.connect(noiseFilter).connect(noiseGain).connect(masterGain);
+                noise.start(now);
+
+                // 2. Магический звон: два чистых тона с «хрустальной» огибающей
+                var base = up ? 880 : 660;
+                tone(ctx, base, now + 0.02, 0.22, 'sine', 0.1);
+                tone(ctx, base * 1.5, now + 0.06, 0.34, 'sine', 0.07);
+                tone(ctx, base * 2, now + 0.1, 0.2, 'triangle', 0.035);
+            }
+
+            // Клик по «Скачать» — короткий аккорд-подтверждение
+            function playDownload() {
+                if (!soundOn) return;
+                var ctx = getCtx();
+                if (!ctx) return;
+                var now = ctx.currentTime;
+                tone(ctx, 523.25, now, 0.16, 'sine', 0.14);        // C5
+                tone(ctx, 659.25, now + 0.08, 0.18, 'sine', 0.12); // E5
+                tone(ctx, 783.99, now + 0.16, 0.26, 'sine', 0.1);  // G5
+            }
+
+            var soundToggle = document.getElementById('soundToggle');
+            var soundLabel = document.getElementById('soundLabel');
+
+            function syncSoundButton() {
+                soundToggle.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
+                soundLabel.textContent = soundOn ? '🔊 Звук вкл' : '🔇 Звук выкл';
+            }
+
+            // Гул и потрескивания тоже подчиняются переключателю:
+            // «выкл» глушит мастер-громкость, «вкл» возвращает и включает гул.
+            soundToggle.addEventListener('click', function () {
+                soundOn = !soundOn;
+                syncSoundButton();
+                var ctx = getCtx();
+                if (ctx && masterGain) {
+                    var t = ctx.currentTime;
+                    masterGain.gain.cancelScheduledValues(t);
+                    masterGain.gain.setValueAtTime(masterGain.gain.value, t);
+                    masterGain.gain.linearRampToValueAtTime(soundOn ? 1 : 0, t + 0.25);
+                }
+                if (soundOn) {
+                    startAmbient();
+                    playFlip(true);
+                }
+            });
+
+            syncSoundButton();
+
+            // ===== Звук обычного клика по кнопкам и ссылкам =====
+            // Короткий «клик + вжух»: тихий щелчок и мягкий свист воздуха
+            function playClick() {
+                if (!soundOn) return;
+                var ctx = getCtx();
+                if (!ctx) return;
+                var now = ctx.currentTime;
+
+                // 1. Щелчок
+                var len = Math.floor(ctx.sampleRate * 0.028);
+                var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+                var d = buf.getChannelData(0);
+                for (var i = 0; i < len; i++) {
+                    d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 4);
+                }
+                var src = ctx.createBufferSource();
+                src.buffer = buf;
+                var bp = ctx.createBiquadFilter();
+                bp.type = 'bandpass';
+                bp.frequency.value = 1900;
+                bp.Q.value = 1.2;
+                var g1 = ctx.createGain();
+                g1.gain.value = 0.07;
+                src.connect(bp).connect(g1).connect(masterGain);
+                src.start(now);
+
+                // 2. «Вжух» — короткий нисходящий свист
+                var osc = ctx.createOscillator();
+                var g2 = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1250, now);
+                osc.frequency.exponentialRampToValueAtTime(520, now + 0.1);
+                g2.gain.setValueAtTime(0.0001, now);
+                g2.gain.exponentialRampToValueAtTime(0.045, now + 0.015);
+                g2.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+                osc.connect(g2).connect(masterGain);
+                osc.start(now);
+                osc.stop(now + 0.14);
+            }
+
+            // ===== «Магический» звук клика по шару =====
+            // Вспышка: низкий удар + быстрое арпеджио вверх + хрустальный шлейф
+            function playOrb() {
+                if (!soundOn) return;
+                var ctx = getCtx();
+                if (!ctx) return;
+                var now = ctx.currentTime;
+
+                // 1. Низкий «бум» — вспышка
+                var boom = ctx.createOscillator();
+                var bg = ctx.createGain();
+                boom.type = 'sine';
+                boom.frequency.setValueAtTime(180, now);
+                boom.frequency.exponentialRampToValueAtTime(60, now + 0.35);
+                bg.gain.setValueAtTime(0.0001, now);
+                bg.gain.exponentialRampToValueAtTime(0.16, now + 0.02);
+                bg.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+                boom.connect(bg).connect(masterGain);
+                boom.start(now);
+                boom.stop(now + 0.42);
+
+                // 2. Арпеджио вверх — «перезвон»
+                var notes = [880, 1108.73, 1318.51, 1760, 2217.46];
+                notes.forEach(function (f, i) {
+                    tone(ctx, f, now + 0.04 + i * 0.055, 0.5 - i * 0.05, 'sine', 0.075 - i * 0.008);
+                });
+
+                // 3. Хрустальный шлейф
+                tone(ctx, 2637, now + 0.3, 0.55, 'triangle', 0.03);
+
+                // 4. Искры — шумовой «шип» с высоким фильтром
+                var len = Math.floor(ctx.sampleRate * 0.4);
+                var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+                var d = buf.getChannelData(0);
+                for (var i = 0; i < len; i++) {
+                    d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2);
+                }
+                var src = ctx.createBufferSource();
+                src.buffer = buf;
+                var hp = ctx.createBiquadFilter();
+                hp.type = 'highpass';
+                hp.frequency.value = 3200;
+                var g = ctx.createGain();
+                g.gain.value = 0.03;
+                src.connect(hp).connect(g).connect(masterGain);
+                src.start(now + 0.05);
+            }
+
+            // Делегирование: клик по ссылке/кнопке даёт звук,
+            // кроме элементов со своим собственным звуком
+            document.addEventListener('click', function (e) {
+                var el = e.target.closest && e.target.closest('a, button');
+                if (!el) return;
+                if (el.closest('[data-download], .flip, #soundToggle, #heroOrb')) return;
+                playClick();
+            });
+
+            // ===== Флип-карточки «Секреты» =====
+            document.querySelectorAll('.flip').forEach(function (card) {
+                card.addEventListener('click', function () {
+                    var flipped = card.classList.toggle('flipped');
+                    card.setAttribute('aria-pressed', flipped ? 'true' : 'false');
+                    // Клик + магический звон при каждом перевороте
+                    playFlip(flipped);
+                });
+                // Пробел/Enter уже обрабатываются кнопкой нативно
+            });
+
+            // ===== Звук на кнопках скачивания =====
+            document.querySelectorAll('[data-download]').forEach(function (btn) {
+                btn.addEventListener('click', function () { playDownload(); });
+            });
+
+            // ===== Магический шар в hero =====
+            var orb = document.getElementById('heroOrb');
+
+            if (orb) {
+                var orbTicking = false;
+                var orbTarget = { x: 0, y: 0, s: 1 };
+                var orbCur = { x: 0, y: 0, s: 1 };
+
+                if (finePointer && !reduceMotion) {
+                    var applyOrb = function () {
+                        orb.style.setProperty('--tx', orbCur.x.toFixed(2));
+                        orb.style.setProperty('--ty', orbCur.y.toFixed(2));
+                        orb.style.setProperty('--s', orbCur.s.toFixed(3));
+                    };
+
+                    var orbLoop = function () {
+                        orbTicking = false;
+                        orbCur.x += (orbTarget.x - orbCur.x) * 0.14;
+                        orbCur.y += (orbTarget.y - orbCur.y) * 0.14;
+                        orbCur.s += (orbTarget.s - orbCur.s) * 0.14;
+                        applyOrb();
+                        if (Math.abs(orbTarget.x - orbCur.x) > 0.01 ||
+                            Math.abs(orbTarget.y - orbCur.y) > 0.01 ||
+                            Math.abs(orbTarget.s - orbCur.s) > 0.001) {
+                            requestAnimationFrame(orbLoop);
+                        }
+                    };
+
+                    window.addEventListener('pointermove', function (e) {
+                        if (e.pointerType === 'touch') return;
+                        var r = orb.getBoundingClientRect();
+                        var cx = r.left + r.width / 2;
+                        var cy = r.top + r.height / 2;
+                        var dx = e.clientX - cx;
+                        var dy = e.clientY - cy;
+                        var dist = Math.hypot(dx, dy);
+                        var range = Math.max(260, r.width * 2.8);
+                        if (dist < range) {
+                            var pull = 1 - dist / range;
+                            orbTarget.x = (dx / range) * 42 * pull * 2.2;
+                            orbTarget.y = (dy / range) * 28 * pull * 2.2;
+                            orbTarget.s = 1 + pull * 0.1;
+                            orb.classList.add('is-active');
+                        } else {
+                            orbTarget.x = 0;
+                            orbTarget.y = 0;
+                            orbTarget.s = 1;
+                            orb.classList.remove('is-active');
+                        }
+                        if (!orbTicking) { orbTicking = true; requestAnimationFrame(orbLoop); }
+                    }, { passive: true });
+
+                    orb.addEventListener('pointerdown', function () {
+                        orbTarget.s = 0.86;
+                        orbCur.s = 0.86;
+                        applyOrb();
+                    });
+                    orb.addEventListener('pointerup', function () { orbTarget.s = 1.08; });
+                }
+
+                // Клик/тап — особый «магический» звук, рябь и искры
+                orb.addEventListener('click', function () {
+                    playOrb();
+
+                    var ripple = document.createElement('span');
+                    ripple.className = 'ripple';
+                    orb.appendChild(ripple);
+                    setTimeout(function () { ripple.remove(); }, 1000);
+
+                    if (!reduceMotion) {
+                        for (var i = 0; i < 12; i++) {
+                            (function (i) {
+                                var spark = document.createElement('span');
+                                spark.className = 'spark';
+                                var angle = (Math.PI * 2 * i) / 12 + Math.random() * 0.4;
+                                var dist = 60 + Math.random() * 60;
+                                spark.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+                                spark.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+                                orb.appendChild(spark);
+                                setTimeout(function () { spark.remove(); }, 1000);
+                            })(i);
+                        }
+                    }
+                });
+
+                // Доступность: Enter/Space на шаре
+                orb.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        orb.click();
+                    }
+                });
+            }
+
+            // ===== Логотип-шар в шапке =====
+            var logoOrb = document.getElementById('logoOrb');
+            if (logoOrb && finePointer && !reduceMotion) {
+                window.addEventListener('pointermove', function (e) {
+                    if (e.pointerType === 'touch') return;
+                    var r = logoOrb.getBoundingClientRect();
+                    var cx = r.left + r.width / 2;
+                    var cy = r.top + r.height / 2;
+                    var dx = e.clientX - cx;
+                    var dy = e.clientY - cy;
+                    var dist = Math.hypot(dx, dy);
+                    var range = 180;
+                    if (dist < range) {
+                        var pull = 1 - dist / range;
+                        logoOrb.style.setProperty('--ox', (dx / range) * pull * 1.6);
+                        logoOrb.style.setProperty('--oy', (dy / range) * pull * 1.6);
+                    } else {
+                        logoOrb.style.setProperty('--ox', 0);
+                        logoOrb.style.setProperty('--oy', 0);
+                    }
+                }, { passive: true });
+            }
+
+            // ===== Кастомный курсор: шар + мягкое свечение =====
+            var cursorOrb = document.getElementById('cursorOrb');
+            var cursorGlow = document.getElementById('cursorGlow');
+
+            if (cursorOrb && cursorGlow && finePointer && !reduceMotion) {
+                // Скрываем системный курсор везде, где работает кастомный
+                document.documentElement.classList.add('has-cursor');
+
+                var c = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+                var ct = { x: c.x, y: c.y };
+                var cursorTicking = false;
+                var hoverScale = 1;   // плавно меняется, без CSS-транзишена (нет дёрганья)
+                var hoverTarget = 1;
+                var ROT = -15;        // наклон шара, градусы (влево)
+
+                var cursorLoop = function () {
+                    cursorTicking = false;
+                    c.x += (ct.x - c.x) * 0.22;
+                    c.y += (ct.y - c.y) * 0.22;
+                    hoverScale += (hoverTarget - hoverScale) * 0.18;
+
+                    // Вся геометрия в одном transform: позиция + наклон + масштаб.
+                    // Центр шара остаётся точно под курсором — без смещений при ховере.
+                    cursorOrb.style.transform =
+                        'translate3d(' + c.x.toFixed(1) + 'px,' + c.y.toFixed(1) + 'px,0) ' +
+                        'rotate(' + ROT + 'deg) ' +
+                        'scale(' + hoverScale.toFixed(3) + ')';
+
+                    // Свечение живёт в своём слое (plus-lighter) и просто следует за шаром
+                    cursorGlow.style.transform =
+                        'translate3d(' + c.x.toFixed(1) + 'px,' + c.y.toFixed(1) + 'px,0)';
+
+                    if (Math.abs(ct.x - c.x) > 0.4 ||
+                        Math.abs(ct.y - c.y) > 0.4 ||
+                        Math.abs(hoverTarget - hoverScale) > 0.002) {
+                        requestAnimationFrame(cursorLoop);
+                    }
+                };
+
+                var kickCursor = function () {
+                    if (!cursorTicking) { cursorTicking = true; requestAnimationFrame(cursorLoop); }
+                };
+
+                window.addEventListener('pointermove', function (e) {
+                    if (e.pointerType === 'touch') return;
+                    ct.x = e.clientX;
+                    ct.y = e.clientY;
+                    cursorOrb.classList.add('is-on');
+                    cursorGlow.classList.add('is-on');
+                    kickCursor();
+                }, { passive: true });
+
+                document.addEventListener('mouseleave', function () {
+                    cursorOrb.classList.remove('is-on');
+                    cursorGlow.classList.remove('is-on');
+                });
+
+                // Увеличиваем только над настоящими кликабельными элементами:
+                // ссылки, кнопки и всё с классом .clickable
+                var hoverables = 'a, button, .clickable, [role="button"]';
+                document.addEventListener('pointerover', function (e) {
+                    if (e.target.closest && e.target.closest(hoverables)) {
+                        hoverTarget = 1.3;
+                        kickCursor();
+                        playCrackle(0.6);
+                    }
+                }, { passive: true });
+
+                document.addEventListener('pointerout', function (e) {
+                    if (e.target.closest && e.target.closest(hoverables)) {
+                        hoverTarget = 1;
+                        kickCursor();
+                    }
+                }, { passive: true });
+            }
+
+            // ===== Сжатие шапки при скролле =====
+            var lastScroll = 0;
+            var navInner = nav.querySelector('.nav-inner');
+            window.addEventListener('scroll', function () {
+                var y = window.pageYOffset;
+                if (y > lastScroll + 6 && y > 120) {
+                    navInner.style.paddingTop = '9px';
+                    navInner.style.paddingBottom = '9px';
+                } else if (y < lastScroll - 6 || y < 120) {
+                    navInner.style.paddingTop = '14px';
+                    navInner.style.paddingBottom = '14px';
+                }
+                lastScroll = y;
+            }, { passive: true });
+        })();
+    </script>
+</body>
+</html>
+
