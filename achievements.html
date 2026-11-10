@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f0c1b">
+    <meta name="description" content="Достижения Оракула — коллекция наград за любопытство. Нажми на карточку, чтобы узнать, как её получить.">
+    <title>Достижения — Оракул</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔮</text></svg>">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        /* ===== Навигация ===== */
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            background: rgba(15, 12, 27, 0.65);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .nav-inner {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .logo .orb {
+            display: inline-block;
+            font-size: 1.4rem;
+            transform: translate(var(--ox, 0), var(--oy, 0));
+            transition: transform 0.15s ease-out, filter 0.3s ease;
+            filter: drop-shadow(0 0 12px var(--glow));
+        }
+
+        .logo:hover .orb { filter: drop-shadow(0 0 20px var(--accent-2)); }
+
+        .nav-links { display: flex; gap: 20px; align-items: center; }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.92rem;
+            transition: color 0.2s ease;
+        }
+
+        .nav-links a:hover { color: #fff; }
+
+        .nav-links a.is-current { color: var(--accent-2); position: relative; }
+
+        .nav-links a.is-current::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -6px;
+            height: 2px;
+            border-radius: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            box-shadow: 0 0 10px var(--accent-2);
+        }
+
+        .menu-toggle {
+            display: none;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1.3rem;
+            line-height: 1;
+            padding: 7px 12px;
+            cursor: pointer;
+        }
+
+        /* ===== Кнопки ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 13px 30px;
+            font-family: inherit;
+            font-size: 0.98rem;
+            font-weight: 700;
+            text-decoration: none;
+            color: #fff;
+            background: var(--accent);
+            border: none;
+            border-radius: 999px;
+            cursor: pointer;
+            box-shadow: 0 0 18px var(--glow);
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+        }
+
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 0 28px var(--accent-2); }
+        .btn:active { transform: translateY(0) scale(0.98); }
+        .btn:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--accent-2);
+            border: 1px solid rgba(138, 43, 226, 0.5);
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: rgba(138, 43, 226, 0.14);
+            box-shadow: 0 0 22px var(--glow);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--line);
+            box-shadow: none;
+        }
+
+        .btn-ghost:hover {
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.24);
+        }
+
+        /* ===== Страница ===== */
+        .page {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 54px 20px 70px;
+        }
+
+        .page-head { text-align: center; margin-bottom: 34px; }
+
+        .page-head .kicker {
+            display: inline-block;
+            margin-bottom: 14px;
+            padding: 5px 14px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent-2);
+            background: rgba(138, 43, 226, 0.12);
+            border: 1px solid rgba(138, 43, 226, 0.32);
+        }
+
+        .page-head h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            line-height: 1.24;
+            padding-bottom: 0.06em;
+            font-weight: 800;
+            filter: drop-shadow(0 0 22px var(--glow));
+        }
+
+        .page-head p {
+            max-width: 620px;
+            margin: 14px auto 0;
+            color: var(--text-muted);
+            font-size: 0.98rem;
+        }
+
+        /* ===== Прогресс ===== */
+        .progress-card {
+            margin-bottom: 34px;
+            padding: 20px 24px;
+            border-radius: var(--radius);
+            background: var(--card-bg);
+            border: 1px solid var(--line);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .progress-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 14px;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        .progress-top strong { color: #fff; font-size: 1.1rem; font-weight: 800; }
+
+        .progress-percent {
+            font-weight: 800;
+            font-size: 0.92rem;
+            color: var(--accent-2);
+            letter-spacing: 0.5px;
+        }
+
+        .progress-track {
+            height: 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.07);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            box-shadow: 0 0 16px rgba(157, 78, 221, 0.8);
+            transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* =================================================================
+           Сетка достижений: ровная, без наездов карточек друг на друга.
+           Наклон и увеличение при ховере — из common.css (Steam-эффект).
+           ================================================================= */
+        .ach-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+            gap: 18px;
+            align-items: stretch;
+        }
+
+        .ach {
+            position: relative;
+            display: block;
+            width: 100%;
+            min-height: 120px;
+            padding: 0;
+            border: none;
+            background: none;
+            font: inherit;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+            outline: none;
+            /* Плоский контекст: блик и грани не конфликтуют */
+            transform-style: flat;
+            perspective: 1200px;
+            animation: achIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        /* Анимация только прозрачностью — transform занят наклоном */
+        @keyframes achIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        /* После первой отрисовки карточки не мигают при каждом обновлении */
+        .ach-grid.is-ready .ach { animation: none; }
+
+        .ach-inner {
+            position: relative;
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-height: 120px;
+            transform-style: preserve-3d;
+            transition: transform 0.7s cubic-bezier(0.4, 0.1, 0.2, 1);
+        }
+
+        .ach.flipped .ach-inner { transform: rotateY(180deg); }
+
+        .ach-face {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 18px;
+            border-radius: var(--radius);
+            border: 1px solid var(--line);
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            overflow: hidden;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .ach-face.back {
+            transform: rotateY(180deg);
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 8px;
+            padding: 18px 20px;
+            background:
+                radial-gradient(circle at 50% 0%, rgba(138, 43, 226, 0.28), transparent 72%),
+                var(--panel);
+            border-color: rgba(157, 78, 221, 0.42);
+        }
+
+        .ach-icon {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            font-size: 1.45rem;
+            line-height: 1;
+            background: radial-gradient(circle at 30% 25%, rgba(199, 125, 255, 0.35), rgba(138, 43, 226, 0.12));
+            box-shadow: inset 0 0 14px rgba(157, 78, 221, 0.35);
+            transition: box-shadow 0.35s ease, transform 0.35s ease, filter 0.35s ease;
+        }
+
+        .ach-body {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 0;
+            padding-right: 22px;
+        }
+
+        .ach-title {
+            font-size: 0.98rem;
+            font-weight: 700;
+            line-height: 1.3;
+            color: #fff;
+        }
+
+        .ach-sub {
+            font-size: 0.72rem;
+            line-height: 1.35;
+            color: var(--text-muted);
+            opacity: 0.85;
+        }
+
+        .ach-back-title {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.3;
+        }
+
+        .ach-hint {
+            font-size: 0.8rem;
+            line-height: 1.45;
+            color: var(--text-muted);
+        }
+
+        .ach-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 0.62rem;
+            line-height: 1;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+        }
+
+        /* ---- Открытая карточка: яркая ---- */
+        .ach.is-unlocked .ach-face.front {
+            border-color: rgba(157, 78, 221, 0.45);
+            background:
+                linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(26, 21, 40, 0.84) 62%);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 24px rgba(138, 43, 226, 0.16);
+        }
+
+        .ach.is-unlocked:hover .ach-face.front {
+            border-color: var(--accent-2);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.42), 0 0 34px rgba(157, 78, 221, 0.35);
+        }
+
+        .ach.is-unlocked .ach-icon {
+            box-shadow: 0 0 20px rgba(138, 43, 226, 0.55), inset 0 0 14px rgba(199, 125, 255, 0.4);
+        }
+
+        .ach.is-unlocked:hover .ach-icon { transform: scale(1.08) rotate(-6deg); }
+
+        .ach.is-unlocked .ach-badge {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            border-color: transparent;
+            color: #fff;
+            box-shadow: 0 0 14px rgba(157, 78, 221, 0.7);
+        }
+
+        .ach.is-unlocked .ach-back-title { color: var(--accent-2); }
+
+        /* ---- Закрытая карточка: серая ---- */
+        .ach.is-locked .ach-face.front {
+            background: rgba(20, 16, 32, 0.6);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .ach.is-locked:hover .ach-face.front { border-color: rgba(255, 255, 255, 0.14); }
+
+        .ach.is-locked .ach-icon {
+            filter: grayscale(1) opacity(0.4);
+            background: rgba(120, 110, 140, 0.12);
+            box-shadow: inset 0 0 14px rgba(120, 110, 140, 0.18);
+        }
+
+        .ach.is-locked .ach-title { color: var(--text-muted); }
+        .ach.is-locked .ach-sub { opacity: 0.6; }
+        .ach.is-locked .ach-face.back { border-color: rgba(255, 255, 255, 0.12); }
+        .ach.is-locked .ach-back-title { color: var(--text-muted); }
+
+        /* Свежее достижение слегка светится */
+        .ach.is-new .ach-face.front {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 42px rgba(199, 125, 255, 0.5);
+        }
+
+        /* ===== Действия ===== */
+        .page-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            justify-content: center;
+            margin-top: 38px;
+        }
+
+        .page-hint {
+            margin-top: 26px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .page-hint a {
+            color: var(--accent-2);
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(199, 125, 255, 0.5);
+        }
+
+        .page-hint a:hover { color: #fff; border-color: #fff; }
+
+        /* ===== Футер ===== */
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--line);
+            position: relative;
+            z-index: 1;
+        }
+
+        footer a {
+            color: var(--accent-2);
+            text-decoration: none;
+            transition: color 0.2s ease, text-shadow 0.2s ease;
+        }
+
+        footer a:hover { color: #fff; text-shadow: 0 0 12px var(--accent-2); }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 20px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        /* ===== Светлая тема: точечные правки ===== */
+        html[data-theme="light"] .nav { background: rgba(255, 255, 255, 0.75); }
+        html[data-theme="light"] .logo,
+        html[data-theme="light"] .nav-links a:hover,
+        html[data-theme="light"] .page-head h1,
+        html[data-theme="light"] .ach-title,
+        html[data-theme="light"] .ach-back-title,
+        html[data-theme="light"] .progress-top strong,
+        html[data-theme="light"] .btn-ghost:hover,
+        html[data-theme="light"] footer a:hover { color: var(--text-main); }
+
+        html[data-theme="light"] .menu-toggle {
+            color: var(--text-main);
+            border-color: rgba(124, 58, 237, 0.25);
+        }
+
+        html[data-theme="light"] .ach.is-unlocked .ach-face.front {
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.14), rgba(255, 255, 255, 0.94) 62%);
+            box-shadow: 0 10px 26px rgba(87, 42, 160, 0.1);
+        }
+
+        html[data-theme="light"] .ach.is-locked .ach-face.front {
+            background: rgba(255, 255, 255, 0.62);
+            border-color: rgba(124, 58, 237, 0.12);
+        }
+
+        html[data-theme="light"] .ach-face.back {
+            background:
+                radial-gradient(circle at 50% 0%, rgba(124, 58, 237, 0.16), transparent 72%),
+                #ffffff;
+        }
+
+        html[data-theme="light"] .ach-badge { border-color: rgba(124, 58, 237, 0.18); }
+
+        html[data-theme="light"] .progress-card { box-shadow: 0 10px 26px rgba(87, 42, 160, 0.08); }
+
+        html[data-theme="light"] .progress-track { background: rgba(124, 58, 237, 0.1); }
+
+        html[data-theme="light"] .btn-outline { color: var(--accent-2); }
+        html[data-theme="light"] .btn-outline:hover { background: rgba(124, 58, 237, 0.1); }
+        html[data-theme="light"] footer { border-top-color: rgba(124, 58, 237, 0.12); }
+
+        /* Мобильное меню в светлой теме: раньше оставалось тёмным
+           (светло-серый текст на почти чёрном фоне) */
+        html[data-theme="light"] .nav.open .nav-links {
+            background: rgba(250, 248, 255, 0.98);
+            border-bottom-color: rgba(124, 58, 237, 0.12);
+        }
+
+        html[data-theme="light"] .nav.open .nav-links a {
+            border-bottom-color: rgba(124, 58, 237, 0.08);
+        }
+
+        /* ===== Адаптив ===== */
+        @media (max-width: 860px) {
+            .nav-links { display: none; }
+            .menu-toggle { display: inline-block; }
+
+            .nav.open .nav-links {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                padding: 10px 20px 16px;
+                background: rgba(15, 12, 27, 0.98);
+                border-bottom: 1px solid var(--line);
+            }
+
+            .nav.open .nav-links a {
+                width: 100%;
+                padding: 12px 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            }
+
+            .nav.open .nav-links a.is-current::after { display: none; }
+            .nav { position: sticky; }
+            .nav-inner { position: relative; }
+        }
+
+        @media (max-width: 768px) {
+            .page { padding: 36px 16px 56px; }
+            .ach-grid { grid-template-columns: 1fr; gap: 14px; }
+            .progress-card { padding: 16px 18px; }
+            .page-head p { font-size: 0.92rem; }
+        }
+
+        @media (max-width: 420px) {
+            .ach-face { padding: 14px; gap: 12px; }
+            .ach-icon { width: 42px; height: 42px; font-size: 1.3rem; }
+            .ach-title { font-size: 0.92rem; }
+            .ach-sub { font-size: 0.68rem; }
+        }
+    </style>
+    <script>
+        /* Тема применяется до первой отрисовки — без «вспышки» */
+        (function () {
+            try {
+                var saved = localStorage.getItem('orakul.theme');
+                if (saved && saved.indexOf('light') !== -1) {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                }
+            } catch (e) {}
+        })();
+    </script>
+</head>
+<body>
+
+    <header class="nav" id="nav">
+        <div class="nav-inner">
+            <a class="logo" href="index.html">
+                <span class="orb" aria-hidden="true">🔮</span>
+                <span>Оракул</span>
+            </a>
+            <nav class="nav-links">
+                <a href="index.html#features">Возможности</a>
+                <a href="index.html#secrets">Секреты</a>
+                <a href="index.html#install">Установка</a>
+                <a href="achievements.html" class="is-current" aria-current="page">Достижения</a>
+            </nav>
+            <div class="nav-tools">
+                <button class="theme-toggle" id="themeToggle" type="button" aria-label="Включить светлую тему" aria-pressed="false">
+                    <span class="icon" id="themeIcon" aria-hidden="true">🌙</span>
+                </button>
+                <button class="menu-toggle" id="menuToggle" aria-label="Открыть меню" aria-expanded="false">☰</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="page">
+        <div class="page-head">
+            <span class="kicker">Коллекция</span>
+            <h1>Достижения</h1>
+            <p>Шестнадцать наград за любопытство. Четыре из них спрятаны так, что о них знает только Старый Кодер.</p>
+        </div>
+
+        <div class="progress-card">
+            <div class="progress-top">
+                <span>Открыто <strong id="achCount">0</strong> из <strong id="achTotal">16</strong></span>
+                <span class="progress-percent" id="achPercent">0%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <div class="ach-grid" id="achGrid"></div>
+
+        <div class="page-actions">
+            <a class="btn btn-outline" href="index.html">← На главную</a>
+            <button class="btn btn-ghost" id="resetBtn" type="button">Сбросить прогресс</button>
+        </div>
+
+        <p class="page-hint">
+            Нажми на карточку — она перевернётся и покажет подсказку.
+            Большинство наград открывается <a href="index.html">на главной</a>.
+        </p>
+    </main>
+
+    <footer>
+        <p>Оракул v3.7.0 «Mini App» · Сделано с 💜 для Fortnite</p>
+        <p class="footer-links">
+            <a href="index.html">Главная</a>
+            <a href="https://github.com/AlexanderPo22/Orakul_demo">GitHub</a>
+            <a href="https://github.com/AlexanderPo22/Orakul_demo/releases">Релизы</a>
+        </p>
+    </footer>
+
+    <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="true">
+        <span class="dot" aria-hidden="true"></span>
+        <span id="soundLabel">🔊 Звук вкл</span>
+    </button>
+
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            var O = window.Orakul;
+            var Snd = O.Snd;
+            var grid = document.getElementById('achGrid');
+            var countEl = document.getElementById('achCount');
+            var totalEl = document.getElementById('achTotal');
+            var percentEl = document.getElementById('achPercent');
+            var fillEl = document.getElementById('progressFill');
+
+            /* ===== Отрисовка карточек ===== */
+            function render() {
+                // Перевёрнутые карточки запоминаем: обновление списка не должно
+                // «закрывать» то, что пользователь уже открыл
+                var flipped = {};
+                Array.prototype.forEach.call(grid.querySelectorAll('.ach.flipped'), function (el) {
+                    if (el.dataset.id) flipped[el.dataset.id] = true;
+                });
+
+                // Метки времени читаем один раз, а не 16 раз подряд
+                var stamps = O.store.get(O.store.keys.ach, {});
+                if (!stamps || typeof stamps !== 'object') stamps = {};
+
+                var unlocked = 0;
+                var newest = 0;
+                var newestId = null;
+
+                O.LIST.forEach(function (def) {
+                    if (!O.has(def.id)) return;
+                    unlocked++;
+                    var ts = Number(stamps[def.id]) || 0;
+                    if (ts >= newest) { newest = ts; newestId = def.id; }
+                });
+
+                grid.innerHTML = '';
+                var frag = document.createDocumentFragment();
+
+                O.LIST.forEach(function (def) {
+                    var got = O.has(def.id);
+                    // Пока награда не получена — не показываем ни иконку, ни название
+                    var hidden = !got;
+
+                    var card = document.createElement('button');
+                    card.type = 'button';
+                    card.className = 'ach ' + (got ? 'is-unlocked' : 'is-locked');
+                    card.dataset.id = def.id;
+                    if (flipped[def.id]) card.classList.add('flipped');
+                    card.setAttribute('aria-pressed', flipped[def.id] ? 'true' : 'false');
+                    if (got && def.id === newestId && Date.now() - newest < 120000) {
+                        card.classList.add('is-new');
+                    }
+
+                    var iconText = hidden ? '?' : def.icon;
+                    var titleText = hidden ? '???' : def.title;
+                    var subText = 'Нажми, чтобы увидеть подсказку';
+                    var backTitle = hidden ? '???' : def.icon + ' ' + def.title;
+                    // Подсказка видна всегда — и до открытия награды
+                    var hintText = def.hint;
+
+                    card.innerHTML =
+                        '<span class="ach-inner">' +
+                            '<span class="ach-face front">' +
+                                '<span class="ach-icon" aria-hidden="true">' + iconText + '</span>' +
+                                '<span class="ach-body">' +
+                                    '<span class="ach-title">' + titleText + '</span>' +
+                                    '<span class="ach-sub">' + subText + '</span>' +
+                                '</span>' +
+                                '<span class="ach-badge" aria-hidden="true">' + (got ? '✓' : '🔒') + '</span>' +
+                            '</span>' +
+                            '<span class="ach-face back">' +
+                                '<span class="ach-back-title">' + backTitle + '</span>' +
+                                '<span class="ach-hint">' + hintText + '</span>' +
+                            '</span>' +
+                        '</span>';
+
+                    var sr = document.createElement('span');
+                    sr.className = 'sr-only';
+                    sr.textContent = (got ? 'Получено. ' : 'Не получено. ') + def.hint;
+                    card.appendChild(sr);
+
+                    card.addEventListener('click', function () {
+                        var flipped = card.classList.toggle('flipped');
+                        card.setAttribute('aria-pressed', flipped ? 'true' : 'false');
+                        Snd.orb(0.35);
+                        setTimeout(function () { Snd.flip(flipped); }, 90);
+                    });
+
+                    frag.appendChild(card);
+                });
+
+                grid.appendChild(frag);
+                // Вступительную анимацию гасим только после первой отрисовки,
+                // иначе карточки мигали бы при каждом обновлении списка
+                if (!grid.classList.contains('is-ready')) {
+                    setTimeout(function () { grid.classList.add('is-ready'); }, 700);
+                }
+
+                var total = O.TOTAL;
+                var percent = Math.round((unlocked / total) * 100);
+                countEl.textContent = unlocked;
+                totalEl.textContent = total;
+                percentEl.textContent = percent + '%';
+                fillEl.style.width = percent + '%';
+
+                O.tilt.refresh(grid);
+            }
+
+            render();
+
+            window.addEventListener('pageshow', function (e) {
+                if (e.persisted) render();
+            });
+
+            document.addEventListener('orakul:unlock', render);
+            document.addEventListener('orakul:sync', render);
+
+            /* ===== Сброс ===== */
+            var resetBtn = document.getElementById('resetBtn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function () {
+                    if (!window.confirm('Сбросить весь прогресс достижений? Это действие нельзя отменить.')) return;
+                    O.reset();
+                    render();
+                });
+            }
+
+            /* ===== Мобильное меню ===== */
+            var nav = document.getElementById('nav');
+            var menuToggle = document.getElementById('menuToggle');
+
+            if (menuToggle) {
+                menuToggle.addEventListener('click', function () {
+                    var isOpen = nav.classList.toggle('open');
+                    menuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                    menuToggle.textContent = isOpen ? '✕' : '☰';
+                });
+            }
+
+            /* ===== Клики по ссылкам — звук ===== */
+            document.addEventListener('click', function (e) {
+                var el = e.target.closest && e.target.closest('a, button');
+                if (!el) return;
+                if (el.id === 'soundToggle' || el.id === 'resetBtn' || el.id === 'themeToggle') return;
+                if (el.classList.contains('ach')) return;
+                Snd.orb(0.4);
+            });
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,627 @@
+/* ===================================================================
+   Оракул — общие стили для всех страниц (index / achievements / console / 404)
+   Подключается ДО стилей страницы: <link rel="stylesheet" href="common.css">
+   =================================================================== */
+
+/* ===== Переменные ===== */
+:root {
+    --bg-color: #0f0c1b;
+    --card-bg: rgba(26, 21, 40, 0.8);
+    --panel: rgba(22, 17, 36, 0.9);
+    --text-main: #e0d8f0;
+    --text-muted: #9a8cb8;
+    --accent: #8a2be2;
+    --accent-hover: #9d4edd;
+    --accent-2: #c77dff;
+    --glow: rgba(138, 43, 226, 0.4);
+    --grid-color: rgba(138, 43, 226, 0.1);
+    --line: rgba(255, 255, 255, 0.06);
+    --radius: 20px;
+    --grid-shift: 50px;   /* шаг сдвига фоновой сетки = размер клетки */
+}
+
+/* ===== Светлая тема (день) ===== */
+html[data-theme="light"] {
+    --bg-color: #f7f4ff;
+    --card-bg: rgba(255, 255, 255, 0.78);
+    --panel: rgba(255, 255, 255, 0.94);
+    --text-main: #2b2142;
+    --text-muted: #6d5f8c;
+    --accent: #7c3aed;
+    --accent-hover: #8b5cf6;
+    --accent-2: #6d28d9;
+    --glow: rgba(124, 58, 237, 0.22);
+    --grid-color: rgba(124, 58, 237, 0.13);
+    --line: rgba(124, 58, 237, 0.14);
+}
+
+/* ===== База ===== */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    overflow-x: clip;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    line-height: 1.6;
+    overflow-x: hidden;
+    position: relative;
+    min-height: 100vh;
+    transition: background-color 0.45s ease, color 0.45s ease;
+}
+
+::selection {
+    background: var(--accent);
+    color: #fff;
+}
+
+img, svg { max-width: 100%; display: block; }
+
+a { color: var(--accent-2); }
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ===== Неоновая сетка на фоне (с пульсацией) ===== */
+body::before {
+    content: '';
+    position: fixed;
+    inset: -60px;   /* запас, чтобы сдвиг сетки не открывал край экрана */
+    background-image:
+        linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+    background-size: 50px 50px;
+    z-index: -2;
+    mask-image: radial-gradient(circle at 50% 40%, black 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(circle at 50% 40%, black 30%, transparent 80%);
+    animation: gridPulse 8s ease-in-out infinite alternate,
+               gridDrift 24s linear infinite alternate;
+    pointer-events: none;
+}
+
+@keyframes gridPulse {
+    0%   { opacity: 0.45; }
+    100% { opacity: 1; }
+}
+
+/* Сдвиг через transform (композитится), а не background-position:
+   анимация позиции фона перерисовывала весь экран каждый кадр. */
+@keyframes gridDrift {
+    0%   { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(var(--grid-shift, 50px), var(--grid-shift, 50px), 0); }
+}
+
+/* ===== Плавающие частицы (искры, летят вверх) ===== */
+.fx-particles {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.fx-particle {
+    position: absolute;
+    bottom: -12vh;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--accent-2);
+    box-shadow: 0 0 8px var(--accent-2), 0 0 16px var(--glow);
+    opacity: 0;
+    animation-name: fxFloat;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    will-change: transform, opacity;
+}
+
+/* Часть частиц — звёздочки, часть — искры-ромбики */
+.fx-particle.is-star {
+    width: 8px;
+    height: 8px;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    color: var(--accent-2);
+    font-size: 8px;
+    line-height: 1;
+    text-shadow: 0 0 10px var(--accent-2);
+}
+
+@keyframes fxFloat {
+    0%   { transform: translate3d(0, 0, 0) scale(0.5); opacity: 0; }
+    8%   { opacity: 0.85; }
+    55%  { opacity: 0.7; }
+    100% { transform: translate3d(var(--drift, 0px), -118vh, 0) scale(1.15); opacity: 0; }
+}
+
+html[data-theme="light"] .fx-particle {
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(124, 58, 237, 0.55);
+    opacity: 0;
+}
+
+/* ===== Кастомный курсор: свечение + шар (два слоя) ===== */
+.cursor-glow {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 400px;
+    height: 400px;
+    margin: -200px 0 0 -200px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    will-change: transform;
+    background: radial-gradient(
+        circle,
+        rgba(157, 78, 221, 0.3) 0%,
+        rgba(138, 43, 226, 0.16) 32%,
+        rgba(138, 43, 226, 0.06) 58%,
+        transparent 78%
+    );
+    filter: blur(18px);
+    -webkit-filter: blur(18px);
+    mix-blend-mode: screen;
+}
+
+@supports (mix-blend-mode: plus-lighter) {
+    .cursor-glow { mix-blend-mode: plus-lighter; }
+}
+
+.cursor-glow.is-on { opacity: 1; }
+
+.cursor-orb {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 34px;
+    height: 34px;
+    margin: -17px 0 0 -17px;
+    font-size: 26px;
+    line-height: 34px;
+    text-align: center;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0;
+    filter: drop-shadow(0 0 10px rgba(199, 125, 255, 0.85)) drop-shadow(0 0 26px rgba(138, 43, 226, 0.7));
+    transition: opacity 0.3s ease;
+    will-change: transform;
+    user-select: none;
+}
+
+.cursor-orb.is-on { opacity: 1; }
+
+html.has-cursor,
+html.has-cursor * {
+    cursor: none !important;
+}
+
+/* В полях ввода свой курсор-палочка важнее декора: иначе не видно,
+   куда ставится каретка (например, в консоли). */
+html.has-cursor input,
+html.has-cursor textarea,
+html.has-cursor [contenteditable="true"] {
+    cursor: text !important;
+}
+
+html[data-theme="light"] .cursor-glow {
+    mix-blend-mode: multiply;
+    opacity: 0.5;
+}
+
+/* ===== Вуаль смены дня и ночи ===== */
+.theme-veil {
+    position: fixed;
+    inset: 0;
+    z-index: 9980;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.theme-veil.is-day {
+    background: radial-gradient(circle at 50% -15%, rgba(255, 214, 140, 0.8), rgba(255, 242, 218, 0.38) 42%, transparent 74%);
+}
+
+.theme-veil.is-night {
+    background: radial-gradient(circle at 50% -15%, rgba(74, 38, 148, 0.85), rgba(15, 12, 27, 0.6) 46%, transparent 80%);
+}
+
+.theme-veil.is-on { animation: veilSweep 1s ease-out; }
+
+@keyframes veilSweep {
+    0%   { opacity: 0; }
+    20%  { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* Плавная смена палитры при переключении темы */
+html.theme-fade,
+html.theme-fade * {
+    transition: background-color 0.55s ease, color 0.55s ease,
+                border-color 0.55s ease, box-shadow 0.55s ease !important;
+}
+
+/* ===== Переключатель темы ===== */
+.nav-tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+}
+
+.theme-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(138, 43, 226, 0.14);
+    border: 1px solid rgba(138, 43, 226, 0.38);
+    color: var(--text-main);
+    cursor: pointer;
+    overflow: hidden;
+    flex: 0 0 auto;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+}
+
+.theme-toggle:hover {
+    border-color: var(--accent-2);
+    box-shadow: 0 0 20px var(--glow);
+    background: rgba(138, 43, 226, 0.24);
+}
+
+.theme-toggle:focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: 3px;
+}
+
+.theme-toggle .icon {
+    display: block;
+    font-size: 1.15rem;
+    line-height: 1;
+    will-change: transform, opacity;
+}
+
+.theme-toggle.is-swapping .icon {
+    animation: iconRoll 0.62s cubic-bezier(0.45, 0.05, 0.25, 1);
+}
+
+@keyframes iconRoll {
+    0%   { transform: translateY(0) rotate(0) scale(1); opacity: 1; }
+    42%  { transform: translateY(30px) rotate(70deg) scale(0.72); opacity: 0; }
+    58%  { transform: translateY(-30px) rotate(-70deg) scale(0.72); opacity: 0; }
+    100% { transform: translateY(0) rotate(0) scale(1); opacity: 1; }
+}
+
+html[data-theme="light"] .theme-toggle {
+    background: rgba(124, 58, 237, 0.1);
+    border-color: rgba(124, 58, 237, 0.28);
+}
+
+/* ===== Кнопка звука ===== */
+.sound-toggle {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 900;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-main);
+    background: rgba(26, 21, 40, 0.9);
+    border: 1px solid rgba(138, 43, 226, 0.45);
+    border-radius: 999px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 18px rgba(138, 43, 226, 0.25);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+}
+
+.sound-toggle:hover {
+    border-color: var(--accent-2);
+    box-shadow: 0 0 26px var(--glow);
+    transform: translateY(-1px);
+}
+
+.sound-toggle:focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: 2px;
+}
+
+.sound-toggle .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent-2);
+    box-shadow: 0 0 10px var(--accent-2);
+}
+
+.sound-toggle[aria-pressed="false"] .dot {
+    background: #6b6480;
+    box-shadow: none;
+}
+
+html[data-theme="light"] .sound-toggle {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(124, 58, 237, 0.3);
+    box-shadow: 0 6px 20px rgba(87, 42, 160, 0.14);
+}
+
+html[data-theme="light"] .sound-toggle .dot { background: var(--accent); }
+
+/* ===== Тост достижения ===== */
+.toast-host {
+    position: fixed;
+    top: 86px;
+    right: 18px;
+    z-index: 950;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: min(340px, calc(100vw - 36px));
+    pointer-events: none;
+}
+
+.toast {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: linear-gradient(140deg, rgba(46, 32, 74, 0.97), rgba(24, 18, 40, 0.97));
+    border: 1px solid rgba(157, 78, 221, 0.55);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), 0 0 30px rgba(138, 43, 226, 0.35);
+    overflow: hidden;
+    transform-origin: 100% 50%;
+    animation: toastIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.toast::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.16) 48%, transparent 62%);
+    transform: translateX(-120%);
+    animation: toastShine 1.3s ease 0.25s;
+    pointer-events: none;
+}
+
+@keyframes toastIn {
+    from { opacity: 0; transform: translate3d(46px, 0, 0) scale(0.92); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes toastShine { to { transform: translateX(120%); } }
+
+@keyframes toastOut {
+    to { opacity: 0; transform: translate3d(46px, 0, 0) scale(0.94); }
+}
+
+.toast.is-out { animation: toastOut 0.42s ease forwards; }
+
+.toast-icon {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    font-size: 1.35rem;
+    line-height: 1;
+    background: radial-gradient(circle at 30% 25%, rgba(199, 125, 255, 0.55), rgba(138, 43, 226, 0.18));
+    box-shadow: 0 0 20px rgba(138, 43, 226, 0.65), inset 0 0 12px rgba(199, 125, 255, 0.35);
+    animation: toastPop 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) 0.1s both;
+}
+
+@keyframes toastPop {
+    from { transform: scale(0.4) rotate(-25deg); opacity: 0; }
+    to   { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+.toast-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding-right: 30px;
+}
+
+.toast-kicker {
+    font-size: 0.66rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #c77dff;
+}
+
+.toast-title {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.3;
+}
+
+.toast-count {
+    position: absolute;
+    top: 9px;
+    right: 11px;
+    font-size: 0.66rem;
+    letter-spacing: 0.5px;
+    color: #9a8cb8;
+}
+
+/* ===== Пасхалка: «Старый Кодер» ===== */
+.whisper {
+    position: fixed;
+    left: 50%;
+    bottom: 84px;
+    z-index: 940;
+    max-width: min(460px, calc(100vw - 32px));
+    padding: 16px 22px;
+    border-radius: 14px;
+    background: rgba(20, 14, 34, 0.94);
+    border: 1px solid rgba(157, 78, 221, 0.45);
+    box-shadow: 0 0 40px rgba(138, 43, 226, 0.35);
+    color: #e6dcff;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    text-align: center;
+    opacity: 0;
+    transform: translate(-50%, 16px);
+    pointer-events: none;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.whisper.is-on { opacity: 1; transform: translate(-50%, 0); }
+
+.whisper em {
+    display: block;
+    margin-top: 8px;
+    font-style: normal;
+    font-size: 0.72rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #c77dff;
+}
+
+/* ===== Танцующий эмодзи ===== */
+.dance-emoji {
+    position: fixed;
+    left: 50%;
+    bottom: 14vh;
+    z-index: 945;
+    font-size: clamp(3rem, 9vw, 5rem);
+    line-height: 1;
+    pointer-events: none;
+    filter: drop-shadow(0 0 26px rgba(199, 125, 255, 0.9));
+    animation: dancePop 2.6s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+}
+
+@keyframes dancePop {
+    0%   { opacity: 0; transform: translate(-50%, 40px) scale(0.4) rotate(-20deg); }
+    16%  { opacity: 1; transform: translate(-50%, 0) scale(1.12) rotate(6deg); }
+    28%  { transform: translate(-46%, -16px) scale(1) rotate(-9deg); }
+    40%  { transform: translate(-54%, 0) scale(1.03) rotate(9deg); }
+    52%  { transform: translate(-46%, -16px) scale(1) rotate(-9deg); }
+    64%  { transform: translate(-54%, 0) scale(1.03) rotate(9deg); }
+    76%  { transform: translate(-46%, -16px) scale(1) rotate(-9deg); }
+    100% { opacity: 0; transform: translate(-50%, -100px) scale(0.85) rotate(0); }
+}
+
+/* ===================================================================
+   STEAM-ЭФФЕКТ: карточка растёт, наклоняется за курсором и ловит блик
+   =================================================================== */
+.tilt {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+/* Пока карточка «живая» — она поверх соседей, чтобы наклон не выглядел поломкой */
+.tilt.is-tilting {
+    z-index: 30;
+    /* Подсказку браузеру даём только на время наклона: держать её на
+       каждой карточке постоянно — лишние слои и память. */
+    will-change: transform;
+}
+
+/* Плавное возвращение в исходное положение, когда курсор ушёл */
+.tilt.is-returning {
+    transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1),
+                border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ===== Взрыв частиц (клик по магическому шару) ===== */
+.burst-spark {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    margin: -3px 0 0 -3px;
+    border-radius: 50%;
+    background: var(--accent-2);
+    box-shadow: 0 0 10px var(--accent-2), 0 0 22px var(--glow);
+    pointer-events: none;
+    z-index: 5;
+    animation: burstOut 0.95s cubic-bezier(0.15, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes burstOut {
+    0%   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+    70%  { opacity: 0.85; }
+    100% { opacity: 0; transform: translate3d(var(--dx, 0), var(--dy, 0), 0) scale(0.15); }
+}
+
+/* ===== Вспышка при клике ===== */
+.click-flash {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 18px;
+    height: 18px;
+    margin: -9px 0 0 -9px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9990;
+    background: radial-gradient(circle, rgba(233, 213, 255, 0.95) 0%, rgba(199, 125, 255, 0.55) 45%, rgba(138, 43, 226, 0.2) 68%, transparent 78%);
+    box-shadow: 0 0 14px var(--accent-2), 0 0 26px var(--glow);
+    animation: flash 0.3s ease-out forwards;
+}
+
+@keyframes flash {
+    0%   { transform: scale(0.35); opacity: 0.95; }
+    60%  { opacity: 0.55; }
+    100% { transform: scale(2.8); opacity: 0; }
+}
+
+html[data-theme="light"] .click-flash {
+    background: radial-gradient(circle, rgba(124, 58, 237, 0.55) 0%, rgba(124, 58, 237, 0.25) 48%, transparent 72%);
+    box-shadow: 0 0 12px rgba(124, 58, 237, 0.5);
+}
+
+/* ===== Уважаем настройку «меньше движения» ===== */
+@media (prefers-reduced-motion: reduce) {
+    body::before { animation: none; }
+    .fx-particle { animation: none; display: none; }
+    .theme-veil { display: none; }
+    .tilt { transition: none; }
+    .click-flash { display: none; }
+    .toast,
+    .toast::after,
+    .toast-icon,
+    .dance-emoji,
+    .whisper { animation: none !important; }
+    html.theme-fade,
+    html.theme-fade * { transition: none !important; }
+}

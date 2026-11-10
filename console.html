@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f0c1b">
+    <meta name="description" content="Скрытая консоль Оракула. Команды, пасхалки и кое-кто на связи.">
+    <title>Консоль — Оракул</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔮</text></svg>">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        :root {
+            --mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, 'Courier New', monospace;
+        }
+
+        body {
+            font-family: var(--mono);
+            background-image: radial-gradient(circle at 50% 0%, rgba(138, 43, 226, 0.14), transparent 62%);
+        }
+
+        html[data-theme="light"] body {
+            background-image: radial-gradient(circle at 50% 0%, rgba(124, 58, 237, 0.1), transparent 62%);
+        }
+
+        /* ===== Сканлайны ===== */
+        .scanlines {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.022) 0px,
+                rgba(255, 255, 255, 0.022) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+            mix-blend-mode: overlay;
+        }
+
+        html[data-theme="light"] .scanlines { opacity: 0.35; }
+
+        /* ===== Верхняя панель ===== */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 12px 20px;
+            background: rgba(15, 12, 27, 0.72);
+            border-bottom: 1px solid var(--line);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+
+        html[data-theme="light"] .topbar { background: rgba(255, 255, 255, 0.78); }
+
+        .back {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.82rem;
+            letter-spacing: 0.5px;
+            transition: color 0.2s ease, text-shadow 0.2s ease;
+        }
+
+        .back:hover { color: var(--accent-2); text-shadow: 0 0 14px var(--accent-2); }
+
+        .tag {
+            font-size: 0.76rem;
+            letter-spacing: 1.5px;
+            color: var(--accent-2);
+            text-shadow: 0 0 14px var(--glow);
+        }
+
+        .topbar-tools { display: flex; align-items: center; gap: 10px; }
+
+        /* ===== Сцена ===== */
+        .stage {
+            position: relative;
+            z-index: 2;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 28px 18px 90px;
+        }
+
+        /* ===== Терминал ===== */
+        .term {
+            border-radius: 16px;
+            border: 1px solid rgba(138, 43, 226, 0.35);
+            background: rgba(12, 9, 20, 0.9);
+            box-shadow:
+                0 24px 70px rgba(0, 0, 0, 0.55),
+                0 0 46px rgba(138, 43, 226, 0.2),
+                inset 0 0 60px rgba(138, 43, 226, 0.06);
+            overflow: hidden;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+
+        html[data-theme="light"] .term {
+            background: rgba(255, 255, 255, 0.92);
+            border-color: rgba(124, 58, 237, 0.3);
+            box-shadow: 0 24px 60px rgba(87, 42, 160, 0.16), 0 0 40px rgba(124, 58, 237, 0.12);
+        }
+
+        .term-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: rgba(28, 20, 44, 0.95);
+            border-bottom: 1px solid rgba(138, 43, 226, 0.22);
+            font-size: 0.72rem;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+
+        html[data-theme="light"] .term-bar {
+            background: rgba(244, 240, 255, 0.96);
+            border-bottom-color: rgba(124, 58, 237, 0.18);
+        }
+
+        .dots { display: inline-flex; gap: 6px; }
+
+        .dots i {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4b3a6b;
+        }
+
+        .dots i:nth-child(1) { background: #ff5f57; }
+        .dots i:nth-child(2) { background: #febc2e; }
+        .dots i:nth-child(3) { background: #28c840; }
+
+        .term-title {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .term-status {
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-size: 0.66rem;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: #6ee7a8;
+            border: 1px solid rgba(110, 231, 168, 0.35);
+            background: rgba(110, 231, 168, 0.08);
+        }
+
+        .term-status.is-broken {
+            color: #ff7a7a;
+            border-color: rgba(255, 122, 122, 0.4);
+            background: rgba(255, 122, 122, 0.08);
+        }
+
+        /* ===== Уровень доступа в шапке ===== */
+        .access {
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-size: 0.66rem;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.04);
+            transition: color 0.3s ease, border-color 0.3s ease,
+                        background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .access.is-admin {
+            color: #ffd97a;
+            border-color: rgba(255, 217, 122, 0.45);
+            background: rgba(255, 217, 122, 0.1);
+            box-shadow: 0 0 16px rgba(255, 217, 122, 0.25);
+        }
+
+        html[data-theme="light"] .access { border-color: rgba(124, 58, 237, 0.2); }
+
+        html[data-theme="light"] .access.is-admin {
+            color: #9a6b00;
+            border-color: rgba(154, 107, 0, 0.35);
+            background: rgba(255, 217, 122, 0.3);
+        }
+
+        /* ===== Тело терминала ===== */
+        .term-body {
+            padding: 18px 18px 8px;
+            min-height: 46vh;
+            max-height: 62vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            font-size: 0.86rem;
+            line-height: 1.65;
+            color: var(--text-main);
+            scrollbar-width: thin;
+            scrollbar-color: rgba(138, 43, 226, 0.6) transparent;
+        }
+
+        .term-body::-webkit-scrollbar { width: 8px; }
+        .term-body::-webkit-scrollbar-track { background: transparent; }
+
+        .term-body::-webkit-scrollbar-thumb {
+            background: rgba(138, 43, 226, 0.45);
+            border-radius: 8px;
+        }
+
+        .line {
+            white-space: pre-wrap;
+            word-break: break-word;
+            min-height: 1.2em;
+        }
+
+        .line-title {
+            color: var(--accent-2);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 16px var(--glow);
+        }
+
+        .line-ok { color: #7ee2b8; }
+        .line-dim { color: var(--text-muted); }
+        .line-err { color: #ff7a7a; }
+
+        .line-echo { color: var(--accent-2); }
+
+        /* Приглашение берётся из data-prompt: после login оно admin@orakul */
+        .line-echo::before {
+            content: attr(data-prompt);
+            color: var(--text-muted);
+        }
+
+        .line-dialog {
+            color: #d9c7ff;
+            font-weight: 600;
+        }
+
+        html[data-theme="light"] .line-dialog { color: #4c2a8f; }
+
+        .p { color: var(--accent-2); font-weight: 700; }
+
+        .granted {
+            color: #ffd97a;
+            text-shadow: 0 0 14px rgba(255, 217, 122, 0.5);
+            font-weight: 700;
+        }
+
+        /* ===== Матрица ===== */
+        .matrix {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            margin: 6px 0 10px;
+            font-size: 0.72rem;
+            line-height: 1.1;
+            color: #57ff9a;
+            text-shadow: 0 0 8px rgba(87, 255, 154, 0.7);
+            overflow: hidden;
+            max-height: 220px;
+        }
+
+        .matrix span {
+            white-space: nowrap;
+            animation: matrixIn 0.4s ease both;
+        }
+
+        @keyframes matrixIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        /* ===== Строка ввода ===== */
+        .term-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 18px 16px;
+            border-top: 1px solid rgba(138, 43, 226, 0.18);
+        }
+
+        .prompt {
+            flex: 0 0 auto;
+            font-size: 0.84rem;
+            color: var(--accent-2);
+            text-shadow: 0 0 12px var(--glow);
+        }
+
+        .term-input input {
+            flex: 1 1 auto;
+            min-width: 0;
+            padding: 6px 2px;
+            font-family: var(--mono);
+            font-size: 0.88rem;
+            color: var(--text-main);
+            background: transparent;
+            border: none;
+            outline: none;
+            caret-color: var(--accent-2);
+        }
+
+        .term-input input::placeholder { color: rgba(154, 140, 184, 0.5); }
+
+        .hint {
+            margin-top: 16px;
+            text-align: center;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .hint code {
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            color: var(--accent-2);
+            background: rgba(138, 43, 226, 0.14);
+            border: 1px solid rgba(138, 43, 226, 0.28);
+        }
+
+        /* Вспышка терминала при достижении */
+        .term.is-flash { animation: termFlash 0.6s ease; }
+
+        @keyframes termFlash {
+            0%   { box-shadow: 0 0 0 rgba(199, 125, 255, 0); }
+            35%  { box-shadow: 0 0 90px rgba(199, 125, 255, 0.55), 0 24px 70px rgba(0, 0, 0, 0.55); }
+            100% { box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), 0 0 46px rgba(138, 43, 226, 0.2); }
+        }
+
+        /* ===== Адаптив ===== */
+        @media (max-width: 640px) {
+            .stage { padding: 18px 12px 80px; }
+            .term-body { padding: 14px 13px 6px; font-size: 0.79rem; min-height: 52vh; max-height: 64vh; }
+            .term-input { padding: 10px 13px 13px; gap: 8px; }
+            .prompt { font-size: 0.76rem; }
+            .term-input input { font-size: 0.82rem; }
+            .term-title { font-size: 0.66rem; }
+            .term-status { display: none; }
+            .hint { font-size: 0.72rem; }
+        }
+    </style>
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('orakul.theme');
+                if (saved && saved.indexOf('light') !== -1) {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                }
+            } catch (e) {}
+        })();
+    </script>
+</head>
+<body>
+
+    <div class="scanlines" aria-hidden="true"></div>
+
+    <header class="topbar">
+        <a class="back" href="index.html">← На главную</a>
+        <span class="tag">orakul://console</span>
+        <div class="topbar-tools">
+            <span class="access" id="accessLevel" aria-live="polite">guest</span>
+            <button class="theme-toggle" id="themeToggle" type="button" aria-label="Включить светлую тему" aria-pressed="false">
+                <span class="icon" id="themeIcon" aria-hidden="true">🌙</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="stage">
+        <section class="term" id="term" aria-label="Консоль Оракула">
+            <div class="term-bar">
+                <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span class="term-title">orakul@demo — secure shell — 80×24</span>
+                <span class="term-status" id="termStatus">secure</span>
+            </div>
+
+            <!-- aria-live="off": строки печатаются по символу, и вежливый
+                 live-регион зачитывал бы каждую букву -->
+            <div class="term-body" id="out" role="log" aria-live="off"></div>
+
+            <form class="term-input" id="form" autocomplete="off">
+                <label class="prompt" id="prompt" for="cmd">orakul@demo:~$</label>
+                <input id="cmd" name="cmd" type="text" autocomplete="off" autocapitalize="off"
+                       autocorrect="off" spellcheck="false" placeholder="help"
+                       aria-label="Команда консоли">
+            </form>
+        </section>
+
+        <p class="hint">Подсказка: начни с <code>help</code>. Выход — <code>exit</code>.</p>
+
+        <!-- Сюда попадает готовая строка целиком: скринридер читает её один
+             раз, а не по букве, как из «печатающегося» лога -->
+        <div class="sr-only" id="outLive" role="status" aria-live="polite" aria-atomic="true"></div>
+    </main>
+
+    <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="true">
+        <span class="dot" aria-hidden="true"></span>
+        <span id="soundLabel">🔊 Звук вкл</span>
+    </button>
+
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            var O = window.Orakul;
+            var Snd = O.Snd;
+            var reduceMotion = O.reduceMotion;
+
+            var out = document.getElementById('out');
+            var outLive = document.getElementById('outLive');
+            var liveReady = false;   // до конца загрузки не засоряем озвучку
+            var term = document.getElementById('term');
+            var form = document.getElementById('form');
+            var input = document.getElementById('cmd');
+            var statusEl = document.getElementById('termStatus');
+            var accessEl = document.getElementById('accessLevel');
+            var promptEl = document.getElementById('prompt');
+
+            /* ================= ПЕЧАТНАЯ МАШИНКА ================= */
+            var queue = [];
+            var typing = false;
+            var gen = 0;   // растёт при clear/reset: старый цикл печати умирает
+
+            function scrollDown() { out.scrollTop = out.scrollHeight; }
+
+            function announce(text) {
+                if (!liveReady || !outLive || !text) return;
+                outLive.textContent = text;
+            }
+
+            function stripTags(html) {
+                var tmp = document.createElement('div');
+                tmp.innerHTML = html;
+                return tmp.textContent || '';
+            }
+
+            function pump() {
+                if (typing) return;
+                var job = queue.shift();
+                if (!job) return;
+
+                typing = true;
+                var myGen = gen;
+
+                var div = document.createElement('div');
+                div.className = 'line ' + (job.cls || '');
+                out.appendChild(div);
+                scrollDown();
+
+                if (job.instant || reduceMotion || !job.text) {
+                    if (job.html) div.innerHTML = job.html;
+                    else div.textContent = job.text;
+                    announce(job.html ? stripTags(job.html) : job.text);
+                    typing = false;
+                    scrollDown();
+                    pump();
+                    return;
+                }
+
+                var i = 0;
+                var speed = job.fast ? 4 : 9;
+
+                (function step() {
+                    if (myGen !== gen) return;   // экран очистили — выходим
+                    if (i >= job.text.length) {
+                        if (job.html) div.innerHTML = job.html;
+                        announce(job.html ? stripTags(job.html) : job.text);
+                        typing = false;
+                        scrollDown();
+                        pump();
+                        return;
+                    }
+                    var chunk = job.text.charAt(i);
+                    if (Math.random() < 0.45 && i + 1 < job.text.length) chunk += job.text.charAt(i + 1);
+                    div.textContent += chunk;
+                    i += chunk.length;
+                    if (i % 4 === 0) Snd.type();
+                    scrollDown();
+                    setTimeout(step, speed + Math.random() * 7);
+                })();
+            }
+
+            function line(text, cls, opts) {
+                queue.push({
+                    text: String(text),
+                    cls: cls || '',
+                    instant: !!(opts && opts.instant),
+                    fast: !!(opts && opts.fast)
+                });
+                pump();
+            }
+
+            function lineHTML(html, cls, opts) {
+                queue.push({
+                    text: stripTags(html),
+                    html: html,
+                    cls: cls || '',
+                    instant: !!(opts && opts.instant),
+                    fast: !!(opts && opts.fast)
+                });
+                pump();
+            }
+
+            function echo(cmd) {
+                var div = document.createElement('div');
+                div.className = 'line line-echo';
+                div.setAttribute('data-prompt', admin ? 'admin@orakul:~$ ' : 'orakul@demo:~$ ');
+                div.textContent = cmd;
+                out.appendChild(div);
+                scrollDown();
+            }
+
+            function flashTerm() {
+                term.classList.remove('is-flash');
+                void term.offsetWidth;
+                term.classList.add('is-flash');
+            }
+
+            function setStatus(text, broken) {
+                if (!statusEl) return;
+                statusEl.textContent = text;
+                statusEl.classList.toggle('is-broken', !!broken);
+            }
+
+            /* Очистка экрана. gen++ обрывает уже идущий цикл печати: иначе
+               старый цикл продолжал дописывать строки, а новый параллельно
+               забирал задачи из очереди — строки дублировались. */
+            function clearScreen() {
+                gen++;
+                out.innerHTML = '';
+                unknown.state = 'idle';
+                boss.state = 'idle';
+                connecting = false;
+                queue.length = 0;
+                typing = false;
+                setStatus('secure', false);
+            }
+
+            function normalize(raw) {
+                return String(raw || '')
+                    .toLowerCase()
+                    .replace(/[«»"'`]/g, '')
+                    .replace(/[?!.,:;]/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+            }
+
+            /* ================= ДОСТУП ================= */
+            var admin = false;
+            var heard45 = false;   // был ли диалог с Неизвестным (45)
+
+            function setAccess(isAdmin) {
+                admin = isAdmin;
+                if (accessEl) {
+                    accessEl.textContent = isAdmin ? 'admin' : 'guest';
+                    accessEl.classList.toggle('is-admin', isAdmin);
+                }
+                if (promptEl) {
+                    promptEl.textContent = isAdmin ? 'admin@orakul:~$' : 'orakul@demo:~$';
+                }
+            }
+
+            function doLogin(raw) {
+                var parts = raw.trim().split(/\s+/);
+                var loginName = (parts[1] || '').toLowerCase();
+                var password = parts[2] || '';
+
+                if (!loginName || !password) {
+                    line('[ERROR] Формат: login <логин> <пароль>', 'line-err');
+                    return;
+                }
+
+                if (loginName === 'admin' && password === 'QWERTY123') {
+                    if (admin) {
+                        line('> Вы уже вошли как admin.', 'line-ok');
+                        return;
+                    }
+                    setAccess(true);
+                    lineHTML('<span class="p">[ AUTH OK ]</span>', 'line-title');
+                    line('добро пожаловать, admin', 'line-ok');
+                    line('доступ: расширенный', 'line-dim');
+                    lineHTML('новая команда: <span class="p">connect Zloy Valeriyevich</span>', 'granted');
+                    Snd.beep(880, 0.03, 0.12);
+                    setTimeout(function () { Snd.beep(1180, 0.03, 0.14); }, 130);
+                    return;
+                }
+
+                line('[ERROR] Неверный логин или пароль. Доступ запрещен.', 'line-err');
+                Snd.beep(150, 0.04, 0.22);
+            }
+
+            /* ================= ДОСТИЖЕНИЯ ================= */
+            function grant(id) {
+                var fresh = O.unlock(id);
+                flashTerm();
+                return fresh;
+            }
+
+            function grantHacker() {
+                grant('hacker');
+                setTimeout(function () {
+                    lineHTML('<span class="p">[ ACCESS GRANTED ]</span>', 'line-title');
+                    line('ядро: разблокировано', 'line-ok');
+                    line('подпись: «Старый Кодер»', 'line-dim');
+                    line('уровень доступа: полный', 'line-dim');
+                    line('');
+                    lineHTML('+ скрытая награда <span class="p">«Хакер»</span>', 'granted');
+                    line('Полный список: achievements.html', 'line-dim');
+                }, 260);
+            }
+
+            function grantOnePiece() {
+                grant('onepiece');
+                setTimeout(function () {
+                    lineHTML('<span class="p">[ GRAND LINE FOUND ]</span>', 'line-title');
+                    line('курс: проложен', 'line-ok');
+                    line('команда: собрана', 'line-dim');
+                    line('');
+                    line('«Я стану королём пиратов!»', 'granted');
+                    lineHTML('+ скрытая награда <span class="p">«Ван Пис»</span> 🏴‍☠️', 'granted');
+                }, 260);
+            }
+
+            /* ================= МАТРИЦА ================= */
+            var MATRIX_CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノ01ｱｲｳｴｵｶｷｸｹｺABCDEFXYZ#$%&*+=<>';
+
+            function matrix() {
+                var block = document.createElement('div');
+                block.className = 'matrix';
+
+                for (var i = 0; i < 12; i++) {
+                    var span = document.createElement('span');
+                    var text = '';
+                    var len = 28 + Math.floor(Math.random() * 30);
+                    for (var j = 0; j < len; j++) {
+                        text += MATRIX_CHARS.charAt(Math.floor(Math.random() * MATRIX_CHARS.length));
+                    }
+                    span.textContent = text;
+                    span.style.animationDelay = (i * 55) + 'ms';
+                    block.appendChild(span);
+                }
+
+                out.appendChild(block);
+                scrollDown();
+                Snd.hover();
+
+                setTimeout(function () {
+                    block.style.transition = 'opacity .6s ease';
+                    block.style.opacity = '0';
+                    setTimeout(function () { block.remove(); }, 700);
+                }, 2600);
+            }
+
+            /* ================= ДИАЛОГ 1: НЕИЗВЕСТНЫЙ (45) ================= */
+            var unknown = { state: 'idle' };   // idle | waiting | blocked
+
+            function startUnknown() {
+                if (unknown.state === 'blocked') {
+                    line('> [ERROR] Соединение разорвано. Требуется сброс (введите clear или reset).', 'line-err');
+                    Snd.beep(140, 0.04, 0.18);
+                    return;
+                }
+                if (unknown.state === 'waiting') {
+                    line('> 45 ждёт ответа: Да или Кто ты такой.', 'line-dialog');
+                    return;
+                }
+
+                unknown.state = 'waiting';
+                setStatus('dialogue', true);
+                line('> 45, Проект готов?', 'line-dialog');
+                line('  ответь: Да / Кто ты такой', 'line-dim');
+                Snd.beep(660, 0.025, 0.1);
+            }
+
+            function finishUnknown() {
+                line('Соединение закрыто. Требуется сброс (clear или reset).', 'line-dim');
+                unknown.state = 'blocked';
+                heard45 = true;
+                setStatus('broken', true);
+                Snd.beep(220, 0.03, 0.2);
+            }
+
+            function unknownAnswer(raw) {
+                var answer = normalize(raw);
+
+                if (/^(да|ага|yes|конечно|готов)/.test(answer)) {
+                    line('> отлично, переходим к новой фазе', 'line-dialog');
+                    line('');
+                    grant('whatwasthat');
+                    lineHTML('+ скрытая награда <span class="p">«Что это было?»</span> 👁️', 'granted');
+                    finishUnknown();
+                    return;
+                }
+
+                if (/кто\s*ты|кто\s*вы|who/.test(answer)) {
+                    line('> у нас посторонний! закрыть доступ 45', 'line-dialog');
+                    line('');
+                    grant('whatwasthat');
+                    lineHTML('+ скрытая награда <span class="p">«Что это было?»</span> 👁️', 'granted');
+                    finishUnknown();
+                    return;
+                }
+
+                line('> не понял. Ответь «Да» или «Кто ты такой».', 'line-dialog');
+                Snd.beep(320, 0.02, 0.08);
+            }
+
+            /* ================= ДИАЛОГ 2: БОСС ================= */
+            var boss = { state: 'idle' };      // idle | waiting | blocked
+            var connecting = false;            // идёт анимация «соединяем...»
+
+            function connectDots(done) {
+                connecting = true;
+
+                var div = document.createElement('div');
+                div.className = 'line line-dim';
+                out.appendChild(div);
+
+                var step = 1;
+                div.textContent = 'соединяем.';
+                scrollDown();
+
+                var timer = setInterval(function () {
+                    step++;
+                    if (step > 3) {
+                        clearInterval(timer);
+                        div.textContent = 'соединяем... ok';
+                        div.className = 'line line-ok';
+                        scrollDown();
+                        // Флаг снимаем вместе с запуском диалога, а не раньше:
+                        // иначе 240 мс ввод проваливался в никуда
+                        setTimeout(function () {
+                            connecting = false;
+                            done();
+                        }, 240);
+                        return;
+                    }
+                    div.textContent = 'соединяем' + new Array(step + 1).join('.');
+                    scrollDown();
+                    Snd.beep(480 + step * 120, 0.02, 0.05);
+                }, 230);
+            }
+
+            function bossOptions() {
+                line('  ответить:', 'line-dim');
+                line('   «Когда повысите зарплату?»', 'line-dim');
+                line('   «Чем мы занимаемся?»', 'line-dim');
+                if (heard45) line('   «Что случилось с 45?»', 'line-dim');
+            }
+
+            function startBoss() {
+                if (!admin) {
+                    line('[ERROR] Недостаточно прав. Требуется вход в систему.', 'line-err');
+                    line('подсказка: login <логин> <пароль>', 'line-dim');
+                    Snd.beep(160, 0.04, 0.2);
+                    return;
+                }
+
+                if (boss.state === 'blocked') {
+                    line('[ERROR] Соединение заблокировано. Требуется сброс (введите clear или reset).', 'line-err');
+                    Snd.beep(140, 0.04, 0.2);
+                    return;
+                }
+
+                if (boss.state === 'waiting') {
+                    line('> Босс ждёт ответа.', 'line-dialog');
+                    return;
+                }
+
+                boss.state = 'waiting';
+                setStatus('boss', true);
+                Snd.beep(520, 0.02, 0.06);
+
+                connectDots(function () {
+                    line('> Я сильно занят, давай быстрее.', 'line-dialog');
+                    if (heard45) {
+                        line('> И да, я уже слышал про инцидент со взломом 45.', 'line-dialog');
+                    }
+                    line('');
+                    bossOptions();
+                    grant('boss');
+                });
+            }
+
+            function closeBoss() {
+                line('');
+                line('[СОЕДИНЕНИЕ РАЗОРВАНО]', 'line-err');
+                boss.state = 'blocked';
+                setStatus('broken', true);
+                Snd.beep(120, 0.05, 0.3);
+            }
+
+            function bossAnswer(raw) {
+                var answer = normalize(raw);
+
+                // Секретный вопрос — только если был диалог с 45
+                if (heard45 && (/(^|\s)45(\s|$)/.test(answer) || /сорок\s*пять/.test(answer))) {
+                    line('> Мне передали, что он сбежал. Мы уже ищем его. Что-то еще?', 'line-dialog');
+                    line('');
+                    bossOptions();
+                    return;
+                }
+
+                if (/зарплат|повыс|преми|деньг|оклад/.test(answer)) {
+                    line('> Уже 6 раз за день это слышу. Еще раз скажешь и уволю.', 'line-dialog');
+                    closeBoss();
+                    return;
+                }
+
+                if (/занимаемся|делаем|чем\s+мы|работ|проект|задач/.test(answer)) {
+                    line('> Ты сейчас серьезно? И этот человек программист...', 'line-dialog');
+                    closeBoss();
+                    return;
+                }
+
+                if (/(^|\s)45(\s|$)/.test(answer) && !heard45) {
+                    line('> Не твоего ума дело. Спрашивай по существу.', 'line-dialog');
+                    return;
+                }
+
+                line('> Я не понял. Спроси по делу.', 'line-dialog');
+                line('');
+                bossOptions();
+            }
+
+            /* ================= КОМАНДЫ ================= */
+            function helpLines() {
+                line('Доступные команды:', 'line-title');
+                line('  help           — этот список');
+                line('  version        — версия сборки');
+                line('  credits        — кто это сделал');
+                line('  lore           — история Оракула');
+                line('  whoami         — кто ты в этой системе');
+                line('  time           — текущее время');
+                line('  bug            — известные баги');
+                line('  login          — вход в систему: login <логин> <пароль>');
+                line('  connect        — установить защищённое соединение');
+                if (admin) line('  connect Zloy Valeriyevich — связаться с руководством');
+                line('  matrix         — ...');
+                line('  clear / reset  — очистить экран и сбросить диалог');
+                line('  exit           — вернуться на главную');
+                line('  ???            — команды, которой здесь нет', 'line-dim');
+                line('');
+                line('служебный лог:', 'line-dim');
+                line('  system.init()', 'line-dim');
+                line('  connect --secure', 'line-dim');
+                line('  bypassing loop...', 'line-dim');
+            }
+
+            var COMMANDS = {
+                help: function () { helpLines(); },
+
+                version: function () {
+                    line('Оракул v3.7.0 «Mini App»', 'line-ok');
+                    line('сборка: 3.7.0 · канал: demo · ядро: oracle-core', 'line-dim');
+                    line('наград в профиле: ' + O.count() + ' / ' + O.TOTAL, 'line-dim');
+                    line('уровень доступа: ' + (admin ? 'admin' : 'guest'), 'line-dim');
+                },
+
+                credits: function () {
+                    line('credits:', 'line-title');
+                    line('  идея и код      — Александр');
+                    line('  голос Оракула   — он сам');
+                    line('  присматривает   — Старый Кодер', 'line-dim');
+                    line('  звук            — синтез, без единого файла', 'line-dim');
+                },
+
+                lore: function () {
+                    line('lore:', 'line-title');
+                    line('Оракул появился, когда кто-то устал фармить руками.');
+                    line('Сначала это был скрипт на три строки. Потом — шар, который');
+                    line('знает, где лут, и молчит о том, откуда знает.', 'line-dim');
+                    line('');
+                    line('Говорят, в его коде есть подпись, которую никто не удаляет.', 'line-dim');
+                },
+
+                whoami: function () {
+                    if (admin) {
+                        line('admin@orakul', 'line-ok');
+                        line('доступ: расширенный. руководство на связи.', 'line-dim');
+                    } else {
+                        line('guest@orakul', 'line-ok');
+                        line('доступ ограничен. но кое-что здесь спрятано.', 'line-dim');
+                    }
+                },
+
+                time: function () {
+                    var d = new Date();
+                    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+                    line('системное время: ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()), 'line-ok');
+                    line(pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear() +
+                         ' · ' + d.toLocaleDateString('ru-RU', { weekday: 'long' }), 'line-dim');
+                },
+
+                bug: function () {
+                    line('известные баги:', 'line-title');
+                    line('  [x] заголовок рвался посреди слова — починили');
+                    line('  [x] карточки наезжали друг на друга — починили');
+                    line('  [x] буква «у» подрезалась — починили');
+                    line('  [ ] Оракул иногда отвечает раньше, чем его спрашивают', 'line-dim');
+                    line('  [ ] шар знает больше, чем говорит', 'line-dim');
+                },
+
+                matrix: function () {
+                    matrix();
+                    line('...', 'line-dim');
+                },
+
+                clear: function () {
+                    clearScreen();
+                },
+
+                reset: function () {
+                    clearScreen();
+                    line('сеанс сброшен. соединения можно восстановить.', 'line-dim');
+                },
+
+                exit: function () {
+                    line('Завершение сеанса…', 'line-dim');
+                    setTimeout(function () { window.location.href = 'index.html'; }, 600);
+                }
+            };
+
+            /* ================= CONNECT ================= */
+            function handleConnect(args) {
+                var target = normalize(args.join(' '));
+
+                if (!target) { startUnknown(); return; }
+
+                if (/^(zloy\s+valeriyevich|злой\s+валериевич)$/.test(target)) {
+                    startBoss();
+                    return;
+                }
+
+                line('[ERROR] Неизвестный адресат: ' + args.join(' '), 'line-err');
+                line('доступные адресаты: Zloy Valeriyevich', 'line-dim');
+            }
+
+            /* ================= ВВОД ================= */
+            var historyList = [];
+            var histPos = -1;
+
+            function run(raw) {
+                var cmd = String(raw || '').trim();
+                if (!cmd) return;
+
+                echo(cmd);
+                historyList.push(cmd);
+                histPos = historyList.length;
+
+                // Пока идёт анимация соединения — ввод ждёт
+                if (connecting) {
+                    line('> соединение устанавливается, подожди…', 'line-dim');
+                    return;
+                }
+
+                var lower = cmd.toLowerCase();
+                var parts = lower.split(/\s+/);
+                var name = parts[0];
+
+                // Служебные команды работают всегда
+                if (name === 'clear' || name === 'reset') { COMMANDS[name](); return; }
+                if (name === 'exit') { COMMANDS.exit(); return; }
+                if (name === 'login') { doLogin(cmd); return; }
+
+                // Диалог ждёт ответа — строка трактуется как ответ
+                if (boss.state === 'waiting') { bossAnswer(cmd); return; }
+                if (unknown.state === 'waiting') { unknownAnswer(cmd); return; }
+
+                // Секретные ключи
+                if (lower === 'oracle' || lower === 'v3.7.0') { grantHacker(); return; }
+                if (lower === 'onepiece' || lower === 'luffy') { grantOnePiece(); return; }
+
+                if (name === 'connect') { handleConnect(cmd.split(/\s+/).slice(1)); return; }
+
+                if (Object.prototype.hasOwnProperty.call(COMMANDS, name)) {
+                    COMMANDS[name]();
+                    return;
+                }
+
+                line('command not found: ' + cmd, 'line-err');
+                line('попробуй help', 'line-dim');
+            }
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var value = input.value;
+                input.value = '';
+                run(value);
+            });
+
+            // Звук механической клавиатуры при вводе
+            var SILENT_KEYS = { Shift: 1, Control: 1, Alt: 1, Meta: 1, CapsLock: 1, Tab: 1, Escape: 1, Enter: 1 };
+            input.addEventListener('keydown', function (e) {
+                if (e.ctrlKey || e.metaKey || e.altKey) return;
+                if (SILENT_KEYS[e.key]) return;
+                Snd.key();
+            });
+
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'ArrowUp') {
+                    if (!historyList.length) return;
+                    e.preventDefault();
+                    histPos = Math.max(0, histPos - 1);
+                    input.value = historyList[histPos] || '';
+                } else if (e.key === 'ArrowDown') {
+                    if (!historyList.length) return;
+                    e.preventDefault();
+                    histPos = Math.min(historyList.length, histPos + 1);
+                    input.value = historyList[histPos] || '';
+                }
+            });
+
+            term.addEventListener('click', function (e) {
+                if (window.getSelection && String(window.getSelection())) return;
+                if (e.target === input) return;
+                input.focus();
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.ctrlKey && e.key === '`') {
+                    e.preventDefault();
+                    input.focus();
+                }
+            });
+
+            /* ================= ЗАГРУЗКА ================= */
+            (function boot() {
+                var steps = [
+                    ['OraKul secure shell [v3.7.0]', 'line-title'],
+                    ['system.init() ... ok', 'line-dim'],
+                    ['connect --secure ... ok', 'line-dim'],
+                    ['bypassing loop... done', 'line-dim'],
+                    ['проверка подписи ... ok', 'line-dim'],
+                    ['синхронизация с ядром фарма ... ok', 'line-dim'],
+                    ['модулей загружено: 6/6', 'line-dim'],
+                    ['наград в профиле: ' + O.count() + ' / ' + O.TOTAL, 'line-dim'],
+                    ['доступ: гость', 'line-dim'],
+                    ['', ''],
+                    ['Введи help — список команд.', 'line-ok']
+                ];
+
+                steps.forEach(function (step, i) {
+                    setTimeout(function () {
+                        line(step[0], step[1]);
+                        if (i === steps.length - 1) {
+                            setTimeout(function () { liveReady = true; }, 400);
+                        }
+                    }, i * 90);
+                });
+
+                // На тач-устройствах не выдёргиваем экранную клавиатуру сами
+                if (O.finePointer) {
+                    setTimeout(function () { input.focus(); }, steps.length * 90 + 300);
+                }
+            })();
+
+            /* ================= ЗВУК КЛИКОВ ================= */
+            document.addEventListener('click', function (e) {
+                var el = e.target.closest && e.target.closest('a, button');
+                if (!el) return;
+                if (el.id === 'soundToggle' || el.id === 'themeToggle') return;
+                if (el.closest('.term')) return;
+                Snd.orb(0.4);
+            });
+        })();
+    </script>
+</body>
+</html>

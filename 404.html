@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f0c1b">
+    <meta name="description" content="Страница не найдена — Оракул не видит такой страницы в своих видениях.">
+    <title>404 — Оракул</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔮</text></svg>">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .stage {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 40px 20px 70px;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ===== Плавающий шар ===== */
+        .orb-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 150px;
+            height: 150px;
+            margin-bottom: 6px;
+        }
+
+        .orb {
+            font-size: 4.4rem;
+            line-height: 1;
+            cursor: pointer;
+            filter: drop-shadow(0 0 26px var(--accent-2)) drop-shadow(0 0 60px var(--glow));
+            animation: orbFloat 5.5s ease-in-out infinite;
+            user-select: none;
+            position: relative;
+            z-index: 1;
+            transition: transform 0.3s ease;
+        }
+
+        /* transform занят анимацией парения — «нажатие» показываем свечением */
+        .orb:active { filter: drop-shadow(0 0 40px var(--accent-2)) drop-shadow(0 0 90px var(--accent)); }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translateY(0) rotate(-4deg); }
+            50%      { transform: translateY(-16px) rotate(4deg); }
+        }
+
+        .orb-wrap::before {
+            content: '';
+            position: absolute;
+            inset: -30%;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(157, 78, 221, 0.32), transparent 68%);
+            filter: blur(16px);
+            animation: auraPulse 6s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes auraPulse {
+            0%, 100% { opacity: 0.5; transform: scale(0.94); }
+            50%      { opacity: 1; transform: scale(1.06); }
+        }
+
+        /* ===== 404 ===== */
+        .code {
+            font-size: clamp(4.5rem, 18vw, 9rem);
+            line-height: 1.05;
+            padding-bottom: 0.06em;
+            font-weight: 900;
+            letter-spacing: 0.02em;
+            background: linear-gradient(120deg, #ffffff, #c77dff 45%, #8a2be2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            filter: drop-shadow(0 0 30px rgba(138, 43, 226, 0.55));
+        }
+
+        html[data-theme="light"] .code {
+            background: linear-gradient(120deg, #2b2142, #7c3aed 60%, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+
+        h1 {
+            font-size: clamp(1.15rem, 3vw, 1.6rem);
+            font-weight: 700;
+            margin-top: 4px;
+            line-height: 1.3;
+        }
+
+        .lead {
+            max-width: 520px;
+            margin: 10px auto 0;
+            color: var(--text-muted);
+            font-size: 0.98rem;
+        }
+
+        /* ===== Кнопки ===== */
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 32px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            text-decoration: none;
+            color: #fff;
+            background: var(--accent);
+            border: none;
+            border-radius: 999px;
+            cursor: pointer;
+            box-shadow: 0 0 18px var(--glow);
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+        }
+
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 0 30px var(--accent-2); }
+        .btn:active { transform: translateY(0) scale(0.98); }
+        .btn:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--accent-2);
+            border: 1px solid rgba(138, 43, 226, 0.5);
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: rgba(138, 43, 226, 0.14);
+            box-shadow: 0 0 22px var(--glow);
+        }
+
+        html[data-theme="light"] .btn-outline { color: var(--accent-2); }
+        html[data-theme="light"] .btn-outline:hover { background: rgba(124, 58, 237, 0.1); }
+
+        /* ===== Подсказка ===== */
+        .hint {
+            margin-top: 34px;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            opacity: 0.85;
+        }
+
+        .hint em { font-style: normal; color: var(--accent-2); }
+
+        footer {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 26px 20px;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            border-top: 1px solid var(--line);
+        }
+
+        footer a { color: var(--accent-2); text-decoration: none; }
+        footer a:hover { color: #fff; text-shadow: 0 0 12px var(--accent-2); }
+
+        @media (max-width: 520px) {
+            .orb { font-size: 3.4rem; }
+            .orb-wrap { width: 120px; height: 120px; }
+            .btn { padding: 12px 24px; font-size: 0.92rem; }
+            .lead { font-size: 0.9rem; }
+        }
+    </style>
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('orakul.theme');
+                if (saved && saved.indexOf('light') !== -1) {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                }
+            } catch (e) {}
+        })();
+    </script>
+</head>
+<body>
+
+    <main class="stage">
+        <div class="orb-wrap">
+            <span class="orb" id="errOrb" role="button" tabindex="0" aria-label="Магический шар — нажми">🔮</span>
+        </div>
+
+        <div class="code" aria-hidden="true">404</div>
+        <h1>Такой страницы Оракул не увидел</h1>
+        <p class="lead">Возможно, её унесло бурей, а может — её никогда и не было. Шар молчит, но путь назад он знает.</p>
+
+        <div class="actions">
+            <a class="btn" href="index.html">На главную</a>
+            <a class="btn btn-outline" href="achievements.html">Достижения</a>
+        </div>
+
+        <p class="hint">говорят, в подвале главной спрятана <em>ссылка</em>…</p>
+    </main>
+
+    <footer>
+        <p>Оракул v3.7.0 «Mini App» · Сделано с 💜 для Fortnite</p>
+    </footer>
+
+    <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="true">
+        <span class="dot" aria-hidden="true"></span>
+        <span id="soundLabel">🔊 Звук вкл</span>
+    </button>
+
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Включить светлую тему" aria-pressed="false"
+            style="position:fixed; top:16px; right:16px; z-index:900;">
+        <span class="icon" id="themeIcon" aria-hidden="true">🌙</span>
+    </button>
+
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            var O = window.Orakul;
+            var Snd = O.Snd;
+            var orb = document.getElementById('errOrb');
+
+            if (orb) {
+                orb.addEventListener('click', function () {
+                    Snd.orb();
+                    O.burst(orb, 16);
+                    O.unlock('magic');
+                });
+
+                orb.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        orb.click();
+                    }
+                });
+            }
+
+            document.addEventListener('click', function (e) {
+                var el = e.target.closest && e.target.closest('a, button');
+                if (!el) return;
+                if (el.id === 'soundToggle' || el.id === 'themeToggle' || el.id === 'errOrb') return;
+                Snd.orb(0.4);
+            });
+        })();
+    </script>
+</body>
+</html>

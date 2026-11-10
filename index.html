@@ -7,144 +7,8 @@
     <meta name="description" content="Оракул — бот для автоматического фарма Fortnite. Авто-фарм, статистика, Mini App в Telegram. Бесплатное демо.">
     <title>Оракул — Бот для фарма Fortnite</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔮</text></svg>">
+    <link rel="stylesheet" href="common.css">
     <style>
-        /* ===== Переменные ===== */
-        :root {
-            --bg-color: #0f0c1b;
-            --card-bg: rgba(26, 21, 40, 0.8);
-            --text-main: #e0d8f0;
-            --text-muted: #9a8cb8;
-            --accent: #8a2be2;
-            --accent-hover: #9d4edd;
-            --accent-2: #c77dff;
-            --glow: rgba(138, 43, 226, 0.4);
-            --grid-color: rgba(138, 43, 226, 0.1);
-            --radius: 20px;
-        }
-
-        /* ===== База ===== */
-        *, *::before, *::after {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: auto; /* прокруткой управляет JS-лента */
-            -webkit-text-size-adjust: 100%;
-            overflow-x: clip;
-            scroll-padding-top: 76px;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            line-height: 1.6;
-            overflow-x: hidden;
-            position: relative;
-            min-height: 100vh;
-        }
-
-        ::selection {
-            background: var(--accent);
-            color: #fff;
-        }
-
-        img, svg { max-width: 100%; display: block; }
-
-        a { color: var(--accent-2); }
-
-        /* ===== Неоновая сетка на фоне (с пульсацией) ===== */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
-                linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
-            background-size: 50px 50px;
-            z-index: -2;
-            mask-image: radial-gradient(circle at 50% 40%, black 30%, transparent 80%);
-            -webkit-mask-image: radial-gradient(circle at 50% 40%, black 30%, transparent 80%);
-            animation: gridPulse 8s ease-in-out infinite alternate,
-                       gridDrift 24s linear infinite alternate;
-            pointer-events: none;
-        }
-
-        @keyframes gridPulse {
-            0%   { opacity: 0.45; }
-            100% { opacity: 1; }
-        }
-
-        @keyframes gridDrift {
-            0%   { background-position: 0 0, 0 0; }
-            100% { background-position: 50px 50px, 50px 50px; }
-        }
-
-        /* ===== Кастомный курсор: свечение + шар (два слоя) ===== */
-        /* Слой свечения смешивается с фоном, а не перекрывает текст */
-        .cursor-glow {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 400px;
-            height: 400px;
-            margin: -200px 0 0 -200px;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 9998;
-            opacity: 0;
-            transition: opacity 0.35s ease;
-            will-change: transform;
-            background: radial-gradient(
-                circle,
-                rgba(157, 78, 221, 0.3) 0%,
-                rgba(138, 43, 226, 0.16) 32%,
-                rgba(138, 43, 226, 0.06) 58%,
-                transparent 78%
-            );
-            filter: blur(18px);
-            -webkit-filter: blur(18px);
-            /* Аддитивное смешивание: свет «налипает» на фон, текст остаётся читаемым */
-            mix-blend-mode: screen;
-        }
-
-        /* Где поддерживается — более чистый аддитивный режим */
-        @supports (mix-blend-mode: plus-lighter) {
-            .cursor-glow { mix-blend-mode: plus-lighter; }
-        }
-
-        .cursor-glow.is-on { opacity: 1; }
-
-        .cursor-orb {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 34px;
-            height: 34px;
-            margin: -17px 0 0 -17px;
-            font-size: 26px;
-            line-height: 34px;
-            text-align: center;
-            pointer-events: none;
-            z-index: 9999;
-            opacity: 0;
-            filter: drop-shadow(0 0 10px rgba(199, 125, 255, 0.85)) drop-shadow(0 0 26px rgba(138, 43, 226, 0.7));
-            transition: opacity 0.3s ease;
-            will-change: transform;
-            user-select: none;
-            /* Наклон шара — задаётся в transform из JS (вместе с позицией) */
-        }
-
-        .cursor-orb.is-on { opacity: 1; }
-
-        /* Скрываем системный курсор только там, где включён кастомный */
-        html.has-cursor,
-        html.has-cursor * {
-            cursor: none !important;
-        }
-
         /* ===== Навигация ===== */
         .nav {
             position: sticky;
@@ -182,6 +46,13 @@
             gap: 16px;
             position: relative;
             z-index: 1;
+            transition: padding 0.25s ease;
+        }
+
+        /* Шапка сжимается классом, а не записью padding на каждый скролл */
+        .nav-inner.is-compact {
+            padding-top: 9px;
+            padding-bottom: 9px;
         }
 
         .logo {
@@ -404,7 +275,8 @@
         /* Заголовок: полупрозрачный, при наведении — яркий */
         .hero h1 {
             font-size: clamp(2.4rem, 7vw, 4rem);
-            line-height: 1.1;
+            line-height: 1.26;
+            padding-bottom: 0.06em;
             margin-bottom: 20px;
             font-weight: 800;
             filter: drop-shadow(0 0 22px var(--glow));
@@ -415,6 +287,10 @@
 
         /* Градиент — на каждой букве (background-clip не наследуется на span) */
         .hero h1 .ch {
+            /* Буква «у» подрезалась: градиент рисуется по боксу буквы,
+               а хвостик «у» выходит за line-height. Даём боксу запас снизу. */
+            padding-bottom: 0.2em;
+            margin-bottom: -0.2em;
             background: linear-gradient(90deg, #ffffff, #b388ff);
             -webkit-background-clip: text;
             background-clip: text;
@@ -429,6 +305,12 @@
         }
 
         /* ===== Буквы, которые разбегаются от курсора ===== */
+        /* Слово — неделимый блок: перенос только между словами */
+        .letter-play .word {
+            display: inline-block;
+            white-space: nowrap;
+        }
+
         .letter-play .ch {
             display: inline-block;
             transform-origin: 50% 60%;
@@ -590,7 +472,7 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
             position: relative;
             overflow: hidden;
             text-align: left;
@@ -616,7 +498,6 @@
         .card > * { position: relative; z-index: 1; }
 
         .card:hover {
-            transform: translateY(-6px);
             border-color: rgba(138, 43, 226, 0.5);
             box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), 0 0 24px rgba(138, 43, 226, 0.18);
         }
@@ -820,54 +701,6 @@
             margin: 0 auto 32px;
         }
 
-        /* ===== Кнопка звука ===== */
-        .sound-toggle {
-            position: fixed;
-            right: 18px;
-            bottom: 18px;
-            z-index: 900;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            font-family: inherit;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-main);
-            background: rgba(26, 21, 40, 0.9);
-            border: 1px solid rgba(138, 43, 226, 0.45);
-            border-radius: 999px;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            box-shadow: 0 0 18px rgba(138, 43, 226, 0.25);
-            transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
-        }
-
-        .sound-toggle:hover {
-            border-color: var(--accent-2);
-            box-shadow: 0 0 26px var(--glow);
-            transform: translateY(-1px);
-        }
-
-        .sound-toggle:focus-visible {
-            outline: 2px solid var(--accent-2);
-            outline-offset: 2px;
-        }
-
-        .sound-toggle .dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--accent-2);
-            box-shadow: 0 0 10px var(--accent-2);
-        }
-
-        .sound-toggle[aria-pressed="false"] .dot {
-            background: #6b6480;
-            box-shadow: none;
-        }
-
         /* ===== Мобильное меню ===== */
         .menu-toggle {
             display: none;
@@ -935,13 +768,189 @@
         /* ===== Появление при скролле ===== */
         .reveal {
             opacity: 0;
-            transform: translateY(26px);
-            transition: opacity 0.7s ease, transform 0.7s ease;
+            translate: 0 26px;
+            transition: opacity 0.7s ease, translate 0.7s ease;
         }
 
         .reveal.is-visible {
             opacity: 1;
-            transform: none;
+            translate: 0 0;
+        }
+
+        /* ===== Светлая тема: точечные правки поверх тёмной ===== */
+        html[data-theme="light"] .nav {
+            background: rgba(255, 255, 255, 0.72);
+            border-bottom-color: rgba(124, 58, 237, 0.12);
+        }
+
+        html[data-theme="light"] .nav::before {
+            background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(124, 58, 237, 0.16), transparent 70%);
+        }
+
+        html[data-theme="light"] .logo,
+        html[data-theme="light"] .nav-links a:hover,
+        html[data-theme="light"] .section h2,
+        html[data-theme="light"] .card h3,
+        html[data-theme="light"] .flip-face.front .ask,
+        html[data-theme="light"] .flip-face.back .a,
+        html[data-theme="light"] .cta h2,
+        html[data-theme="light"] footer a:hover,
+        html[data-theme="light"] .menu-toggle {
+            color: var(--text-main);
+        }
+
+        html[data-theme="light"] .card,
+        html[data-theme="light"] .flip-face {
+            border-color: rgba(124, 58, 237, 0.14);
+            box-shadow: 0 10px 30px rgba(87, 42, 160, 0.07);
+        }
+
+        html[data-theme="light"] .card:hover {
+            box-shadow: 0 16px 40px rgba(87, 42, 160, 0.16), 0 0 24px rgba(124, 58, 237, 0.12);
+        }
+
+        html[data-theme="light"] .flip-face.back {
+            background:
+                radial-gradient(circle at 50% 0%, rgba(124, 58, 237, 0.16), transparent 70%),
+                #ffffff;
+        }
+
+        html[data-theme="light"] .cta {
+            background:
+                radial-gradient(circle at 50% 0%, rgba(124, 58, 237, 0.15), transparent 70%),
+                rgba(255, 255, 255, 0.92);
+            border-color: rgba(124, 58, 237, 0.26);
+            box-shadow: 0 18px 50px rgba(87, 42, 160, 0.12);
+        }
+
+        html[data-theme="light"] .btn-outline {
+            color: var(--text-main);
+            border-color: rgba(124, 58, 237, 0.35);
+        }
+
+        html[data-theme="light"] .btn-outline:hover { background: rgba(124, 58, 237, 0.1); }
+
+        html[data-theme="light"] .menu-toggle {
+            border-color: rgba(124, 58, 237, 0.25);
+        }
+
+        html[data-theme="light"] .nav.open .nav-links {
+            background: rgba(250, 248, 255, 0.98);
+            border-bottom-color: rgba(124, 58, 237, 0.12);
+        }
+
+        html[data-theme="light"] .nav.open .nav-links a {
+            border-bottom-color: rgba(124, 58, 237, 0.08);
+        }
+
+        html[data-theme="light"] .hero h1 .ch {
+            background: linear-gradient(90deg, #3b2a63, #7c3aed);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+
+        html[data-theme="light"] .hero h1 { opacity: 0.42; }
+
+        html[data-theme="light"] .badge {
+            background: rgba(124, 58, 237, 0.1);
+            border-color: rgba(124, 58, 237, 0.28);
+        }
+
+        html[data-theme="light"] .hero::before { opacity: 0.6; }
+
+        html[data-theme="light"] footer { border-top-color: rgba(124, 58, 237, 0.12); }
+
+        html[data-theme="light"] .spark { background: var(--accent); }
+
+        /* ===== Скрытая консоль в углу ===== */
+        .console-hotspot {
+            position: fixed;
+            left: 16px;
+            bottom: 16px;
+            z-index: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            border-radius: 50%;
+            background: rgba(138, 43, 226, 0.06);
+            border: 1px solid rgba(138, 43, 226, 0.18);
+            color: var(--accent-2);
+            font-size: 0.95rem;
+            text-decoration: none;
+            opacity: 0.32;
+            box-shadow: 0 0 12px rgba(138, 43, 226, 0.2);
+            animation: hotspotBreath 5.5s ease-in-out infinite;
+            transition: opacity 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease,
+                        border-color 0.35s ease, background-color 0.35s ease;
+        }
+
+        @keyframes hotspotBreath {
+            0%, 100% { box-shadow: 0 0 10px rgba(138, 43, 226, 0.16); }
+            50%      { box-shadow: 0 0 20px rgba(138, 43, 226, 0.42); }
+        }
+
+        .console-hotspot .hs-icon {
+            opacity: 0.3;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .console-hotspot:hover,
+        .console-hotspot:focus-visible {
+            opacity: 1;
+            transform: scale(1.14);
+            background: rgba(138, 43, 226, 0.24);
+            border-color: var(--accent-2);
+            box-shadow: 0 0 26px rgba(157, 78, 221, 0.6);
+            outline: none;
+        }
+
+        .console-hotspot:hover .hs-icon,
+        .console-hotspot:focus-visible .hs-icon {
+            opacity: 1;
+            transform: scale(1.12);
+        }
+
+        .console-hotspot .hs-label {
+            position: absolute;
+            left: 42px;
+            font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            color: var(--accent-2);
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateX(-6px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+        }
+
+        .console-hotspot:hover .hs-label,
+        .console-hotspot:focus-visible .hs-label {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* .whisper и .dance-emoji живут в common.css — здесь были их
+           точные копии. Оставлены только правки под мобилку (ниже). */
+
+        /* ===== Скрытая ссылка в подвале ===== */
+        .foot-secret {
+            color: var(--text-muted) !important;
+            text-decoration: none;
+            opacity: 0.16;
+            font-size: 0.8rem;
+            transition: opacity 0.3s ease, color 0.3s ease, text-shadow 0.3s ease;
+        }
+
+        .foot-secret:hover,
+        .foot-secret:focus-visible {
+            opacity: 1;
+            color: var(--accent-2) !important;
+            text-shadow: 0 0 14px var(--accent-2);
+            outline: none;
         }
 
         /* ===== Адаптив ===== */
@@ -1033,7 +1042,7 @@
                 border-radius: 22px;
             }
 
-            body::before { background-size: 34px 34px; }
+            body::before { background-size: 34px 34px; --grid-shift: 34px; }
 
             .sound-toggle {
                 right: 12px;
@@ -1041,6 +1050,41 @@
                 padding: 9px 14px;
                 font-size: 0.8rem;
             }
+
+            .toast-host {
+                top: 74px;
+                right: 12px;
+                left: 12px;
+                width: auto;
+            }
+
+            .console-hotspot {
+                left: 12px;
+                bottom: 12px;
+                width: 30px;
+                height: 30px;
+                font-size: 0.85rem;
+            }
+
+            .console-hotspot .hs-label { display: none; }
+
+            .theme-toggle {
+                width: 38px;
+                height: 38px;
+            }
+
+            .whisper {
+                bottom: 66px;
+                font-size: 0.88rem;
+                padding: 13px 16px;
+            }
+        }
+
+        @media (max-width: 560px) {
+            /* Одна колонка: длинные вопросы не наезжают друг на друга */
+            .secrets { grid-template-columns: 1fr; }
+            .flip, .flip-inner { min-height: 168px; }
+            .flip-face { padding: 18px 16px; }
         }
 
         @media (max-width: 380px) {
@@ -1062,6 +1106,18 @@
             .flip-inner { transition: none; }
         }
     </style>
+    <script>
+        /* Тема применяется до первой отрисовки — без «вспышки» тёмного фона */
+        (function () {
+            try {
+                var saved = localStorage.getItem('orakul.theme');
+                // Старое значение могло сохраниться как JSON: "\"light\""
+                if (saved && saved.indexOf('light') !== -1) {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                }
+            } catch (e) {}
+        })();
+    </script>
 </head>
 <body>
 
@@ -1072,17 +1128,23 @@
     <!-- Навигация -->
     <header class="nav" id="nav">
         <div class="nav-inner">
-            <a class="logo" href="#top">
+            <a class="logo" href="#top" id="logoLink">
                 <span class="orb" id="logoOrb" aria-hidden="true">🔮</span>
                 <span>Оракул</span>
             </a>
-            <button class="menu-toggle" id="menuToggle" aria-label="Открыть меню" aria-expanded="false">☰</button>
             <nav class="nav-links">
                 <a href="#features" data-scroll>Возможности</a>
                 <a href="#secrets" data-scroll>Секреты</a>
                 <a href="#install" data-scroll>Установка</a>
+                <a href="achievements.html">Достижения</a>
                 <a class="btn btn-sm" href="https://github.com/AlexanderPo22/Orakul_demo/releases/download/3.7.0/Orakul-Installer.exe" data-download>Скачать</a>
             </nav>
+            <div class="nav-tools">
+                <button class="theme-toggle" id="themeToggle" type="button" aria-label="Включить светлую тему" aria-pressed="false">
+                    <span class="icon" id="themeIcon" aria-hidden="true">🌙</span>
+                </button>
+                <button class="menu-toggle" id="menuToggle" aria-label="Открыть меню" aria-expanded="false">☰</button>
+            </div>
         </div>
     </header>
 
@@ -1243,9 +1305,23 @@
         <p class="footer-links">
             <a href="https://github.com/AlexanderPo22/Orakul_demo">GitHub</a>
             <a href="https://github.com/AlexanderPo22/Orakul_demo/releases">Релизы</a>
+            <a href="achievements.html">Достижения</a>
             <a href="https://github.com/AlexanderPo22/Orakul_demo/issues">Сообщить о проблеме</a>
+            <a class="foot-secret" id="footSecret" href="achievements.html" aria-label="Скрытая ссылка в подвале">✦</a>
         </p>
     </footer>
+
+    <!-- Вуаль смены дня и ночи -->
+    <div class="theme-veil" id="themeVeil" aria-hidden="true"></div>
+
+    <!-- Скрытая консоль: едва заметная точка в углу -->
+    <a class="console-hotspot" href="console.html" aria-label="Открыть скрытую консоль" title="Консоль">
+        <span class="hs-icon" aria-hidden="true">💻</span>
+        <span class="hs-label" aria-hidden="true">console</span>
+    </a>
+
+    <!-- Уведомления о достижениях -->
+    <div class="toast-host" id="toastHost" aria-live="polite"></div>
 
     <!-- Переключатель звука -->
     <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="true">
@@ -1253,12 +1329,16 @@
         <span id="soundLabel">🔊 Звук вкл</span>
     </button>
 
+    <script src="common.js"></script>
     <script>
         (function () {
             'use strict';
 
-            var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            var finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+            var reduceMotion = window.Orakul.reduceMotion;
+            var finePointer = window.Orakul.finePointer;
+            var Snd = window.Orakul.Snd;
+            var store = window.Orakul.store;
+            var K = store.keys;
 
             // ===== Мобильное меню =====
             var nav = document.getElementById('nav');
@@ -1280,98 +1360,19 @@
                 link.addEventListener('click', closeMenu);
             });
 
-            // ===== Плавная прокрутка страницы (инерционная лента) =====
-            var smoothScroll = null;
+            // Закрытие меню по клику мимо него и по Escape
+            document.addEventListener('click', function (e) {
+                if (!nav.classList.contains('open')) return;
+                if (nav.contains(e.target)) return;
+                closeMenu();
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && nav.classList.contains('open')) closeMenu();
+            });
 
-            (function enableSmoothScroll() {
-                if (reduceMotion || !finePointer) return;
-
-                var target = window.pageYOffset;
-                var current = window.pageYOffset;
-                var running = false;
-                var ownScroll = false;
-
-                var maxScroll = function () {
-                    return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-                };
-
-                var clamp = function (v) {
-                    return Math.max(0, Math.min(maxScroll(), v));
-                };
-
-                window.addEventListener('scroll', function () {
-                    if (ownScroll) { ownScroll = false; return; }
-                    target = window.pageYOffset;
-                    current = target;
-                }, { passive: true });
-
-                var loop = function () {
-                    current += (target - current) * 0.16;
-                    if (Math.abs(target - current) < 0.4) {
-                        current = target;
-                        running = false;
-                        ownScroll = true;
-                        window.scrollTo(0, current);
-                        return;
-                    }
-                    ownScroll = true;
-                    window.scrollTo(0, current);
-                    requestAnimationFrame(loop);
-                };
-
-                var go = function (to) {
-                    target = clamp(to);
-                    current = window.pageYOffset;
-                    if (!running) {
-                        running = true;
-                        requestAnimationFrame(loop);
-                    }
-                };
-
-                window.addEventListener('wheel', function (e) {
-                    var el = e.target;
-                    while (el && el !== document.body && el !== document.documentElement) {
-                        var style = window.getComputedStyle(el);
-                        if (/(auto|scroll)/.test(style.overflowY) && el.scrollHeight > el.clientHeight + 1) {
-                            return;
-                        }
-                        el = el.parentElement;
-                    }
-                    if (e.ctrlKey) return;
-
-                    e.preventDefault();
-
-                    var delta = e.deltaY;
-                    if (e.deltaMode === 1) {
-                        delta *= 32;
-                    } else if (e.deltaMode === 2) {
-                        delta *= window.innerHeight;
-                    }
-                    delta = Math.max(-260, Math.min(260, delta));
-                    go(target + delta);
-                }, { passive: false });
-
-                window.addEventListener('keydown', function (e) {
-                    var tag = (e.target && e.target.tagName) || '';
-                    if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag)) return;
-                    var vh = window.innerHeight;
-                    var handled = true;
-                    switch (e.key) {
-                        case 'PageDown': go(window.pageYOffset + vh * 0.9); break;
-                        case 'PageUp':   go(window.pageYOffset - vh * 0.9); break;
-                        case 'Home':     go(0); break;
-                        case 'End':      go(maxScroll()); break;
-                        case ' ':
-                            if (e.shiftKey) go(window.pageYOffset - vh * 0.9);
-                            else go(window.pageYOffset + vh * 0.9);
-                            break;
-                        default: handled = false;
-                    }
-                    if (handled) e.preventDefault();
-                });
-
-                smoothScroll = go;
-            })();
+            // ===== Плавная прокрутка (инерционная лента) =====
+            // Живёт в common.js — работает на всех страницах
+            var smoothScroll = function (y) { window.Orakul.scroll.to(y); };
 
             // ===== Якорная навигация =====
             function scrollToTarget(target) {
@@ -1402,6 +1403,13 @@
                     e.preventDefault();
                     if (typeof smoothScroll === 'function') smoothScroll(0);
                     else window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                    // Пасхалка: пять кликов по логотипу
+                    var clicks = store.get(K.logo, 0);
+                    if (typeof clicks !== 'number' || !isFinite(clicks)) clicks = 0;
+                    clicks += 1;
+                    store.set(K.logo, clicks);
+                    if (clicks >= 5) window.Orakul.unlock('pastvoice');
                 });
             }
 
@@ -1411,12 +1419,15 @@
             if ('IntersectionObserver' in window) {
                 var observer = new IntersectionObserver(function (entries) {
                     entries.forEach(function (entry, i) {
-                        if (entry.isIntersecting) {
-                            var el = entry.target;
-                            el.style.transitionDelay = (i * 70) + 'ms';
-                            el.classList.add('is-visible');
-                            observer.unobserve(el);
-                        }
+                        if (!entry.isIntersecting) return;
+                        var el = entry.target;
+                        var delay = i * 70;
+                        el.style.transitionDelay = delay + 'ms';
+                        el.classList.add('is-visible');
+                        observer.unobserve(el);
+                        // Задержку снимаем после появления: иначе она тормозит
+                        // ховер-переходы карточки (тень, рамку, наклон).
+                        setTimeout(function () { el.style.transitionDelay = ''; }, 760 + delay);
                     });
                 }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
 
@@ -1429,15 +1440,13 @@
             (function letterPlay() {
                 if (!finePointer || reduceMotion) return;
 
-                // Заголовки, с которыми «играем»
                 var headings = document.querySelectorAll('.hero h1, .section h2, .cta h2');
                 if (!headings.length) return;
 
                 var items = [];
-                var RADIUS = 105;       // зона влияния курсора, px
-                var PUSH = 15;          // максимальное смещение буквы, px
+                var RADIUS = 105;
+                var PUSH = 15;
 
-                // Разбиваем текст на буквы, сохраняя пробелы между словами
                 function split(el) {
                     if (el.querySelector('.ch')) return;
                     var text = el.textContent;
@@ -1445,15 +1454,22 @@
                     Array.prototype.slice.call(el.childNodes).forEach(function (n) {
                         if (n.nodeType === 3) el.removeChild(n);
                     });
+                    var word = null;
                     for (var i = 0; i < text.length; i++) {
                         var c = text.charAt(i);
                         if (c === ' ' || c === '\n' || c === '\t') {
+                            word = null;
                             frag.appendChild(document.createTextNode(' '));
                         } else {
+                            if (!word) {
+                                word = document.createElement('span');
+                                word.className = 'word';
+                                frag.appendChild(word);
+                            }
                             var s = document.createElement('span');
                             s.className = 'ch';
                             s.textContent = c;
-                            frag.appendChild(s);
+                            word.appendChild(s);
                         }
                     }
                     el.appendChild(frag);
@@ -1465,7 +1481,6 @@
                     item.rect = r;
                     item.chars.forEach(function (ch) {
                         var cr = ch.el.getBoundingClientRect();
-                        // Базовый центр буквы относительно заголовка
                         ch.bx = cr.left - r.left + cr.width / 2;
                         ch.by = cr.top - r.top + cr.height / 2;
                     });
@@ -1482,7 +1497,6 @@
                     measure(item);
                 });
 
-                // Позиция курсора (в координатах окна)
                 var ptr = { x: -9999, y: -9999, active: false };
                 var ticking = false;
 
@@ -1493,12 +1507,10 @@
                     for (var i = 0; i < items.length; i++) {
                         var item = items[i];
                         var r = item.el.getBoundingClientRect();
-                        // Пропускаем заголовки далеко за пределами экрана
                         if (r.bottom < -120 || r.top > window.innerHeight + 120) continue;
 
                         for (var j = 0; j < item.chars.length; j++) {
                             var ch = item.chars[j];
-                            // Текущий центр буквы в координатах окна
                             var cx = r.left + ch.bx + ch.x;
                             var cy = r.top + ch.by + ch.y;
 
@@ -1508,8 +1520,8 @@
                                 var dy = cy - ptr.y;
                                 var dist = Math.sqrt(dx * dx + dy * dy);
                                 if (dist < RADIUS && dist > 0.01) {
-                                    var force = 1 - dist / RADIUS;      // 0..1
-                                    force = force * force;              // мягкий край зоны
+                                    var force = 1 - dist / RADIUS;
+                                    force = force * force;
                                     var push = PUSH * force;
                                     tx = (dx / dist) * push;
                                     ty = (dy / dist) * push;
@@ -1517,7 +1529,6 @@
                                 }
                             }
 
-                            // Плавное «доезжание» к цели
                             ch.x += (tx - ch.x) * 0.2;
                             ch.y += (ty - ch.y) * 0.2;
 
@@ -1537,7 +1548,6 @@
                         }
                     }
 
-                    // Продолжаем, только пока буквы не «доехали» до целей
                     if (stillMoving) requestAnimationFrame(frame);
                 }
 
@@ -1559,7 +1569,6 @@
                     kick();
                 });
 
-                // Пересчёт базовых позиций при изменении размера/шрифтов
                 var resizeTimer = null;
                 window.addEventListener('resize', function () {
                     clearTimeout(resizeTimer);
@@ -1583,336 +1592,84 @@
                 }, { passive: true });
             });
 
-            // ===== Звуки (WebAudio, без внешних файлов) =====
-            var soundOn = true;
-            var audioCtx = null;
-            var masterGain = null;
-
-            function getCtx() {
-                if (!audioCtx) {
-                    var AC = window.AudioContext || window.webkitAudioContext;
-                    if (!AC) return null;
-                    audioCtx = new AC();
-                    masterGain = audioCtx.createGain();
-                    masterGain.gain.value = soundOn ? 1 : 0;
-                    masterGain.connect(audioCtx.destination);
-                }
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-                return audioCtx;
-            }
-
-            // Короткий тон с мягкой огибающей
-            function tone(ctx, freq, start, dur, type, gainPeak) {
-                var osc = ctx.createOscillator();
-                var gain = ctx.createGain();
-                osc.type = type || 'sine';
-                osc.frequency.setValueAtTime(freq, start);
-                gain.gain.setValueAtTime(0.0001, start);
-                gain.gain.exponentialRampToValueAtTime(gainPeak || 0.16, start + 0.02);
-                gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
-                osc.connect(gain).connect(masterGain);
-                osc.start(start);
-                osc.stop(start + dur + 0.02);
-            }
-
-            // ===== Фоновый «магический» гул =====
-            var ambientStarted = false;
-
-            function startAmbient() {
-                if (ambientStarted) return;
-                var ctx = getCtx();
-                if (!ctx) return;
-                ambientStarted = true;
-
-                var now = ctx.currentTime;
-                var bus = ctx.createGain();
-                bus.gain.setValueAtTime(0.0001, now);
-                // Плавно проявляем гул, чтобы он не «щёлкнул»
-                bus.gain.exponentialRampToValueAtTime(0.055, now + 3.5);
-                bus.connect(masterGain);
-
-                // Низкий фильтр — глухой, тёплый тембр
-                var lp = ctx.createBiquadFilter();
-                lp.type = 'lowpass';
-                lp.frequency.value = 260;
-                lp.Q.value = 0.6;
-                lp.connect(bus);
-
-                // Два расстроенных низких тона — «дыхание» комнаты
-                var freqs = [55, 82.5, 110];
-                freqs.forEach(function (f, i) {
-                    var osc = ctx.createOscillator();
-                    var g = ctx.createGain();
-                    osc.type = i === 2 ? 'triangle' : 'sine';
-                    osc.frequency.value = f + (Math.random() * 0.6 - 0.3);
-                    g.gain.value = i === 2 ? 0.22 : 0.4;
-                    osc.connect(g).connect(lp);
-                    osc.start(now);
-                });
-
-                // Медленная «волна» фильтра — гул слегка дышит
-                var lfo = ctx.createOscillator();
-                var lfoGain = ctx.createGain();
-                lfo.type = 'sine';
-                lfo.frequency.value = 0.06;
-                lfoGain.gain.value = 70;
-                lfo.connect(lfoGain).connect(lp.frequency);
-                lfo.start(now);
-
-                // Едва слышный воздушный шум поверх гула
-                var noiseLen = ctx.sampleRate * 3;
-                var noiseBuf = ctx.createBuffer(1, noiseLen, ctx.sampleRate);
-                var nd = noiseBuf.getChannelData(0);
-                for (var i = 0; i < noiseLen; i++) nd[i] = (Math.random() * 2 - 1) * 0.35;
-                var air = ctx.createBufferSource();
-                air.buffer = noiseBuf;
-                air.loop = true;
-                var airFilter = ctx.createBiquadFilter();
-                airFilter.type = 'lowpass';
-                airFilter.frequency.value = 420;
-                var airGain = ctx.createGain();
-                airGain.gain.value = 0.05;
-                air.connect(airFilter).connect(airGain).connect(bus);
-                air.start(now);
-            }
-
-            // ===== Магическое потрескивание =====
-            var lastCrackle = 0;
-
-            function playCrackle(strength) {
-                if (!soundOn) return;
-                var ctx = getCtx();
-                if (!ctx) return;
-
-                var now = ctx.currentTime;
-                if (now - lastCrackle < 0.07) return; // защита от «пулемёта»
-                lastCrackle = now;
-
-                var dur = 0.02 + Math.random() * 0.03;
-                var len = Math.max(64, Math.floor(ctx.sampleRate * dur));
-                var buf = ctx.createBuffer(1, len, ctx.sampleRate);
-                var d = buf.getChannelData(0);
-                for (var i = 0; i < len; i++) {
-                    d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2);
-                }
-
-                var src = ctx.createBufferSource();
-                src.buffer = buf;
-
-                var bp = ctx.createBiquadFilter();
-                bp.type = 'bandpass';
-                bp.frequency.value = 2600 + Math.random() * 3200;
-                bp.Q.value = 3 + Math.random() * 6;
-
-                var g = ctx.createGain();
-                g.gain.value = 0.03 * (strength == null ? 1 : strength);
-
-                src.connect(bp).connect(g).connect(masterGain);
-                src.start(now);
-            }
-
-            // Запускаем гул после первого действия пользователя (требование браузеров)
-            ['pointerdown', 'keydown', 'touchstart'].forEach(function (evt) {
-                document.addEventListener(evt, startAmbient, { once: true, passive: true });
-            });
-
-            // Потрескивание при скролле — тихое, «магическое»
+            // ===== Реакция на скролл =====
+            // Один обработчик на потрескивание, достижения и шапку: раньше
+            // их было три, и каждый заново читал pageYOffset.
             var lastScrollCrackle = 0;
             var prevScrollY = window.pageYOffset;
-            window.addEventListener('scroll', function () {
-                var y = window.pageYOffset;
-                if (Math.abs(y - prevScrollY) < 4) return;
-                prevScrollY = y;
-                var now = Date.now();
-                if (now - lastScrollCrackle < 130) return;
-                lastScrollCrackle = now;
-                if (Math.random() < 0.55) playCrackle(0.45);
-            }, { passive: true });
+            var reachedBottom = false;
+            var prevY = prevScrollY;
+            var scrollDir = 0;
+            var legLength = 0;
+            var turns = 0;
+            var lastScroll = prevY;
+            var navCompact = false;
+            var pageStart = performance.now ? performance.now() : Date.now();
 
-            // Переворот карточки: короткий «клик» + магический звон.
-            // Разный звон при открытии (выше) и закрытии (ниже) карточки.
-            function playFlip(opening) {
-                if (!soundOn) return;
-                var ctx = getCtx();
-                if (!ctx) return;
-                var now = ctx.currentTime;
-                var up = opening !== false;
-
-                // 1. Сухой клик переворота — шумовой всплеск
-                var bufferSize = Math.floor(ctx.sampleRate * 0.035);
-                var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-                var data = buffer.getChannelData(0);
-                for (var i = 0; i < bufferSize; i++) {
-                    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 3);
-                }
-                var noise = ctx.createBufferSource();
-                noise.buffer = buffer;
-                var noiseFilter = ctx.createBiquadFilter();
-                noiseFilter.type = 'bandpass';
-                noiseFilter.frequency.value = 2400;
-                noiseFilter.Q.value = 0.9;
-                var noiseGain = ctx.createGain();
-                noiseGain.gain.value = 0.09;
-                noise.connect(noiseFilter).connect(noiseGain).connect(masterGain);
-                noise.start(now);
-
-                // 2. Магический звон: два чистых тона с «хрустальной» огибающей
-                var base = up ? 880 : 660;
-                tone(ctx, base, now + 0.02, 0.22, 'sine', 0.1);
-                tone(ctx, base * 1.5, now + 0.06, 0.34, 'sine', 0.07);
-                tone(ctx, base * 2, now + 0.1, 0.2, 'triangle', 0.035);
-            }
-
-            // Клик по «Скачать» — короткий аккорд-подтверждение
-            function playDownload() {
-                if (!soundOn) return;
-                var ctx = getCtx();
-                if (!ctx) return;
-                var now = ctx.currentTime;
-                tone(ctx, 523.25, now, 0.16, 'sine', 0.14);        // C5
-                tone(ctx, 659.25, now + 0.08, 0.18, 'sine', 0.12); // E5
-                tone(ctx, 783.99, now + 0.16, 0.26, 'sine', 0.1);  // G5
-            }
-
-            var soundToggle = document.getElementById('soundToggle');
-            var soundLabel = document.getElementById('soundLabel');
-
-            function syncSoundButton() {
-                soundToggle.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
-                soundLabel.textContent = soundOn ? '🔊 Звук вкл' : '🔇 Звук выкл';
-            }
-
-            // Гул и потрескивания тоже подчиняются переключателю:
-            // «выкл» глушит мастер-громкость, «вкл» возвращает и включает гул.
-            soundToggle.addEventListener('click', function () {
-                soundOn = !soundOn;
-                syncSoundButton();
-                var ctx = getCtx();
-                if (ctx && masterGain) {
-                    var t = ctx.currentTime;
-                    masterGain.gain.cancelScheduledValues(t);
-                    masterGain.gain.setValueAtTime(masterGain.gain.value, t);
-                    masterGain.gain.linearRampToValueAtTime(soundOn ? 1 : 0, t + 0.25);
-                }
-                if (soundOn) {
-                    startAmbient();
-                    playFlip(true);
+            // ===== «Готов к бою» и «Кодекс» — по клику на ссылки =====
+            document.addEventListener('click', function (e) {
+                var a = e.target.closest && e.target.closest('a[href]');
+                if (!a) return;
+                var href = a.getAttribute('href') || '';
+                if (href.indexOf('github.com') === -1) return;
+                if (a.hasAttribute('data-download') || href.indexOf('/releases/download/') !== -1) {
+                    window.Orakul.unlock('ready');
+                } else {
+                    window.Orakul.unlock('codex');
                 }
             });
 
-            syncSoundButton();
-
-            // ===== Звук обычного клика по кнопкам и ссылкам =====
-            // Короткий «клик + вжух»: тихий щелчок и мягкий свист воздуха
-            function playClick() {
-                if (!soundOn) return;
-                var ctx = getCtx();
-                if (!ctx) return;
-                var now = ctx.currentTime;
-
-                // 1. Щелчок
-                var len = Math.floor(ctx.sampleRate * 0.028);
-                var buf = ctx.createBuffer(1, len, ctx.sampleRate);
-                var d = buf.getChannelData(0);
-                for (var i = 0; i < len; i++) {
-                    d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 4);
-                }
-                var src = ctx.createBufferSource();
-                src.buffer = buf;
-                var bp = ctx.createBiquadFilter();
-                bp.type = 'bandpass';
-                bp.frequency.value = 1900;
-                bp.Q.value = 1.2;
-                var g1 = ctx.createGain();
-                g1.gain.value = 0.07;
-                src.connect(bp).connect(g1).connect(masterGain);
-                src.start(now);
-
-                // 2. «Вжух» — короткий нисходящий свист
-                var osc = ctx.createOscillator();
-                var g2 = ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(1250, now);
-                osc.frequency.exponentialRampToValueAtTime(520, now + 0.1);
-                g2.gain.setValueAtTime(0.0001, now);
-                g2.gain.exponentialRampToValueAtTime(0.045, now + 0.015);
-                g2.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
-                osc.connect(g2).connect(masterGain);
-                osc.start(now);
-                osc.stop(now + 0.14);
-            }
-
-            // ===== «Магический» звук клика по шару =====
-            // Вспышка: низкий удар + быстрое арпеджио вверх + хрустальный шлейф
-            function playOrb() {
-                if (!soundOn) return;
-                var ctx = getCtx();
-                if (!ctx) return;
-                var now = ctx.currentTime;
-
-                // 1. Низкий «бум» — вспышка
-                var boom = ctx.createOscillator();
-                var bg = ctx.createGain();
-                boom.type = 'sine';
-                boom.frequency.setValueAtTime(180, now);
-                boom.frequency.exponentialRampToValueAtTime(60, now + 0.35);
-                bg.gain.setValueAtTime(0.0001, now);
-                bg.gain.exponentialRampToValueAtTime(0.16, now + 0.02);
-                bg.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
-                boom.connect(bg).connect(masterGain);
-                boom.start(now);
-                boom.stop(now + 0.42);
-
-                // 2. Арпеджио вверх — «перезвон»
-                var notes = [880, 1108.73, 1318.51, 1760, 2217.46];
-                notes.forEach(function (f, i) {
-                    tone(ctx, f, now + 0.04 + i * 0.055, 0.5 - i * 0.05, 'sine', 0.075 - i * 0.008);
+            // ===== «Археолог» — скрытая ссылка в подвале =====
+            var footSecret = document.getElementById('footSecret');
+            var footBusy = false;
+            if (footSecret) {
+                footSecret.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    if (footBusy) return;       // второй клик не плодит таймеры
+                    footBusy = true;
+                    window.Orakul.unlock('archaeologist');
+                    Snd.flip(true);
+                    setTimeout(function () { window.location.href = 'achievements.html'; }, 1100);
                 });
-
-                // 3. Хрустальный шлейф
-                tone(ctx, 2637, now + 0.3, 0.55, 'triangle', 0.03);
-
-                // 4. Искры — шумовой «шип» с высоким фильтром
-                var len = Math.floor(ctx.sampleRate * 0.4);
-                var buf = ctx.createBuffer(1, len, ctx.sampleRate);
-                var d = buf.getChannelData(0);
-                for (var i = 0; i < len; i++) {
-                    d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2);
-                }
-                var src = ctx.createBufferSource();
-                src.buffer = buf;
-                var hp = ctx.createBiquadFilter();
-                hp.type = 'highpass';
-                hp.frequency.value = 3200;
-                var g = ctx.createGain();
-                g.gain.value = 0.03;
-                src.connect(hp).connect(g).connect(masterGain);
-                src.start(now + 0.05);
             }
 
-            // Делегирование: клик по ссылке/кнопке даёт звук,
-            // кроме элементов со своим собственным звуком
+            // ===== Звук клика по ссылкам и кнопкам =====
             document.addEventListener('click', function (e) {
                 var el = e.target.closest && e.target.closest('a, button');
                 if (!el) return;
-                if (el.closest('[data-download], .flip, #soundToggle, #heroOrb')) return;
-                playClick();
+                if (el.closest('[data-download], .flip, #soundToggle, #heroOrb, #themeToggle')) return;
+                Snd.orb(0.4);
             });
 
             // ===== Флип-карточки «Секреты» =====
-            document.querySelectorAll('.flip').forEach(function (card) {
+            var openedCards = store.get(K.cards, []);
+            if (!Array.isArray(openedCards)) openedCards = [];
+
+            document.querySelectorAll('.flip').forEach(function (card, index) {
+                if (openedCards.indexOf(index) !== -1) {
+                    card.classList.add('flipped');
+                    card.setAttribute('aria-pressed', 'true');
+                }
+
                 card.addEventListener('click', function () {
                     var flipped = card.classList.toggle('flipped');
                     card.setAttribute('aria-pressed', flipped ? 'true' : 'false');
-                    // Клик + магический звон при каждом перевороте
-                    playFlip(flipped);
+
+                    if (flipped && openedCards.indexOf(index) === -1) {
+                        openedCards.push(index);
+                        store.set(K.cards, openedCards);
+                    }
+                    if (openedCards.length >= 4) window.Orakul.unlock('curious');
+
+                    Snd.flip(flipped);
                 });
-                // Пробел/Enter уже обрабатываются кнопкой нативно
             });
+
+            if (openedCards.length >= 4) window.Orakul.unlock('curious');
 
             // ===== Звук на кнопках скачивания =====
             document.querySelectorAll('[data-download]').forEach(function (btn) {
-                btn.addEventListener('click', function () { playDownload(); });
+                btn.addEventListener('click', function () { Snd.download(); });
             });
 
             // ===== Магический шар в hero =====
@@ -1975,32 +1732,18 @@
                     orb.addEventListener('pointerup', function () { orbTarget.s = 1.08; });
                 }
 
-                // Клик/тап — особый «магический» звук, рябь и искры
+                // Клик/тап — звук, рябь и взрыв частиц
                 orb.addEventListener('click', function () {
-                    playOrb();
+                    Snd.orb();
+                    window.Orakul.unlock('magic');
+                    window.Orakul.burst(orb, 18);
 
                     var ripple = document.createElement('span');
                     ripple.className = 'ripple';
                     orb.appendChild(ripple);
                     setTimeout(function () { ripple.remove(); }, 1000);
-
-                    if (!reduceMotion) {
-                        for (var i = 0; i < 12; i++) {
-                            (function (i) {
-                                var spark = document.createElement('span');
-                                spark.className = 'spark';
-                                var angle = (Math.PI * 2 * i) / 12 + Math.random() * 0.4;
-                                var dist = 60 + Math.random() * 60;
-                                spark.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
-                                spark.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
-                                orb.appendChild(spark);
-                                setTimeout(function () { spark.remove(); }, 1000);
-                            })(i);
-                        }
-                    }
                 });
 
-                // Доступность: Enter/Space на шаре
                 orb.addEventListener('keydown', function (e) {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
@@ -2009,116 +1752,87 @@
                 });
             }
 
-            // ===== Логотип-шар в шапке =====
+            // ===== Магический шар в шапке: параллакс + взрыв при клике =====
             var logoOrb = document.getElementById('logoOrb');
-            if (logoOrb && finePointer && !reduceMotion) {
-                window.addEventListener('pointermove', function (e) {
-                    if (e.pointerType === 'touch') return;
-                    var r = logoOrb.getBoundingClientRect();
-                    var cx = r.left + r.width / 2;
-                    var cy = r.top + r.height / 2;
-                    var dx = e.clientX - cx;
-                    var dy = e.clientY - cy;
-                    var dist = Math.hypot(dx, dy);
-                    var range = 180;
-                    if (dist < range) {
-                        var pull = 1 - dist / range;
-                        logoOrb.style.setProperty('--ox', (dx / range) * pull * 1.6);
-                        logoOrb.style.setProperty('--oy', (dy / range) * pull * 1.6);
-                    } else {
-                        logoOrb.style.setProperty('--ox', 0);
-                        logoOrb.style.setProperty('--oy', 0);
-                    }
-                }, { passive: true });
-            }
+            if (logoOrb) {
+                if (finePointer && !reduceMotion) {
+                    window.addEventListener('pointermove', function (e) {
+                        if (e.pointerType === 'touch') return;
+                        var r = logoOrb.getBoundingClientRect();
+                        var cx = r.left + r.width / 2;
+                        var cy = r.top + r.height / 2;
+                        var dx = e.clientX - cx;
+                        var dy = e.clientY - cy;
+                        var dist = Math.hypot(dx, dy);
+                        var range = 180;
+                        if (dist < range) {
+                            var pull = 1 - dist / range;
+                            logoOrb.style.setProperty('--ox', (dx / range) * pull * 1.6);
+                            logoOrb.style.setProperty('--oy', (dy / range) * pull * 1.6);
+                        } else {
+                            logoOrb.style.setProperty('--ox', 0);
+                            logoOrb.style.setProperty('--oy', 0);
+                        }
+                    }, { passive: true });
+                }
 
-            // ===== Кастомный курсор: шар + мягкое свечение =====
-            var cursorOrb = document.getElementById('cursorOrb');
-            var cursorGlow = document.getElementById('cursorGlow');
-
-            if (cursorOrb && cursorGlow && finePointer && !reduceMotion) {
-                // Скрываем системный курсор везде, где работает кастомный
-                document.documentElement.classList.add('has-cursor');
-
-                var c = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-                var ct = { x: c.x, y: c.y };
-                var cursorTicking = false;
-                var hoverScale = 1;   // плавно меняется, без CSS-транзишена (нет дёрганья)
-                var hoverTarget = 1;
-                var ROT = -15;        // наклон шара, градусы (влево)
-
-                var cursorLoop = function () {
-                    cursorTicking = false;
-                    c.x += (ct.x - c.x) * 0.22;
-                    c.y += (ct.y - c.y) * 0.22;
-                    hoverScale += (hoverTarget - hoverScale) * 0.18;
-
-                    // Вся геометрия в одном transform: позиция + наклон + масштаб.
-                    // Центр шара остаётся точно под курсором — без смещений при ховере.
-                    cursorOrb.style.transform =
-                        'translate3d(' + c.x.toFixed(1) + 'px,' + c.y.toFixed(1) + 'px,0) ' +
-                        'rotate(' + ROT + 'deg) ' +
-                        'scale(' + hoverScale.toFixed(3) + ')';
-
-                    // Свечение живёт в своём слое (plus-lighter) и просто следует за шаром
-                    cursorGlow.style.transform =
-                        'translate3d(' + c.x.toFixed(1) + 'px,' + c.y.toFixed(1) + 'px,0)';
-
-                    if (Math.abs(ct.x - c.x) > 0.4 ||
-                        Math.abs(ct.y - c.y) > 0.4 ||
-                        Math.abs(hoverTarget - hoverScale) > 0.002) {
-                        requestAnimationFrame(cursorLoop);
-                    }
-                };
-
-                var kickCursor = function () {
-                    if (!cursorTicking) { cursorTicking = true; requestAnimationFrame(cursorLoop); }
-                };
-
-                window.addEventListener('pointermove', function (e) {
-                    if (e.pointerType === 'touch') return;
-                    ct.x = e.clientX;
-                    ct.y = e.clientY;
-                    cursorOrb.classList.add('is-on');
-                    cursorGlow.classList.add('is-on');
-                    kickCursor();
-                }, { passive: true });
-
-                document.addEventListener('mouseleave', function () {
-                    cursorOrb.classList.remove('is-on');
-                    cursorGlow.classList.remove('is-on');
+                logoOrb.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    window.Orakul.burst(logoOrb, 12);
+                    Snd.crackle(1);
                 });
-
-                // Увеличиваем только над настоящими кликабельными элементами:
-                // ссылки, кнопки и всё с классом .clickable
-                var hoverables = 'a, button, .clickable, [role="button"]';
-                document.addEventListener('pointerover', function (e) {
-                    if (e.target.closest && e.target.closest(hoverables)) {
-                        hoverTarget = 1.3;
-                        kickCursor();
-                        playCrackle(0.6);
-                    }
-                }, { passive: true });
-
-                document.addEventListener('pointerout', function (e) {
-                    if (e.target.closest && e.target.closest(hoverables)) {
-                        hoverTarget = 1;
-                        kickCursor();
-                    }
-                }, { passive: true });
             }
 
-            // ===== Сжатие шапки при скролле =====
-            var lastScroll = 0;
+            // ===== Сжатие шапки + всё остальное, что зависит от скролла =====
             var navInner = nav.querySelector('.nav-inner');
+
             window.addEventListener('scroll', function () {
                 var y = window.pageYOffset;
-                if (y > lastScroll + 6 && y > 120) {
-                    navInner.style.paddingTop = '9px';
-                    navInner.style.paddingBottom = '9px';
-                } else if (y < lastScroll - 6 || y < 120) {
-                    navInner.style.paddingTop = '14px';
-                    navInner.style.paddingBottom = '14px';
+
+                // 1. Потрескивание
+                if (Math.abs(y - prevScrollY) >= 4) {
+                    prevScrollY = y;
+                    var now = Date.now();
+                    if (now - lastScrollCrackle >= 130) {
+                        lastScrollCrackle = now;
+                        if (Math.random() < 0.55) Snd.crackle(0.45);
+                    }
+                }
+
+                // 2. Достижения за скролл
+                if (!reachedBottom) {
+                    var maxY = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+                    if (y >= maxY - 40) {
+                        reachedBottom = true;
+                        window.Orakul.unlock('nightwatch');
+                        var elapsed = (performance.now ? performance.now() : Date.now()) - pageStart;
+                        if (elapsed < 7000) window.Orakul.unlock('lightspeed');
+                    }
+                }
+
+                var d = y - prevY;
+                prevY = y;
+                if (Math.abs(d) >= 0.6) {
+                    var dir = d > 0 ? 1 : -1;
+                    if (dir !== scrollDir) {
+                        if (scrollDir !== 0 && legLength > 120) {
+                            turns++;
+                            if (turns >= 3) window.Orakul.unlock('stormdance');
+                        }
+                        scrollDir = dir;
+                        legLength = Math.abs(d);
+                    } else {
+                        legLength += Math.abs(d);
+                    }
+                }
+
+                // 3. Сжатие шапки — класс вместо записи padding на каждый кадр
+                if (!navCompact && y > 120 && y > lastScroll + 6) {
+                    navCompact = true;
+                    navInner.classList.add('is-compact');
+                } else if (navCompact && (y < lastScroll - 6 || y < 120)) {
+                    navCompact = false;
+                    navInner.classList.remove('is-compact');
                 }
                 lastScroll = y;
             }, { passive: true });
