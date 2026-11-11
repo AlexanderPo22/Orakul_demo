@@ -5,10 +5,12 @@
    Наружу отдаётся один объект — window.Orakul:
      Orakul.LIST / Orakul.TOTAL          — каталог достижений
      Orakul.has(id) / count() / unlock(id) / reset()
-     Orakul.Snd.click() / orb() / air() / hover() / flip() / fanfare() / theme() ...
+     Orakul.Snd.click() / orb() / air() / ring() / phone() / hover() / flip() / fanfare() / theme() ...
        (клики по ссылкам/кнопкам/карточкам = orb потише, по пустому месту = air)
      Orakul.theme.apply(name, animate) / toggle() / name()
      Orakul.store.get(key, fb) / set(key, value)
+     Orakul.cloud.signIn(email, pass) / signUp() / signOut() / sync() / user()
+                                        — облако Supabase: ачивки в таблице achievements
      Orakul.burst(el, n)                 — взрыв частиц из элемента
      Orakul.tilt.refresh()               — навесить эффект на новые карточки
      Orakul.toast(def) / dance(emoji) / whisper()
@@ -27,7 +29,28 @@
         clicks: 'orakul.clicks',
         time: 'orakul.timeOnSite',
         theme: 'orakul.theme',
-        sound: 'orakul.sound'
+        sound: 'orakul.sound',
+        /* сюжетная ветка консоли: телефон, увольнение, поиск 45 */
+        bossCall: 'boss.call',
+        bossChoice: 'boss.choice',
+        bossAsked: 'boss.asked45',
+        admin: 'admin',
+        stats: 'orakul.global_stats',
+        /* приложения телефона: чаты, заказы, интернет */
+        phone: 'phone.state',
+        /* комната: осмотр, щель за автоматом, взлом */
+        room: 'room.state',
+        /* мана: баланс и какие награды уже «собраны» */
+        mana: 'orakul.mana'
+    };
+
+    /* Ключи сюжета: их изменения уходят в облако (таблица plot) */
+    var PLOT_KEYS = {
+        'boss.call': 1,
+        'boss.choice': 1,
+        'boss.asked45': 1,
+        'phone.state': 1,
+        'room.state': 1
     };
 
     function get(key, fallback) {
@@ -40,6 +63,8 @@
 
     function set(key, value) {
         try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+        // Сюжет (звонок, выбор, телефон, комната) сохраняем в облако
+        if (PLOT_KEYS[key] && cloud) cloud.plotDirty();
     }
 
     /* ================= КАТАЛОГ ДОСТИЖЕНИЙ ================= */
@@ -48,34 +73,58 @@
           hint: 'Источник силы Оракула любит внимание.' },
         { id: 'curious',       icon: '🃏', title: 'Любопытный',
           hint: 'Четыре двери в разделе тайн — открой их все.' },
-        { id: 'melomaniac',    icon: '🎵', title: 'Меломан',
+        { id: 'melomaniac',    icon: '🎵', title: 'Меломан', rarity: 'silver',
           hint: 'У любой мелодии есть выключатель. Он прячется в углу.' },
         { id: 'ready',         icon: '⬇️', title: 'Готов к бою',
           hint: 'Тот, кто решится на первый шаг, получит установщик.' },
         { id: 'codex',         icon: '💻', title: 'Кодекс',
           hint: 'Исходник лежит на виду у всех, кто смотрит в сторону кода.' },
-        { id: 'nightwatch',    icon: '🌙', title: 'Ночной страж',
+        { id: 'nightwatch',    icon: '🌙', title: 'Ночной страж', rarity: 'silver',
           hint: 'Иногда нужно заглянуть в самую бездну.' },
-        { id: 'pastvoice',     icon: '👋', title: 'Голос из прошлого',
+        { id: 'pastvoice',     icon: '👋', title: 'Голос из прошлого', rarity: 'silver',
           hint: 'Пять прикосновений к имени — и прошлое ответит.' },
-        { id: 'stormdance',    icon: '💃', title: 'Танец в буре',
+        { id: 'stormdance',    icon: '💃', title: 'Танец в буре', rarity: 'gold',
           hint: 'Буря замечает тех, кто меняет направление. Трижды.' },
         { id: 'patient',       icon: '⏳', title: 'Терпеливый',
           hint: 'Пять минут тишины. Время копится даже между визитами.' },
-        { id: 'lightspeed',    icon: '⚡', title: 'Скорость света',
+        { id: 'lightspeed',    icon: '⚡', title: 'Скорость света', rarity: 'silver',
           hint: 'Семь ударов сердца — и бездна позади. Не медли.' },
-        { id: 'archaeologist', icon: '🏺', title: 'Археолог', secret: true,
+        { id: 'archaeologist', icon: '🏺', title: 'Археолог', secret: true, rarity: 'gold',
           hint: 'В самом низу, между строк, кто-то оставил след. Не оборачивайся.' },
         { id: 'clicker',       icon: '🖱️', title: 'Кликер',
           hint: 'Сто прикосновений — и машина признает тебя своей.' },
-        { id: 'hacker',        icon: '🖥️', title: 'Хакер', secret: true,
+        { id: 'hacker',        icon: '🖥️', title: 'Хакер', secret: true, rarity: 'silver',
           hint: 'Слово, которое знает каждый страж Петли.' },
-        { id: 'onepiece',      icon: '🏴‍☠️', title: 'Ван Пис', secret: true,
+        { id: 'onepiece',      icon: '🏴‍☠️', title: 'Ван Пис', secret: true, rarity: 'gold',
           hint: 'Имя, что ищут в конце Великой линии.' },
-        { id: 'whatwasthat',   icon: '👁️', title: 'Что это было?', secret: true,
+        { id: 'whatwasthat',   icon: '👁️', title: 'Что это было?', secret: true, rarity: 'gold',
           hint: 'Кто-то выйдет на связь. Ответь — и узнаешь, что это было.' },
         { id: 'boss',          icon: '👔', title: 'На ковре у босса',
-          hint: 'Начальство вызывает только тех, у кого есть доступ.' }
+          hint: 'Начальство вызывает только тех, у кого есть доступ.' },
+        { id: 'ignore',        icon: '📞', title: 'Игнор',
+          hint: 'Иногда лучший ответ — не брать трубку.' },
+        { id: 'fired',         icon: '🔥', title: 'Уволен', rarity: 'silver',
+          hint: 'Проси прибавку настойчиво. Очень настойчиво.' },
+        { id: 'agent',         icon: '🕵️', title: 'Оперативник', rarity: 'silver',
+          hint: 'Приложение не грузится просто так. Дождись, пока оно догрузится.' },
+        { id: 'selfcall',      icon: '📵', title: 'Сам себе не дозвонишься',
+          hint: 'Набери свой номер. Кто-то же должен ответить.' },
+        { id: 'rebel',         icon: '✊', title: 'Бунтарь', rarity: 'silver',
+          hint: 'Скажи начальству «пока» прямо в мессенджере. Смело.' },
+        { id: 'turtle',        icon: '🐢', title: 'Как у черепах',
+          hint: 'Закажи пиццу на свой адрес. Быстрой доставки не бывает.' },
+        { id: 'gourmet',       icon: '🍽️', title: 'Гурман', rarity: 'silver',
+          hint: 'Закажи пиццу туда, где живёт начальство. С доставкой.' },
+        { id: 'insider',       icon: '🤝', title: 'Свой человек',
+          hint: 'Агент 45 не отвечает. Но он читает. Напиши ему.' },
+        { id: 'secret',        icon: '🍎', title: 'Ты нашел секрет', secret: true, rarity: 'gold',
+          hint: 'В настройках телефона есть логотип. Пять касаний — и он расскажет.' },
+        { id: 'hack',          icon: '🕹️', title: 'Взломщик', rarity: 'gold',
+          hint: 'Автомат со снеками прячет кое-что за собой. Взломай его.' },
+        { id: 'anon',          icon: '❔', title: 'Кто ты?', rarity: 'silver',
+          hint: 'Согласись помочь с поиском 45 — и с тобой свяжется аноним.' },
+        { id: 'login',         icon: '🔑', title: 'Аутентификация', rarity: 'silver',
+          hint: 'Кто-то должен был это сделать.' }
     ];
 
     var TOTAL = LIST.length;
@@ -95,6 +144,94 @@
         return n;
     }
 
+    /* ================= МАНА ✨ ================= */
+    /* Обычная награда — 100, серебряная — 300, золотая — 500.
+       Мана «собирается» кликом по карточке: пока не собрана, иконка мерцает.
+       У вошедшего игрока баланс живёт в Supabase (таблица profiles). */
+    var MANA_VALUE = { common: 100, silver: 300, gold: 500 };
+
+    var mana = (function () {
+        var state = get(K.mana, null);
+        if (!state || typeof state !== 'object' || Array.isArray(state)) state = {};
+        if (typeof state.balance !== 'number' || !isFinite(state.balance)) state.balance = 0;
+        if (!state.claimed || typeof state.claimed !== 'object' || Array.isArray(state.claimed)) {
+            state.claimed = {};
+        }
+
+        function value(def) {
+            return MANA_VALUE[(def && def.rarity) || 'common'] || MANA_VALUE.common;
+        }
+
+        function save() {
+            set(K.mana, { balance: state.balance, claimed: state.claimed });
+        }
+
+        function notify() {
+            document.dispatchEvent(new CustomEvent('orakul:mana', {
+                detail: { balance: state.balance }
+            }));
+        }
+
+        function balance() { return state.balance; }
+
+        function pending() {
+            var n = 0;
+            LIST.forEach(function (def) {
+                if (achieved[def.id] && !state.claimed[def.id]) n += value(def);
+            });
+            return n;
+        }
+
+        function isPending(id) { return !!achieved[id] && !state.claimed[id]; }
+
+        function markClaimed(id) {
+            if (!id || state.claimed[id]) return;
+            state.claimed[id] = Date.now();
+            save();
+        }
+
+        function setBalance(v) {
+            var n = Math.max(0, Math.round(Number(v) || 0));
+            if (n === state.balance) return;
+            state.balance = n;
+            save();
+            notify();
+        }
+
+        /* Собрать ману за награду. Возвращает, сколько начислено. */
+        function claim(id) {
+            var def = byId[id];
+            if (!def || !achieved[id] || state.claimed[id]) return 0;
+
+            var v = value(def);
+            state.claimed[id] = Date.now();
+            state.balance += v;
+            save();
+
+            if (cloud) cloud.claimMana(id, state.balance);
+            notify();
+            return v;
+        }
+
+        function reset() {
+            state = { balance: 0, claimed: {} };
+            save();
+            notify();
+        }
+
+        return {
+            value: value,
+            balance: balance,
+            pending: pending,
+            isPending: isPending,
+            markClaimed: markClaimed,
+            setBalance: setBalance,
+            claim: claim,
+            reset: reset,
+            notify: notify
+        };
+    })();
+
     /* ================= ЗВУК (WebAudio, без файлов) ================= */
     var Snd = (function () {
         var ctx = null;
@@ -102,6 +239,7 @@
         var on = true;
         var ambientStarted = false;
         var melodyTimer = null;
+        var ambientMode = 'default';   // 'console' — своя мелодия и гул железа
         var lastHover = 0;
         var lastCrackle = 0;
         var lastType = 0;
@@ -151,6 +289,586 @@
             return src;
         }
 
+        /* ---- эхо-шина: одна линия задержки на все «голоса системы» ---- */
+        var echoLine = null;
+
+        function echoBus(c) {
+            if (echoLine) return echoLine;
+
+            var delay = c.createDelay(1.2);
+            delay.delayTime.value = 0.26;
+
+            var lp = c.createBiquadFilter();
+            lp.type = 'lowpass';
+            lp.frequency.value = 1100;
+
+            var fb = c.createGain();
+            fb.gain.value = 0.42;
+
+            var wet = c.createGain();
+            wet.gain.value = 0.5;
+
+            delay.connect(lp);
+            lp.connect(fb);
+            fb.connect(delay);      // затухающее повторение
+            lp.connect(wet);
+            wet.connect(master);
+
+            echoLine = delay;
+            return echoLine;
+        }
+
+        /* ---- низкий тон с эхом: «голос системы» ---- */
+        function low(freq, peak, dur, type) {
+            var c = ensure();
+            if (!c) return;
+            var t = c.currentTime;
+            var f = Math.max(46, freq);
+            var len = Math.max(0.24, dur);
+            var amp = Math.min(0.05, peak);
+
+            var osc = c.createOscillator();
+            var g = c.createGain();
+            osc.type = type || 'sine';
+            osc.frequency.setValueAtTime(f, t);
+            osc.frequency.exponentialRampToValueAtTime(f * 0.84, t + len);
+
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(amp, t + 0.05);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+
+            osc.connect(g);
+            g.connect(master);
+            g.connect(echoBus(c));
+
+            osc.start(t);
+            osc.stop(t + len + 0.04);
+        }
+
+        /* ---- «тёмный» сигнал: консольные частоты уводим в низкий
+           регистр, добавляем эхо и тишину ---- */
+        function dark(freq, peak, dur, type) {
+            if (!on) return;
+            low(Math.max(46, (freq || 880) / 3.6),
+                Math.min(0.05, (peak || 0.03) * 0.8),
+                Math.max(0.24, (dur || 0.12) * 2.2),
+                type || 'sine');
+        }
+
+        /* ---- дверной звонок: 800 и 1000 Гц ---- */
+        function doorbell() {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+            var now = c.currentTime;
+
+            [[800, 0], [1000, 0.22]].forEach(function (pair) {
+                var t = now + pair[1];
+
+                var osc = c.createOscillator();
+                var osc2 = c.createOscillator();
+                var g = c.createGain();
+                osc.type = 'sine';
+                osc2.type = 'sine';
+                osc.frequency.value = pair[0];
+                osc2.frequency.value = pair[0] * 1.5;   // мягкий обертон
+
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(0.04, t + 0.012);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+
+                osc.connect(g);
+                osc2.connect(g);
+                g.connect(master);
+                g.connect(echoBus(c));
+
+                osc.start(t);
+                osc.stop(t + 0.55);
+                osc2.start(t);
+                osc2.stop(t + 0.55);
+            });
+        }
+
+        /* ---- офисный гул: вентилятор в приложениях телефона ---- */
+        var fanSrc = null;
+        var fanGain = null;
+
+        function fan(on) {
+            if (!window.AudioContext && !window.webkitAudioContext) return;
+            var c = ensure();
+            if (!c) return;
+
+            if (on) {
+                if (!fanSrc) {
+                    var len = Math.floor(c.sampleRate * 2);
+                    var buf = c.createBuffer(1, len, c.sampleRate);
+                    var d = buf.getChannelData(0);
+                    for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * 0.6;
+
+                    fanSrc = c.createBufferSource();
+                    fanSrc.buffer = buf;
+                    fanSrc.loop = true;
+
+                    var lp = c.createBiquadFilter();
+                    lp.type = 'lowpass';
+                    lp.frequency.value = 320;   // мягче и глуше
+                    lp.Q.value = 0.4;
+
+                    fanGain = c.createGain();
+                    fanGain.gain.value = 0.0001;
+
+                    fanSrc.connect(lp).connect(fanGain).connect(master);
+                    fanSrc.start();
+                }
+
+                fanGain.gain.cancelScheduledValues(c.currentTime);
+                fanGain.gain.setValueAtTime(Math.max(0.0001, fanGain.gain.value), c.currentTime);
+                fanGain.gain.exponentialRampToValueAtTime(0.012, c.currentTime + 0.9);
+                return;
+            }
+
+            if (!fanGain) return;
+            fanGain.gain.cancelScheduledValues(c.currentTime);
+            fanGain.gain.setValueAtTime(Math.max(0.0001, fanGain.gain.value), c.currentTime);
+            fanGain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.6);
+        }
+
+        /* ---- чистый тон для мини-игры EasyHacking ----
+           Отдельное имя: внутренний хелпер tone() уже занят нотами
+           интерфейса (шар, карточки, скачивание), и одноимённая функция
+           перекрывала его — звуки на всех страницах играли не те. */
+        function blip(freq, dur, peak) {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+
+            var t = c.currentTime;
+            var len = Math.max(0.08, dur || 0.16);
+            var osc = c.createOscillator();
+            var g = c.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(Math.max(60, freq || 440), t);
+
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(Math.min(0.09, peak || 0.06), t + 0.012);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+
+            osc.connect(g);
+            g.connect(master);   // без эха: короткий сухой сигнал
+
+            osc.start(t);
+            osc.stop(t + len + 0.03);
+        }
+
+        /* ---- короткий сигнал «доступа» для консоли ---- */
+        function beep(freq, peak, dur) {
+            dark(freq, peak, dur, 'sine');
+        }
+
+        /* ---- консоль: загадочная мелодия (не колокольчики) и жужжание
+           железа. Включается только на console.html через ambient('console'),
+           на остальных страницах фон остаётся прежним. ---- */
+        function consoleAmbience(c, now) {
+            var bus = c.createGain();
+            bus.gain.setValueAtTime(0.0001, now);
+            bus.gain.exponentialRampToValueAtTime(0.12, now + 4);
+            bus.connect(master);
+
+            /* блок питания: 50 Гц и обертоны */
+            var humLp = c.createBiquadFilter();
+            humLp.type = 'lowpass';
+            humLp.frequency.value = 240;
+            humLp.Q.value = 0.7;
+            humLp.connect(bus);
+
+            [50, 100, 150].forEach(function (f, i) {
+                var osc = c.createOscillator();
+                var g = c.createGain();
+                osc.type = i === 0 ? 'sawtooth' : 'sine';
+                osc.frequency.value = f + (Math.random() * 0.4 - 0.2);
+                g.gain.value = i === 0 ? 0.16 : 0.09;
+                osc.connect(g).connect(humLp);
+                osc.start(now);
+            });
+
+            /* вентиляторы: узкополосный шум */
+            var fan = noise(4, 'pow', 1);
+            fan.loop = true;
+            var fanBp = c.createBiquadFilter();
+            fanBp.type = 'bandpass';
+            fanBp.frequency.value = 520;
+            fanBp.Q.value = 1.1;
+            var fanG = c.createGain();
+            fanG.gain.value = 0.14;
+            fan.connect(fanBp).connect(fanG).connect(bus);
+            fan.start(now);
+
+            /* эхо для мелодии */
+            var delay = c.createDelay(1.5);
+            delay.delayTime.value = 0.5;
+            var fb = c.createGain();
+            fb.gain.value = 0.34;
+            var wet = c.createGain();
+            wet.gain.value = 0.42;
+            delay.connect(fb).connect(delay);
+            delay.connect(wet).connect(bus);
+
+            /* «подушка»: треугольники с расстройкой, мягкая атака */
+            function pad(freq, at, dur, peak) {
+                var g = c.createGain();
+                g.gain.setValueAtTime(0.0001, at);
+                g.gain.linearRampToValueAtTime(peak, at + 0.8);
+                g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+
+                var lp = c.createBiquadFilter();
+                lp.type = 'lowpass';
+                lp.frequency.value = 760;
+                lp.Q.value = 0.5;
+
+                [1, 1.004, 0.5].forEach(function (k, i) {
+                    var osc = c.createOscillator();
+                    osc.type = i === 2 ? 'sine' : 'triangle';
+                    osc.frequency.setValueAtTime(freq * k, at);
+                    osc.connect(lp);
+                    osc.start(at);
+                    osc.stop(at + dur + 0.1);
+                });
+
+                lp.connect(g);
+                g.connect(bus);
+                g.connect(delay);
+            }
+
+            /* ля минор, низкий регистр: медленно, без «колокольчиков» */
+            var motif = [146.83, 174.61, 220.00, 196.00, 164.81, 130.81, 164.81, 196.00];
+            var step = 0;
+
+            function playNote() {
+                if (!on) return;
+                var t = c.currentTime + 0.1;
+                var f = motif[step % motif.length];
+                step++;
+                pad(f, t, 3.6, 0.26);
+                if (step % 4 === 0) pad(f * 1.5, t + 0.9, 2.6, 0.14);
+            }
+
+            setTimeout(playNote, 1600);
+            melodyTimer = setInterval(playNote, 3400);
+
+            /* Редкие хоррор-звуки поверх мелодии: скрип, помехи, гул */
+            function horrorTick() {
+                if (!on) { setTimeout(horrorTick, 12000); return; }
+
+                var r = Math.random();
+                if (r < 0.3) creak();
+                else if (r < 0.5) staticNoise();
+                else if (r < 0.68) rumble();
+                else if (r < 0.86) whisperSound();
+                else steps();
+
+                setTimeout(horrorTick, 9000 + Math.random() * 14000);
+            }
+
+            setTimeout(horrorTick, 6000 + Math.random() * 8000);
+        }
+
+        /* Кому какой фон: 'console' — мелодия и гул, 'default' — как раньше */
+        function ambient(mode) {
+            ambientMode = mode === 'console' ? 'console' : 'default';
+        }
+
+        /* ---- короткая «загадочная» фраза: низкая подушка, не звон ---- */
+        function mystery() {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+
+            var t0 = c.currentTime;
+            var bus = c.createGain();
+            bus.gain.value = 0.5;
+            bus.connect(master);
+
+            [[146.83, 0], [174.61, 0.42], [220.00, 0.9]].forEach(function (pair) {
+                var at = t0 + pair[1];
+
+                var g = c.createGain();
+                g.gain.setValueAtTime(0.0001, at);
+                g.gain.linearRampToValueAtTime(0.05, at + 0.5);
+                g.gain.exponentialRampToValueAtTime(0.0001, at + 2.4);
+
+                var lp = c.createBiquadFilter();
+                lp.type = 'lowpass';
+                lp.frequency.value = 900;
+                lp.Q.value = 0.5;
+
+                var osc = c.createOscillator();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(pair[0], at);
+
+                var osc2 = c.createOscillator();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(pair[0] * 2, at);
+
+                var g2 = c.createGain();
+                g2.gain.value = 0.22;
+
+                osc.connect(lp);
+                osc2.connect(g2).connect(lp);
+                lp.connect(g).connect(bus);
+
+                osc.start(at);
+                osc.stop(at + 2.5);
+                osc2.start(at);
+                osc2.stop(at + 2.5);
+            });
+        }
+
+        /* ---- удар по редкости: обычная — магия, серебро — звон,
+           золото — фанфары с искрами ---- */
+        function rarityHit(kind) {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+
+            if (kind === 'gold') {
+                fanfare();
+                [1568, 2093, 2637].forEach(function (f, i) {
+                    setTimeout(function () { blip(f, 0.2, 0.05); }, 110 + i * 90);
+                });
+                return;
+            }
+
+            if (kind === 'silver') {
+                var t = c.currentTime;
+                [1046.5, 1318.5, 1568].forEach(function (f, i) {
+                    var at = t + i * 0.05;
+                    var osc = c.createOscillator();
+                    var g = c.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(f, at);
+                    g.gain.setValueAtTime(0.0001, at);
+                    g.gain.exponentialRampToValueAtTime(0.045, at + 0.012);
+                    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.75);
+                    osc.connect(g).connect(master);
+                    osc.start(at);
+                    osc.stop(at + 0.8);
+                });
+                return;
+            }
+
+            // обычная: магический клик
+            orb(0.7);
+            setTimeout(function () { blip(523.25, 0.14, 0.05); }, 45);
+        }
+
+        /* ---- хоррор-звуки консоли ---- */
+
+        /* скрип: узкий резонансный шум, уезжающий вниз */
+        function creak() {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+            var t = c.currentTime;
+
+            var src = noise(1.1, 'pow', 1.2);
+            var bp = c.createBiquadFilter();
+            bp.type = 'bandpass';
+            bp.frequency.setValueAtTime(340, t);
+            bp.frequency.exponentialRampToValueAtTime(130, t + 1.1);
+            bp.Q.value = 7;
+
+            var g = c.createGain();
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(0.02, t + 0.22);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+
+            src.connect(bp).connect(g).connect(master);
+            src.start(t);
+        }
+
+        /* помехи: короткий треск, будто сбилась развёртка */
+        function staticNoise() {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+            var t = c.currentTime;
+
+            var src = noise(0.18, 'pow', 1.6);
+            var hp = c.createBiquadFilter();
+            hp.type = 'highpass';
+            hp.frequency.value = 1400;
+
+            var g = c.createGain();
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(0.016, t + 0.01);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+
+            src.connect(hp).connect(g).connect(master);
+            src.start(t);
+        }
+
+        /* низкий гул: что-то большое дышит под полом */
+        function rumble() {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+            var t = c.currentTime;
+
+            var osc = c.createOscillator();
+            var g = c.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(38, t);
+            osc.frequency.exponentialRampToValueAtTime(30, t + 3);
+
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(0.035, t + 0.7);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 3);
+
+            osc.connect(g).connect(master);
+            osc.start(t);
+            osc.stop(t + 3.1);
+        }
+
+        /* шёпот: узкая полоса шума, будто говорят за стеной */
+        function whisperSound() {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+            var t = c.currentTime;
+
+            var src = noise(1.4, 'pow', 1.1);
+            var bp = c.createBiquadFilter();
+            bp.type = 'bandpass';
+            bp.frequency.setValueAtTime(900, t);
+            bp.frequency.linearRampToValueAtTime(1500, t + 0.5);
+            bp.frequency.linearRampToValueAtTime(700, t + 1.4);
+            bp.Q.value = 8;
+
+            var g = c.createGain();
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(0.014, t + 0.3);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+
+            src.connect(bp).connect(g).connect(master);
+            src.start(t);
+        }
+
+        /* шаги: три глухих удара по бетону */
+        function steps() {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+            var t0 = c.currentTime;
+
+            [0, 0.42, 0.86].forEach(function (off, i) {
+                var t = t0 + off;
+                var src = noise(0.16, 'pow', 2);
+                var lp = c.createBiquadFilter();
+                lp.type = 'lowpass';
+                lp.frequency.value = 260;
+                var g = c.createGain();
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(i === 2 ? 0.05 : 0.038, t + 0.012);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+                src.connect(lp).connect(g).connect(master);
+                src.start(t);
+            });
+        }
+
+        /* стук: громко и низко */
+        function knock() {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+            var t = c.currentTime;
+
+            [0, 0.28].forEach(function (off) {
+                var at = t + off;
+
+                var src = noise(0.22, 'pow', 1.4);
+                var lp = c.createBiquadFilter();
+                lp.type = 'lowpass';
+                lp.frequency.value = 180;
+                var g = c.createGain();
+                g.gain.setValueAtTime(0.0001, at);
+                g.gain.exponentialRampToValueAtTime(0.12, at + 0.008);
+                g.gain.exponentialRampToValueAtTime(0.0001, at + 0.22);
+                src.connect(lp).connect(g).connect(master);
+                src.start(at);
+
+                var osc = c.createOscillator();
+                var og = c.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(62, at);
+                osc.frequency.exponentialRampToValueAtTime(38, at + 0.18);
+                og.gain.setValueAtTime(0.0001, at);
+                og.gain.exponentialRampToValueAtTime(0.09, at + 0.01);
+                og.gain.exponentialRampToValueAtTime(0.0001, at + 0.25);
+                osc.connect(og).connect(master);
+                osc.start(at);
+                osc.stop(at + 0.28);
+            });
+        }
+
+        /* голос босса: глухой низкий «буп», как у Санса */
+        function boss() {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+            var t = c.currentTime;
+
+            var osc = c.createOscillator();
+            var lp = c.createBiquadFilter();
+            var g = c.createGain();
+
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(148, t);
+            osc.frequency.exponentialRampToValueAtTime(84, t + 0.16);
+
+            lp.type = 'lowpass';
+            lp.frequency.value = 420;
+            lp.Q.value = 1.2;
+
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(0.05, t + 0.012);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+
+            osc.connect(lp).connect(g).connect(master);
+            osc.start(t);
+            osc.stop(t + 0.26);
+
+            var src = noise(0.12, 'pow', 2);
+            var bp = c.createBiquadFilter();
+            bp.type = 'bandpass';
+            bp.frequency.value = 320;
+            var ng = c.createGain();
+            ng.gain.value = 0.02;
+            src.connect(bp).connect(ng).connect(master);
+            src.start(t);
+        }
+
+        /* писк мыслей: высокий, посимвольно, как в Deltarune */
+        function think() {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+            var t = c.currentTime;
+
+            var osc = c.createOscillator();
+            var g = c.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(1180 + Math.random() * 260, t);
+
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(0.018, t + 0.006);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+
+            osc.connect(g).connect(master);
+            osc.start(t);
+            osc.stop(t + 0.07);
+        }
+
         /* ---- фоновый гул + загадочная мелодия ---- */
         function start() {
             if (ambientStarted) return;
@@ -159,6 +877,13 @@
             ambientStarted = true;
 
             var now = c.currentTime;
+
+            // Консоль звучит иначе: своя мелодия и гул компьютера
+            if (ambientMode === 'console') {
+                consoleAmbience(c, now);
+                return;
+            }
+
             var bus = c.createGain();
             bus.gain.setValueAtTime(0.0001, now);
             bus.gain.exponentialRampToValueAtTime(0.055, now + 3.5);
@@ -555,19 +1280,126 @@
             }
         }
 
-        /* ---- короткий сигнал «доступа» для консоли ---- */
-        function beep(freq, peak, dur) {
+        /* ---- «эхо в трубке»: короткий тихий шум, повтор — свой, не шинный.
+           Через общую эхо-шину он тянулся бы хвостом и гудел. ---- */
+        function echo(strength) {
             if (!on) return;
             var c = ensure();
             if (!c) return;
-            tone(freq || 880, c.currentTime, dur || 0.12, 'square', peak || 0.03);
+            var now = c.currentTime;
+            var v = strength == null ? 1 : strength;
+
+            var src = noise(0.28, 'pow', 1.4);
+            var lp = c.createBiquadFilter();
+            lp.type = 'lowpass';
+            lp.frequency.setValueAtTime(900, now);
+            lp.frequency.exponentialRampToValueAtTime(180, now + 0.28);
+
+            var g = c.createGain();
+            g.gain.setValueAtTime(0.0001, now);
+            g.gain.exponentialRampToValueAtTime(0.03 * v, now + 0.04);
+            g.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+
+            src.connect(lp).connect(g);
+            g.connect(master);
+            src.start(now);
+
+            // короткий повтор через 120 мс — тихий и глухой
+            var tail = noise(0.18, 'pow', 1.6);
+            var tl = c.createBiquadFilter();
+            tl.type = 'lowpass';
+            tl.frequency.value = 420;
+
+            var tg = c.createGain();
+            tg.gain.value = 0.012 * v;
+
+            tail.connect(tl).connect(tg).connect(master);
+            tail.start(now + 0.12);
+        }
+
+        /* ---- звонок телефона: два «дзынь» старого аппарата ---- */
+        function ring(vol) {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+            var now = c.currentTime;
+            var v = vol == null ? 1 : vol;
+
+            [0, 0.46].forEach(function (off) {
+                var t = now + off;
+                var g = c.createGain();
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(0.06 * v, t + 0.02);
+                g.gain.setValueAtTime(0.06 * v, t + 0.28);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + 0.38);
+                g.connect(master);
+
+                [440, 480].forEach(function (f) {
+                    var osc = c.createOscillator();
+                    osc.type = 'triangle';
+                    osc.frequency.value = f;
+                    osc.connect(g);
+                    osc.start(t);
+                    osc.stop(t + 0.4);
+                });
+
+                // дребезг трубки
+                var lfo = c.createOscillator();
+                var lg = c.createGain();
+                lfo.type = 'square';
+                lfo.frequency.value = 24;
+                lg.gain.value = 0.022 * v;
+                lfo.connect(lg).connect(g.gain);
+                lfo.start(t);
+                lfo.stop(t + 0.4);
+            });
+        }
+
+        /* ---- «ту дум»: глухой стук по корпусу телефона ---- */
+        function phone(vol) {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+            var now = c.currentTime;
+            var v = vol == null ? 1 : vol;
+
+            [[110, 55], [150, 70]].forEach(function (pair, i) {
+                var t = now + i * 0.13;
+
+                var osc = c.createOscillator();
+                var g = c.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(pair[0], t);
+                osc.frequency.exponentialRampToValueAtTime(pair[1], t + 0.16);
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(0.16 * v, t + 0.012);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+                osc.connect(g).connect(master);
+                osc.start(t);
+                osc.stop(t + 0.24);
+
+                // щелчок корпуса
+                var src = noise(0.03, 'pow', 4);
+                var bp = c.createBiquadFilter();
+                bp.type = 'bandpass';
+                bp.frequency.value = 1700;
+                bp.Q.value = 1.2;
+                var ng = c.createGain();
+                ng.gain.value = 0.05 * v;
+                src.connect(bp).connect(ng).connect(master);
+                src.start(t);
+            });
         }
 
         return {
             isOn: isOn, setOn: setOn, start: start,
             click: click, hover: hover, crackle: crackle, air: air, type: type, key: key,
             flip: flip, orb: orb, download: download, fanfare: fanfare,
-            theme: theme, beep: beep
+            ring: ring, phone: phone, theme: theme, beep: beep, echo: echo,
+            dark: dark, doorbell: doorbell, fan: fan, blip: blip,
+            ambient: ambient, mystery: mystery,
+            rarity: rarityHit, creak: creak, staticNoise: staticNoise, rumble: rumble,
+            whisperSound: whisperSound, steps: steps, knock: knock, boss: boss, think: think
         };
     })();
 
@@ -666,6 +1498,9 @@
         if (id === 'onepiece') dance('🏴‍☠️');
         if (id === 'pastvoice') whisper();
 
+        // Облако: если пользователь вошёл, награда уходит и в Supabase
+        if (cloud) cloud.push(id, achieved[id]);
+
         document.dispatchEvent(new CustomEvent('orakul:unlock', { detail: { id: id, def: def } }));
         return true;
     }
@@ -677,10 +1512,463 @@
             localStorage.removeItem(K.logo);
             localStorage.removeItem(K.clicks);
             localStorage.removeItem(K.time);
+            // сюжет, доступ и статистика звонков тоже обнуляются
+            localStorage.removeItem(K.bossCall);
+            localStorage.removeItem(K.bossChoice);
+            localStorage.removeItem(K.bossAsked);
+            localStorage.removeItem(K.admin);
+            localStorage.removeItem(K.stats);
+            localStorage.removeItem(K.phone);
+            localStorage.removeItem(K.room);
         } catch (e) {}
         achieved = {};
+        mana.reset();
+        // Сброс прогресса убирает награды и сюжет из облака
+        if (cloud) { cloud.wipe(); cloud.clearPlot(); }
         document.dispatchEvent(new CustomEvent('orakul:sync', { detail: { reason: 'reset' } }));
     }
+
+    /* ================= ОБЛАКО: SUPABASE ================= */
+    /* Ачивки живут в двух местах: localStorage (работает без входа) и
+       таблица achievements в Supabase (после входа). При входе облако и
+       локальные данные объединяются — ничего не теряется. */
+    var CLOUD = {
+        url: 'https://pwipcizehwvekdqczdqb.supabase.co',
+        key: 'sb_publishable_h-mU0vammjvWGZ0ecYj4Bg_65FrGqsW',
+        sdk: 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js',
+        table: 'achievements'
+    };
+
+    var cloud = (function () {
+        var client = null;
+        var sdkPromise = null;
+        var bootPromise = null;
+        var session = null;
+        var listeners = [];
+        var lastError = '';
+
+        /* Supabase JS грузим с CDN по требованию: страницы без сети
+           работают как раньше, просто без облака. */
+        function loadSdk() {
+            if (sdkPromise) return sdkPromise;
+
+            sdkPromise = new Promise(function (resolve) {
+                if (window.supabase && window.supabase.createClient) {
+                    resolve(window.supabase);
+                    return;
+                }
+
+                var s = document.createElement('script');
+                s.src = CLOUD.sdk;
+                s.async = true;
+                s.onload = function () { resolve(window.supabase || null); };
+                s.onerror = function () {
+                    lastError = 'не удалось загрузить Supabase';
+                    resolve(null);
+                };
+                document.head.appendChild(s);
+            });
+
+            return sdkPromise;
+        }
+
+        function connect() {
+            return loadSdk().then(function (lib) {
+                if (!lib || !lib.createClient) return null;
+
+                if (!client) {
+                    client = lib.createClient(CLOUD.url, CLOUD.key, {
+                        auth: { persistSession: true, autoRefreshToken: true }
+                    });
+
+                    client.auth.onAuthStateChange(function (event, next) {
+                        session = next || null;
+                        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') pullAndMerge();
+                        if (event === 'SIGNED_OUT') notify();
+                    });
+                }
+
+                return client;
+            });
+        }
+
+        function user() {
+            return (session && session.user) ? session.user : null;
+        }
+
+        function notify() {
+            listeners.forEach(function (fn) {
+                try { fn(user()); } catch (e) {}
+            });
+        }
+
+        function signIn(email, password) {
+            return connect().then(function (c) {
+                if (!c) return { error: { message: 'нет связи с Supabase' } };
+
+                return c.auth.signInWithPassword({ email: email, password: password })
+                    .then(function (res) {
+                        if (res.error) { lastError = res.error.message; return res; }
+                        session = (res.data && res.data.session) || null;
+                        return pullAndMerge().then(function () {
+                            if (session) unlock('login');   // 🔑 Аутентификация
+                            return loadPlot();
+                        }).then(function () { return res; });
+                    });
+            });
+        }
+
+        function signUp(email, password) {
+            return connect().then(function (c) {
+                if (!c) return { error: { message: 'нет связи с Supabase' } };
+
+                return c.auth.signUp({ email: email, password: password })
+                    .then(function (res) {
+                        if (res.error) { lastError = res.error.message; return res; }
+
+                        // Если в проекте включено подтверждение почты,
+                        // сессии ещё нет — игрок подтвердит адрес по письму.
+                        if (res.data && res.data.session) {
+                            session = res.data.session;
+                            return pullAndMerge().then(function () {
+                                unlock('login');   // 🔑 Аутентификация
+                                return loadPlot();
+                            }).then(function () { return res; });
+                        }
+                        return res;
+                    });
+            });
+        }
+
+        function signOut() {
+            return connect().then(function (c) {
+                if (!c) return;
+                return c.auth.signOut().then(function () {
+                    session = null;
+                    notify();
+                });
+            });
+        }
+
+        /* Читаем награды пользователя: id → время и отметки «мана собрана» */
+        function pull() {
+            var u = user();
+            if (!u) return Promise.resolve({ map: {}, claimed: [] });
+
+            return connect().then(function (c) {
+                if (!c) return { map: {}, claimed: [] };
+
+                return c.from(CLOUD.table)
+                    .select('*')
+                    .eq('user_id', u.id)
+                    .then(function (res) {
+                        if (res.error) {
+                            lastError = res.error.message;
+                            return { map: {}, claimed: [] };
+                        }
+
+                        var map = {};
+                        var claimed = [];
+                        (res.data || []).forEach(function (row) {
+                            if (!row || !row.achievement_id) return;
+                            var t = Date.parse(row.unlocked_at);
+                            map[row.achievement_id] = isFinite(t) ? t : Date.now();
+                            if (row.mana_claimed) claimed.push(row.achievement_id);
+                        });
+                        return { map: map, claimed: claimed };
+                    });
+            });
+        }
+
+        /* Пишем одну награду: и при первом получении, и при слиянии */
+        function push(id, ts) {
+            var u = user();
+            if (!u) return Promise.resolve(false);
+
+            return connect().then(function (c) {
+                if (!c) return false;
+
+                return c.from(CLOUD.table).upsert({
+                    user_id: u.id,
+                    achievement_id: id,
+                    unlocked_at: new Date(ts || Date.now()).toISOString()
+                }, { onConflict: 'user_id,achievement_id' }).then(function (res) {
+                    if (res.error) { lastError = res.error.message; return false; }
+                    return true;
+                });
+            });
+        }
+
+        /* Слияние: чего нет локально — берём из облака, чего нет в
+           облаке — досылаем туда. Возвращает список для отправки. */
+        function merge(remote) {
+            var changed = false;
+            var missing = [];
+
+            Object.keys(remote).forEach(function (id) {
+                if (!byId[id] || achieved[id]) return;
+                achieved[id] = remote[id];
+                changed = true;
+            });
+
+            Object.keys(achieved).forEach(function (id) {
+                if (byId[id] && !(id in remote)) missing.push([id, achieved[id]]);
+            });
+
+            if (changed) {
+                set(K.ach, achieved);
+                document.dispatchEvent(new CustomEvent('orakul:sync', { detail: { reason: 'cloud' } }));
+            }
+
+            return missing;
+        }
+
+        function pullAndMerge() {
+            return pull().then(function (remote) {
+                var missing = merge(remote.map);
+
+                // Что уже собрано на другом устройстве — не мерцает заново
+                remote.claimed.forEach(function (id) { mana.markClaimed(id); });
+
+                return Promise.all(missing.map(function (pair) {
+                    return push(pair[0], pair[1]);
+                })).then(function () {
+                    return pullMana();
+                }).then(function () {
+                    notify();
+                    return missing.length;
+                });
+            }).catch(function (e) {
+                lastError = String((e && e.message) || e);
+                return 0;
+            });
+        }
+
+        /* Полный сброс прогресса стирает и облачные записи */
+        function wipe() {
+            var u = user();
+            if (!u) return Promise.resolve(false);
+
+            return connect().then(function (c) {
+                if (!c) return false;
+
+                return c.from(CLOUD.table).delete().eq('user_id', u.id)
+                    .then(function (res) {
+                        if (res.error) { lastError = res.error.message; return false; }
+                        return true;
+                    });
+            });
+        }
+
+        /* ================= МАНА ================= */
+        /* Баланс живёт в profiles.mana. Локальный считается источником,
+           пока игрок не вошёл; после входа сверяем и берём большее. */
+        function setMana(value) {
+            var u = user();
+            if (!u) return Promise.resolve(false);
+
+            return connect().then(function (c) {
+                if (!c) return false;
+
+                return c.from('profiles').upsert({
+                    user_id: u.id,
+                    mana: Math.max(0, Math.round(Number(value) || 0))
+                }, { onConflict: 'user_id' }).then(function (res) {
+                    if (res.error) { lastError = res.error.message; return false; }
+                    return true;
+                });
+            });
+        }
+
+        function pullMana() {
+            var u = user();
+            if (!u) return Promise.resolve(0);
+
+            return connect().then(function (c) {
+                if (!c) return 0;
+
+                return c.from('profiles').select('mana').eq('user_id', u.id).maybeSingle()
+                    .then(function (res) {
+                        if (res.error) { lastError = res.error.message; return 0; }
+
+                        var remote = (res.data && typeof res.data.mana === 'number') ? res.data.mana : 0;
+                        var local = mana.balance();
+
+                        if (remote > local) { mana.setBalance(remote); return remote; }
+                        if (local > remote) setMana(local);
+                        return local;
+                    });
+            });
+        }
+
+        /* Собрали ману за награду: отметка в облаке + новый баланс */
+        function claimMana(id, balance) {
+            var u = user();
+            if (!u) return;
+
+            connect().then(function (c) {
+                if (!c) return;
+
+                c.from(CLOUD.table)
+                    .update({ mana_claimed: true })
+                    .eq('user_id', u.id)
+                    .eq('achievement_id', id)
+                    .then(function () {});   // колонки может не быть — не страшно
+
+                setMana(balance);
+            });
+        }
+
+        /* ================= СЮЖЕТ (plot) ================= */
+        function plotRow() {
+            return {
+                boss_call: get('boss.call', false) === true,
+                boss_choice: get('boss.choice', null),
+                boss_asked: get('boss.asked45', false) === true,
+                phone_state: get('phone.state', null),
+                room_state: get('room.state', null)
+            };
+        }
+
+        function writeKey(key, value) {
+            try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+        }
+
+        function savePlot() {
+            var u = user();
+            if (!u) return Promise.resolve(false);
+
+            var row = plotRow();
+            row.user_id = u.id;
+
+            return connect().then(function (c) {
+                if (!c) return false;
+
+                return c.from('plot').upsert(row, { onConflict: 'user_id' })
+                    .then(function (res) {
+                        if (res.error) { lastError = res.error.message; return false; }
+                        return true;
+                    });
+            });
+        }
+
+        /* Загрузка сюжета при входе: облако главнее локального */
+        function loadPlot() {
+            var u = user();
+            if (!u) return Promise.resolve(false);
+
+            return connect().then(function (c) {
+                if (!c) return false;
+
+                return c.from('plot').select('*').eq('user_id', u.id).maybeSingle()
+                    .then(function (res) {
+                        if (res.error) { lastError = res.error.message; return false; }
+
+                        var row = res.data;
+                        var local = plotRow();
+                        var hasLocal = !!(local.boss_call || local.boss_choice ||
+                                          local.phone_state || local.room_state);
+
+                        if (!row) {
+                            if (hasLocal) savePlot();   // новый аккаунт — заливаем своё
+                            return false;
+                        }
+
+                        var hasCloud = !!(row.boss_call || row.boss_choice ||
+                                          row.phone_state || row.room_state);
+                        if (!hasCloud) {
+                            if (hasLocal) savePlot();
+                            return false;
+                        }
+
+                        writeKey('boss.call', !!row.boss_call);
+                        writeKey('boss.choice', row.boss_choice || null);
+                        writeKey('boss.asked45', !!row.boss_asked);
+                        if (row.phone_state) writeKey('phone.state', row.phone_state);
+                        if (row.room_state) writeKey('room.state', row.room_state);
+
+                        document.dispatchEvent(new CustomEvent('orakul:sync', {
+                            detail: { reason: 'cloud' }
+                        }));
+                        return true;
+                    });
+            });
+        }
+
+        function clearPlot() {
+            var u = user();
+            if (!u) return Promise.resolve(false);
+
+            return connect().then(function (c) {
+                if (!c) return false;
+
+                return c.from('plot').delete().eq('user_id', u.id)
+                    .then(function (res) { return !res.error; });
+            });
+        }
+
+        /* Любое изменение сюжета — отложенная запись в облако */
+        var plotTimer = null;
+
+        function plotDirty() {
+            if (!user()) return;
+            if (plotTimer) clearTimeout(plotTimer);
+            plotTimer = setTimeout(function () {
+                plotTimer = null;
+                savePlot();
+            }, 900);
+        }
+
+        /* Вызывается один раз при загрузке страницы */
+        function boot() {
+            if (bootPromise) return bootPromise;
+
+            bootPromise = connect().then(function (c) {
+                if (!c) { notify(); return null; }
+
+                return c.auth.getSession().then(function (res) {
+                    session = (res && res.data && res.data.session) || null;
+                    notify();
+
+                    if (!session) return null;
+
+                    return pullAndMerge().then(function () {
+                        unlock('login');   // 🔑 сессия восстановлена — вход уже был
+                        return loadPlot();
+                    });
+                });
+            }).catch(function (e) {
+                lastError = String((e && e.message) || e);
+                return null;
+            });
+
+            return bootPromise;
+        }
+
+        return {
+            config: CLOUD,
+            boot: boot,
+            connect: connect,
+            user: user,
+            signIn: signIn,
+            signUp: signUp,
+            signOut: signOut,
+            sync: pullAndMerge,
+            push: push,
+            wipe: wipe,
+            setMana: setMana,
+            pullMana: pullMana,
+            claimMana: claimMana,
+            savePlot: savePlot,
+            loadPlot: loadPlot,
+            clearPlot: clearPlot,
+            plotDirty: plotDirty,
+            onChange: function (fn) {
+                if (typeof fn === 'function') listeners.push(fn);
+            },
+            error: function () { return lastError; }
+        };
+    })();
 
     /* ================= ТЕМА ================= */
     var theme = (function () {
@@ -793,6 +2081,8 @@
     }
 
     /* ================= КАСТОМНЫЙ КУРСОР ================= */
+    var cursorFreeze = function () {};   // заполняется в initCursor
+
     function initCursor() {
         if (!finePointer || reduceMotion) return;
 
@@ -822,7 +2112,18 @@
         var scale = 1;
         var scaleTarget = 1;
         var ticking = false;
+        var frozen = false;
         var ROT = -15;
+
+        /* Хоррор-эффект консоли: курсор на секунду замирает и бледнеет */
+        cursorFreeze = function (ms) {
+            frozen = true;
+            orb.classList.add('is-frozen');
+            setTimeout(function () {
+                frozen = false;
+                orb.classList.remove('is-frozen');
+            }, ms || 1000);
+        };
 
         function loop() {
             ticking = false;
@@ -846,6 +2147,7 @@
 
         window.addEventListener('pointermove', function (e) {
             if (e.pointerType === 'touch') return;
+            if (frozen) return;
             target.x = e.clientX;
             target.y = e.clientY;
             orb.classList.add('is-on');
@@ -988,13 +2290,13 @@
     })();
 
     /* ================= ВЗРЫВ ЧАСТИЦ ================= */
-    function burst(el, amount) {
+    function burst(el, amount, kind) {
         if (!el || reduceMotion) return;
         var n = amount || 14;
         for (var i = 0; i < n; i++) {
             (function (i) {
                 var spark = document.createElement('span');
-                spark.className = 'burst-spark';
+                spark.className = 'burst-spark' + (kind ? ' is-' + kind : '');
                 var angle = (Math.PI * 2 * i) / n + Math.random() * 0.5;
                 var dist = 55 + Math.random() * 70;
                 spark.style.setProperty('--dx', (Math.cos(angle) * dist).toFixed(0) + 'px');
@@ -1199,12 +2501,97 @@
         }, 5000);
     }
 
+    /* ================= КНОПКА «ВОЙТИ» В ШАПКЕ ================= */
+    /* Кнопка есть в разметке каждой страницы (#authLink). Пока гость —
+       «Войти», после входа — имя из почты. Ведёт на login.html. */
+    function initAuthLink() {
+        var link = document.getElementById('authLink');
+        if (!link) return;
+
+        function paint(u) {
+            if (u && u.email) {
+                link.textContent = u.email.split('@')[0];
+                link.classList.add('is-in');
+                link.setAttribute('title', u.email);
+                link.setAttribute('aria-label', 'Профиль: ' + u.email);
+            } else {
+                link.textContent = 'Войти';
+                link.classList.remove('is-in');
+                link.removeAttribute('title');
+                link.setAttribute('aria-label', 'Войти или зарегистрироваться');
+            }
+        }
+
+        paint(cloud.user());
+        cloud.onChange(paint);
+    }
+
+    /* ================= МАНА В ИНТЕРФЕЙСЕ ================= */
+    /* Элементы [data-mana-value] — счётчик, [data-mana] — сама пилюля.
+       Если есть несобранная мана, пилюля мягко пульсирует. */
+    function initMana() {
+        var values = document.querySelectorAll('[data-mana-value]');
+        var pills = document.querySelectorAll('[data-mana]');
+        if (!values.length && !pills.length) return;
+
+        // Значок «✨» у ссылки на достижения и во вкладке браузера
+        var icon = document.querySelector('link[rel="icon"]');
+        var iconHref = icon ? icon.getAttribute('href') : '';
+        var sparkIcon = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' " +
+                        "viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>";
+
+        var badges = [];
+        Array.prototype.forEach.call(
+            document.querySelectorAll('a[href$="achievements.html"]'),
+            function (a) {
+                var b = document.createElement('span');
+                b.className = 'nav-mana';
+                b.setAttribute('aria-hidden', 'true');
+                b.textContent = '✨';
+                b.hidden = true;
+                a.appendChild(b);
+                badges.push(b);
+            }
+        );
+
+        function paint() {
+            var v = mana.balance();
+            var p = mana.pending();
+
+            Array.prototype.forEach.call(values, function (el) { el.textContent = v; });
+            Array.prototype.forEach.call(pills, function (el) {
+                el.classList.toggle('is-pending', p > 0);
+                el.setAttribute('title', p > 0
+                    ? 'Мана: ' + v + ' · не собрано ' + p
+                    : 'Мана: ' + v);
+            });
+            Array.prototype.forEach.call(badges, function (b) { b.hidden = p <= 0; });
+
+            document.documentElement.classList.toggle('has-pending-mana', p > 0);
+
+            if (icon) {
+                var want = p > 0 ? sparkIcon : iconHref;
+                if (icon.getAttribute('href') !== want) icon.setAttribute('href', want);
+            }
+        }
+
+        paint();
+        document.addEventListener('orakul:mana', paint);
+        document.addEventListener('orakul:unlock', paint);
+        document.addEventListener('orakul:sync', paint);
+    }
+
     /* ================= ИНИЦИАЛИЗАЦИЯ ================= */
     function init() {
         // Синхронизация между вкладками: награда, полученная в одной,
-        // сразу видна в другой
+        // сразу видна в другой. Сюжет и доступ — тоже.
+        var syncKeys = {};
+        [K.ach, K.bossCall, K.bossChoice, K.bossAsked, K.admin, K.stats].forEach(function (key) {
+            syncKeys[key] = 1;
+        });
+
         window.addEventListener('storage', function (e) {
-            if (e.key && e.key !== K.ach) return;
+            if (e.key && !syncKeys[e.key]) return;
             var next = get(K.ach, {});
             achieved = (next && typeof next === 'object' && !Array.isArray(next)) ? next : {};
             document.dispatchEvent(new CustomEvent('orakul:sync', { detail: { reason: 'storage' } }));
@@ -1219,6 +2606,9 @@
         scroll.init();
         tilt.refresh();
         watchActivity();
+        initAuthLink();
+        initMana();
+        cloud.boot();
     }
 
     if (document.readyState === 'loading') {
@@ -1245,6 +2635,9 @@
         scroll: scroll,
         tilt: tilt,
         store: { get: get, set: set, keys: K },
+        cloud: cloud,
+        mana: mana,
+        cursor: { freeze: function (ms) { cursorFreeze(ms); } },
         reduceMotion: reduceMotion,
         finePointer: finePointer
     };

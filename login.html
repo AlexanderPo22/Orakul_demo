@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f0c1b">
+    <meta name="description" content="Вход в Оракул — ачивки сохраняются в облаке и доступны на любом устройстве.">
+    <title>Вход — Оракул</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔮</text></svg>">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        /* ===== Шапка ===== */
+        .auth-top {
+            position: relative;
+            z-index: 3;
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: var(--text-main);
+            text-decoration: none;
+        }
+
+        .logo .orb {
+            font-size: 1.35rem;
+            filter: drop-shadow(0 0 12px var(--glow));
+        }
+
+        /* ===== Страница ===== */
+        .auth-page {
+            position: relative;
+            z-index: 2;
+            min-height: calc(100vh - 190px);
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 24px 20px 60px;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 440px;
+            padding: 30px 28px 26px;
+            border-radius: var(--radius);
+            background: var(--card-bg);
+            border: 1px solid var(--line);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35), 0 0 60px var(--glow);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+
+        .kicker {
+            display: inline-block;
+            font-size: 0.72rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--accent-2);
+            margin-bottom: 8px;
+        }
+
+        .auth-head h1 {
+            font-size: 1.6rem;
+            line-height: 1.25;
+            margin-bottom: 8px;
+        }
+
+        .auth-head p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 22px;
+        }
+
+        /* ===== Вкладки ===== */
+        .auth-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 5px;
+            margin-bottom: 20px;
+            border-radius: 999px;
+            background: rgba(138, 43, 226, 0.1);
+            border: 1px solid var(--line);
+        }
+
+        .auth-tab {
+            flex: 1 1 0;
+            padding: 9px 12px;
+            border: 0;
+            border-radius: 999px;
+            background: transparent;
+            color: var(--text-muted);
+            font: inherit;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.25s ease, color 0.25s ease;
+        }
+
+        .auth-tab:hover { color: var(--text-main); }
+
+        .auth-tab.is-active {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 18px var(--glow);
+        }
+
+        .auth-tab:focus-visible,
+        .auth-submit:focus-visible,
+        .auth-actions .btn:focus-visible,
+        .auth-switch:focus-visible {
+            outline: 2px solid var(--accent-2);
+            outline-offset: 3px;
+        }
+
+        /* ===== Поля ===== */
+        .auth-field {
+            display: block;
+            margin-bottom: 14px;
+        }
+
+        .auth-field span {
+            display: block;
+            font-size: 0.78rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .auth-field input {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: rgba(0, 0, 0, 0.22);
+            color: var(--text-main);
+            font: inherit;
+            font-size: 0.95rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .auth-field input::placeholder { color: var(--text-muted); opacity: 0.7; }
+
+        .auth-field input:focus {
+            outline: none;
+            border-color: var(--accent-2);
+            box-shadow: 0 0 0 3px rgba(138, 43, 226, 0.18);
+        }
+
+        html[data-theme="light"] .auth-field input {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        /* ===== Сообщение ===== */
+        .auth-msg {
+            min-height: 20px;
+            margin: 4px 0 12px;
+            font-size: 0.85rem;
+            line-height: 1.45;
+            color: var(--text-muted);
+        }
+
+        .auth-msg.is-bad { color: #ff7b8a; }
+        .auth-msg.is-ok { color: #6ee7a8; }
+
+        /* ===== Кнопки ===== */
+        .auth-submit,
+        .auth-actions .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+            color: #fff;
+            font: inherit;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 0 22px var(--glow);
+            transition: transform 0.18s ease, box-shadow 0.25s ease, opacity 0.2s ease;
+        }
+
+        .auth-submit:hover,
+        .auth-actions .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 30px var(--glow);
+        }
+
+        .auth-submit:disabled {
+            opacity: 0.55;
+            cursor: default;
+            transform: none;
+        }
+
+        .auth-actions .btn-outline {
+            background: transparent;
+            border-color: var(--line);
+            color: var(--text-main);
+            box-shadow: none;
+        }
+
+        .auth-actions .btn-outline:hover {
+            border-color: var(--accent-2);
+            box-shadow: 0 0 20px var(--glow);
+        }
+
+        /* ===== Переключение режима ===== */
+        .auth-note {
+            margin-top: 16px;
+            text-align: center;
+            font-size: 0.84rem;
+            color: var(--text-muted);
+        }
+
+        .auth-switch {
+            padding: 0;
+            border: 0;
+            background: none;
+            color: var(--accent-2);
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .auth-switch:hover { color: var(--text-main); }
+
+        /* ===== Профиль ===== */
+        .auth-profile { text-align: center; }
+
+        .auth-profile-mail {
+            font-size: 1.05rem;
+            font-weight: 700;
+            word-break: break-all;
+            margin-bottom: 6px;
+        }
+
+        .auth-profile-count {
+            font-size: 0.86rem;
+            color: var(--text-muted);
+            margin-bottom: 22px;
+        }
+
+        .auth-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .auth-hint {
+            margin-top: 20px;
+            font-size: 0.76rem;
+            line-height: 1.5;
+            color: var(--text-muted);
+            opacity: 0.85;
+            text-align: center;
+        }
+
+        footer {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 22px 20px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--line);
+        }
+
+        @media (max-width: 520px) {
+            .auth-card { padding: 24px 20px 22px; }
+            .auth-head h1 { font-size: 1.35rem; }
+        }
+    </style>
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('orakul.theme');
+                if (saved && saved.indexOf('light') !== -1) {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                }
+            } catch (e) {}
+        })();
+    </script>
+</head>
+<body>
+
+    <header class="auth-top">
+        <a class="logo" href="index.html">
+            <span class="orb" aria-hidden="true">🔮</span>
+            <span>Оракул</span>
+        </a>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Включить светлую тему" aria-pressed="false">
+            <span class="icon" id="themeIcon" aria-hidden="true">🌙</span>
+        </button>
+    </header>
+
+    <main class="auth-page">
+        <section class="auth-card">
+            <div class="auth-head">
+                <span class="kicker">Аккаунт</span>
+                <h1>Вход в Оракул</h1>
+                <p>Достижения хранятся в облаке и доступны на любом устройстве.
+                   Без входа прогресс остаётся в этом браузере.</p>
+            </div>
+
+            <div class="auth-tabs" id="authTabs" role="tablist" aria-label="Вход или регистрация">
+                <button class="auth-tab is-active" id="tabIn" type="button" role="tab"
+                        aria-selected="true" aria-controls="authForm">Вход</button>
+                <button class="auth-tab" id="tabUp" type="button" role="tab"
+                        aria-selected="false" aria-controls="authForm">Регистрация</button>
+            </div>
+
+            <form class="auth-form" id="authForm" novalidate>
+                <label class="auth-field" for="authEmail">
+                    <span>Email</span>
+                    <input id="authEmail" name="email" type="email" autocomplete="email"
+                           inputmode="email" placeholder="you@example.com" required>
+                </label>
+
+                <label class="auth-field" for="authPass">
+                    <span>Пароль</span>
+                    <input id="authPass" name="password" type="password" autocomplete="current-password"
+                           placeholder="не короче 6 символов" minlength="6" required>
+                </label>
+
+                <p class="auth-msg" id="authMsg" role="status" aria-live="polite"></p>
+
+                <button class="auth-submit" id="authSubmit" type="submit">Войти</button>
+
+                <p class="auth-note">
+                    <span id="authNoteText">Нет аккаунта?</span>
+                    <button class="auth-switch" id="authSwitch" type="button">Создать</button>
+                </p>
+            </form>
+
+            <div class="auth-profile" id="authProfile" hidden>
+                <p class="auth-profile-mail" id="authMail"></p>
+                <p class="auth-profile-count" id="authCount"></p>
+                <div class="auth-actions">
+                    <a class="btn" href="index.html">На главную</a>
+                    <button class="btn btn-outline" id="authOut" type="button">Выйти</button>
+                </div>
+            </div>
+
+            <p class="auth-hint">Без входа ачивки живут в localStorage. При входе они
+               объединяются с облаком — прогресс не теряется.</p>
+        </section>
+    </main>
+
+    <footer>
+        <p>Оракул v3.7.0 «Mini App» · Сделано с 💜 для Fortnite</p>
+    </footer>
+
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            var O = window.Orakul;
+            var C = O.cloud;
+
+            var form = document.getElementById('authForm');
+            var tabs = document.getElementById('authTabs');
+            var email = document.getElementById('authEmail');
+            var pass = document.getElementById('authPass');
+            var msg = document.getElementById('authMsg');
+            var submit = document.getElementById('authSubmit');
+            var tabIn = document.getElementById('tabIn');
+            var tabUp = document.getElementById('tabUp');
+            var note = document.getElementById('authNoteText');
+            var switchBtn = document.getElementById('authSwitch');
+            var profile = document.getElementById('authProfile');
+            var mailEl = document.getElementById('authMail');
+            var countEl = document.getElementById('authCount');
+            var outBtn = document.getElementById('authOut');
+
+            var mode = 'in';     // in — вход, up — регистрация
+            var busy = false;
+
+            /* Куда вернуться после входа: ?next=achievements.html */
+            function nextUrl() {
+                var p = '';
+                try {
+                    p = new URLSearchParams(window.location.search).get('next') || '';
+                } catch (e) {}
+
+                if (p && !/^[a-z]+:/i.test(p) && p.indexOf('..') === -1 &&
+                    p.charAt(0) !== '/' && p.charAt(0) !== '\\') {
+                    return p;
+                }
+                return 'index.html';
+            }
+
+            function setMsg(text, kind) {
+                msg.textContent = text || '';
+                msg.className = 'auth-msg' + (kind ? ' is-' + kind : '');
+            }
+
+            /* Понятные тексты вместо английских ошибок Supabase */
+            function human(res) {
+                var m = (res && res.error && res.error.message) || 'что-то пошло не так';
+
+                if (/Invalid login credentials/i.test(m)) return 'Неверная почта или пароль.';
+                if (/Email not confirmed/i.test(m)) return 'Почта не подтверждена. Проверь письмо от Supabase.';
+                if (/User already registered/i.test(m)) return 'Такой аккаунт уже есть — попробуй войти.';
+                if (/Password should be at least/i.test(m)) return 'Пароль слишком короткий — минимум 6 символов.';
+                if (/Unable to validate email/i.test(m)) return 'Похоже, в почте опечатка.';
+                if (/rate limit|too many requests/i.test(m)) return 'Слишком много попыток. Подожди минуту.';
+                if (/Failed to fetch|NetworkError|Load failed/i.test(m)) return 'Нет связи с Supabase. Проверь интернет.';
+                if (/загрузить Supabase/i.test(m)) return 'Не удалось загрузить Supabase. Проверь интернет и обнови страницу.';
+
+                return m;
+            }
+
+            function setMode(next) {
+                mode = next === 'up' ? 'up' : 'in';
+                var isUp = mode === 'up';
+
+                tabIn.classList.toggle('is-active', !isUp);
+                tabUp.classList.toggle('is-active', isUp);
+                tabIn.setAttribute('aria-selected', String(!isUp));
+                tabUp.setAttribute('aria-selected', String(isUp));
+
+                submit.textContent = isUp ? 'Создать аккаунт' : 'Войти';
+                pass.setAttribute('autocomplete', isUp ? 'new-password' : 'current-password');
+
+                note.textContent = isUp ? 'Уже есть аккаунт?' : 'Нет аккаунта?';
+                switchBtn.textContent = isUp ? 'Войти' : 'Создать';
+
+                setMsg('');
+            }
+
+            function paintUser(u) {
+                var signed = !!(u && u.email);
+
+                profile.hidden = !signed;
+                form.hidden = signed;
+                tabs.hidden = signed;
+
+                if (!signed) return;
+
+                mailEl.textContent = u.email;
+                countEl.textContent = 'Наград: ' + O.count() + ' из ' + O.TOTAL +
+                                      ' · мана: ' + O.mana.balance() + ' ✨';
+            }
+
+            /* ===== Переключение вкладок ===== */
+            tabIn.addEventListener('click', function () { setMode('in'); });
+            tabUp.addEventListener('click', function () { setMode('up'); });
+            switchBtn.addEventListener('click', function () {
+                setMode(mode === 'up' ? 'in' : 'up');
+                email.focus();
+            });
+
+            /* ===== Отправка формы ===== */
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                if (busy) return;
+
+                var mail = (email.value || '').trim();
+                var pwd = pass.value || '';
+
+                if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) {
+                    setMsg('Введите корректный email.', 'bad');
+                    email.focus();
+                    return;
+                }
+
+                if (pwd.length < 6) {
+                    setMsg('Пароль не короче 6 символов.', 'bad');
+                    pass.focus();
+                    return;
+                }
+
+                busy = true;
+                submit.disabled = true;
+                setMsg(mode === 'up' ? 'Создаём аккаунт…' : 'Входим…');
+
+                var task = mode === 'up' ? C.signUp(mail, pwd) : C.signIn(mail, pwd);
+
+                task.then(function (res) {
+                    busy = false;
+                    submit.disabled = false;
+
+                    if (res && res.error) {
+                        setMsg(human(res), 'bad');
+                        return;
+                    }
+
+                    var u = C.user();
+
+                    // Регистрация с подтверждением почты: сессии ещё нет
+                    if (!u) {
+                        setMsg('Аккаунт создан. Проверь почту, подтверди адрес — и войди.', 'ok');
+                        setMode('in');
+                        return;
+                    }
+
+                    paintUser(u);
+                    setMsg('Готово! Перенаправляем…', 'ok');
+                    setTimeout(function () { window.location.href = nextUrl(); }, 700);
+                }).catch(function (err) {
+                    busy = false;
+                    submit.disabled = false;
+                    setMsg(human({ error: { message: String((err && err.message) || err) } }), 'bad');
+                });
+            });
+
+            /* ===== Выход ===== */
+            outBtn.addEventListener('click', function () {
+                outBtn.disabled = true;
+                C.signOut().then(function () {
+                    outBtn.disabled = false;
+                    paintUser(null);
+                    setMode('in');
+                    setMsg('Вы вышли. Прогресс остался в этом браузере.', 'ok');
+                });
+            });
+
+            /* ===== Старт ===== */
+            paintUser(C.user());
+            C.onChange(paintUser);
+
+            // Обновляем счётчик, когда облако догрузило награды
+            document.addEventListener('orakul:sync', function () {
+                var u = C.user();
+                if (u) paintUser(u);
+            });
+
+            C.boot().then(function () {
+                paintUser(C.user());
+
+                // Supabase не загрузился — честно говорим об этом
+                if (!C.user() && /Supabase/i.test(C.error() || '')) {
+                    setMsg(human({ error: { message: C.error() } }), 'bad');
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

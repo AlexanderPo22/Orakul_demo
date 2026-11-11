@@ -322,6 +322,211 @@ html[data-theme="light"] .theme-toggle {
     border-color: rgba(124, 58, 237, 0.28);
 }
 
+/* ===== Кнопка «Войти» / профиль в шапке ===== */
+.auth-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 42px;
+    max-width: 170px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(138, 43, 226, 0.38);
+    background: rgba(138, 43, 226, 0.14);
+    color: var(--text-main);
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 0 0 auto;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease,
+                background-color 0.25s ease, color 0.25s ease;
+}
+
+.auth-link:hover {
+    border-color: var(--accent-2);
+    background: rgba(138, 43, 226, 0.24);
+    box-shadow: 0 0 20px var(--glow);
+    color: #fff;
+}
+
+.auth-link:focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: 3px;
+}
+
+.auth-link.is-in {
+    border-color: var(--accent-2);
+    box-shadow: inset 0 0 0 1px rgba(199, 125, 255, 0.25);
+}
+
+.auth-link--fixed {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 900;
+    height: 40px;
+}
+
+html[data-theme="light"] .auth-link {
+    background: rgba(124, 58, 237, 0.1);
+    border-color: rgba(124, 58, 237, 0.28);
+}
+
+html[data-theme="light"] .auth-link:hover {
+    color: #2b2142;
+    background: rgba(124, 58, 237, 0.18);
+}
+
+@media (max-width: 640px) {
+    .auth-link {
+        height: 38px;
+        padding: 0 12px;
+        font-size: 0.82rem;
+        max-width: 116px;
+    }
+}
+
+/* ===== Мана ✨ ===== */
+.mana-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 42px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 209, 102, 0.35);
+    background: rgba(255, 209, 102, 0.1);
+    color: var(--text-main);
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    text-decoration: none;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+}
+
+.mana-pill:hover {
+    border-color: #ffd166;
+    background: rgba(255, 209, 102, 0.16);
+    box-shadow: 0 0 18px rgba(255, 209, 102, 0.35);
+    color: #fff;
+}
+
+.mana-pill:focus-visible {
+    outline: 2px solid #ffd166;
+    outline-offset: 3px;
+}
+
+.mana-pill .mana-ico {
+    font-size: 1rem;
+    line-height: 1;
+    filter: drop-shadow(0 0 8px rgba(255, 209, 102, 0.8));
+}
+
+.mana-pill--sm {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 0.85rem;
+}
+
+html[data-theme="light"] .mana-pill {
+    background: rgba(214, 158, 20, 0.12);
+    border-color: rgba(190, 140, 20, 0.35);
+    color: #4a3a12;
+}
+
+/* Есть несобранная мана — пилюля мягко дышит */
+.mana-pill.is-pending {
+    animation: manaPill 2.4s ease-in-out infinite;
+}
+
+@keyframes manaPill {
+    0%, 100% { box-shadow: 0 0 0 rgba(255, 209, 102, 0); }
+    50%      { box-shadow: 0 0 22px rgba(255, 209, 102, 0.55); }
+}
+
+@media (max-width: 640px) {
+    .mana-pill { height: 38px; padding: 0 11px; font-size: 0.82rem; }
+}
+
+/* Курсор замер (хоррор-эффект консоли) */
+.cursor-orb.is-frozen {
+    filter: grayscale(1) brightness(0.65) drop-shadow(0 0 10px rgba(255, 255, 255, 0.25));
+    opacity: 0.75;
+}
+
+/* Искры по редкости */
+.burst-spark.is-gold {
+    background: #ffd166;
+    box-shadow: 0 0 10px #ffd166, 0 0 22px rgba(255, 209, 102, 0.6);
+}
+
+.burst-spark.is-silver {
+    background: #cfe8ff;
+    box-shadow: 0 0 10px #cfe8ff, 0 0 22px rgba(180, 220, 255, 0.6);
+}
+
+/* ✨ у ссылки «Достижения», когда есть несобранная мана */
+.nav-mana {
+    margin-left: 5px;
+    font-size: 0.82em;
+    filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.9));
+    animation: manaPill 2s ease-in-out infinite;
+}
+
+/* Частицы маны, летящие от карточки к счётчику */
+.mana-spark {
+    position: fixed;
+    z-index: 1300;
+    font-size: 1rem;
+    line-height: 1;
+    pointer-events: none;
+    filter: drop-shadow(0 0 8px rgba(255, 209, 102, 0.9));
+    animation: sparkFly 0.95s cubic-bezier(0.3, 0, 0.7, 1) forwards;
+}
+
+@keyframes sparkFly {
+    0%   { transform: translate(0, 0) scale(0.8); opacity: 0; }
+    15%  { opacity: 1; }
+    55%  { transform: translate(calc(var(--dx) * 0.55), calc(var(--dy) * 0.55 - 40px)) scale(1.05); }
+    100% { transform: translate(var(--dx), var(--dy)) scale(0.4); opacity: 0.2; }
+}
+
+/* Сгусток энергии, вылетающий из карточки */
+.mana-blob {
+    position: fixed;
+    z-index: 1290;
+    width: 26px;
+    height: 26px;
+    margin: -13px 0 0 -13px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 236, 170, 0.95), rgba(255, 190, 60, 0.15) 70%);
+    box-shadow: 0 0 24px rgba(255, 209, 102, 0.9);
+    pointer-events: none;
+    animation: blobFly 0.75s cubic-bezier(0.4, 0, 0.8, 0.4) forwards;
+}
+
+@keyframes blobFly {
+    0%   { transform: translate(0, 0) scale(1); opacity: 0.95; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(0.35); opacity: 0.1; }
+}
+
+/* Счётчик подпрыгивает при сборе */
+.mana-pill.is-bump [data-mana-value] {
+    display: inline-block;
+    animation: manaBump 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+
+@keyframes manaBump {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.22); }
+    100% { transform: scale(1); }
+}
+
 /* ===== Кнопка звука ===== */
 .sound-toggle {
     position: fixed;
