@@ -4,7 +4,7 @@
 
    Наружу отдаётся один объект — window.Orakul:
      Orakul.LIST / Orakul.TOTAL          — каталог достижений
-     Orakul.has(id) / count() / unlock(id) / reset()
+     Orakul.has(id) / count() / unlock(id) / reset() / resetPlot()
      Orakul.Snd.click() / orb() / air() / ring() / phone() / hover() / flip() / fanfare() / theme() ...
        (клики по ссылкам/кнопкам/карточкам = orb потише, по пустому месту = air)
      Orakul.theme.apply(name, animate) / toggle() / name()
@@ -41,7 +41,9 @@
         /* комната: осмотр, щель за автоматом, взлом */
         room: 'room.state',
         /* мана: баланс и какие награды уже «собраны» */
-        mana: 'orakul.mana'
+        mana: 'orakul.mana',
+        /* рассудок консоли: 0–100, живёт отдельно от сюжета */
+        sanity: 'console.sanity'
     };
 
     /* Ключи сюжета: их изменения уходят в облако (таблица plot) */
@@ -124,7 +126,9 @@
         { id: 'anon',          icon: '❔', title: 'Кто ты?', rarity: 'silver',
           hint: 'Согласись помочь с поиском 45 — и с тобой свяжется аноним.' },
         { id: 'login',         icon: '🔑', title: 'Аутентификация', rarity: 'silver',
-          hint: 'Кто-то должен был это сделать.' }
+          hint: 'Кто-то должен был это сделать.' },
+        { id: 'remember',      icon: '🧠', title: 'Я помню', secret: true, rarity: 'gold', mana: 100,
+          hint: 'Разум можно разрушить. Но кто-то в консоли всё ещё помнит. Спроси у пустой строки.' }
     ];
 
     var TOTAL = LIST.length;
@@ -159,6 +163,8 @@
         }
 
         function value(def) {
+            /* У отдельной награды может быть своя цена в мане */
+            if (def && typeof def.mana === 'number' && isFinite(def.mana)) return def.mana;
             return MANA_VALUE[(def && def.rarity) || 'common'] || MANA_VALUE.common;
         }
 
@@ -1391,6 +1397,127 @@
             });
         }
 
+        /* ---- «разум разрушен»: глухой удар и шипение ---- */
+        function sanityBreak() {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+            var t = c.currentTime;
+
+            /* удар: низкая синусоида, уходящая в подвал */
+            var osc = c.createOscillator();
+            var og = c.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(96, t);
+            osc.frequency.exponentialRampToValueAtTime(26, t + 0.9);
+            og.gain.setValueAtTime(0.0001, t);
+            og.gain.exponentialRampToValueAtTime(0.24, t + 0.012);
+            og.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+            osc.connect(og).connect(master);
+            osc.start(t);
+            osc.stop(t + 1.45);
+
+            /* шипение: шум, уезжающий вверх по частоте */
+            var src = noise(1.8, 'pow', 1.1);
+            var hp = c.createBiquadFilter();
+            hp.type = 'highpass';
+            hp.frequency.setValueAtTime(1600, t);
+            hp.frequency.exponentialRampToValueAtTime(5600, t + 1.6);
+            var ng = c.createGain();
+            ng.gain.setValueAtTime(0.0001, t);
+            ng.gain.exponentialRampToValueAtTime(0.055, t + 0.05);
+            ng.gain.exponentialRampToValueAtTime(0.0001, t + 1.7);
+            src.connect(hp).connect(ng).connect(master);
+            src.start(t);
+
+            rumble();
+            staticNoise();
+        }
+
+        /* ---- сердцебиение: два глухих удара ---- */
+        function heartbeat(vol) {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+            var t0 = c.currentTime;
+            var v = vol == null ? 1 : vol;
+
+            [0, 0.26].forEach(function (off, i) {
+                var t = t0 + off;
+                var osc = c.createOscillator();
+                var g = c.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(i ? 52 : 64, t);
+                osc.frequency.exponentialRampToValueAtTime(i ? 34 : 42, t + 0.2);
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime((i ? 0.12 : 0.16) * v, t + 0.012);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+                osc.connect(g).connect(master);
+                osc.start(t);
+                osc.stop(t + 0.26);
+            });
+        }
+
+        /* ---- «стингер»: резкий низкий удар с шумом и скрежетом ---- */
+        function stinger() {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+            var t = c.currentTime;
+
+            [82, 96, 123].forEach(function (f, i) {
+                var osc = c.createOscillator();
+                var g = c.createGain();
+                var lp = c.createBiquadFilter();
+                osc.type = i === 2 ? 'square' : 'sawtooth';
+                osc.frequency.setValueAtTime(f, t);
+                osc.frequency.exponentialRampToValueAtTime(f * 0.55, t + 0.7);
+                lp.type = 'lowpass';
+                lp.frequency.value = 700;
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(0.07 / (i + 1), t + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+                osc.connect(lp).connect(g).connect(master);
+                osc.start(t);
+                osc.stop(t + 0.95);
+            });
+
+            var src = noise(0.9, 'pow', 1.3);
+            var bp = c.createBiquadFilter();
+            bp.type = 'bandpass';
+            bp.frequency.setValueAtTime(2400, t);
+            bp.frequency.exponentialRampToValueAtTime(400, t + 0.8);
+            bp.Q.value = 2;
+            var ng = c.createGain();
+            ng.gain.setValueAtTime(0.0001, t);
+            ng.gain.exponentialRampToValueAtTime(0.05, t + 0.01);
+            ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.85);
+            src.connect(bp).connect(ng).connect(master);
+            src.start(t);
+        }
+
+        /* ---- цифровой сбой: рваные короткие тоны ---- */
+        function glitchSound() {
+            if (!on) return;
+            var c = ensure();
+            if (!c) return;
+            var t0 = c.currentTime;
+
+            for (var i = 0; i < 14; i++) {
+                var t = t0 + i * 0.055 + Math.random() * 0.02;
+                var osc = c.createOscillator();
+                var g = c.createGain();
+                osc.type = i % 3 ? 'square' : 'sawtooth';
+                osc.frequency.setValueAtTime(220 + Math.random() * 2400, t);
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(0.018 + Math.random() * 0.02, t + 0.006);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
+                osc.connect(g).connect(master);
+                osc.start(t);
+                osc.stop(t + 0.05);
+            }
+        }
+
         return {
             isOn: isOn, setOn: setOn, start: start,
             click: click, hover: hover, crackle: crackle, air: air, type: type, key: key,
@@ -1399,7 +1526,8 @@
             dark: dark, doorbell: doorbell, fan: fan, blip: blip,
             ambient: ambient, mystery: mystery,
             rarity: rarityHit, creak: creak, staticNoise: staticNoise, rumble: rumble,
-            whisperSound: whisperSound, steps: steps, knock: knock, boss: boss, think: think
+            whisperSound: whisperSound, steps: steps, knock: knock, boss: boss, think: think,
+            sanityBreak: sanityBreak, heartbeat: heartbeat, stinger: stinger, glitchSound: glitchSound
         };
     })();
 
@@ -1520,12 +1648,30 @@
             localStorage.removeItem(K.stats);
             localStorage.removeItem(K.phone);
             localStorage.removeItem(K.room);
+            localStorage.removeItem(K.sanity);
         } catch (e) {}
         achieved = {};
         mana.reset();
         // Сброс прогресса убирает награды и сюжет из облака
         if (cloud) { cloud.wipe(); cloud.clearPlot(); }
         document.dispatchEvent(new CustomEvent('orakul:sync', { detail: { reason: 'reset' } }));
+    }
+
+    /* Сброс ТОЛЬКО сюжета: звонок, выбор, телефон и комната.
+       Награды, мана, доступ и статистика звонков остаются на месте.
+       Именно это вызывают команды консоли clear/reset и обнуление
+       сюжета при 0% рассудка. */
+    function resetPlot() {
+        try {
+            localStorage.removeItem(K.bossCall);
+            localStorage.removeItem(K.bossChoice);
+            localStorage.removeItem(K.bossAsked);
+            localStorage.removeItem(K.phone);
+            localStorage.removeItem(K.room);
+        } catch (e) {}
+        // Если игрок авторизован — стираем сюжет и в Supabase
+        if (cloud) cloud.clearPlot();
+        document.dispatchEvent(new CustomEvent('orakul:sync', { detail: { reason: 'plotreset' } }));
     }
 
     /* ================= ОБЛАКО: SUPABASE ================= */
@@ -1801,7 +1947,11 @@
             });
         }
 
-        /* Собрали ману за награду: отметка в облаке + новый баланс */
+        /* Собрали ману за награду: отметка в облаке + новый баланс.
+           upsert, а не update: «Я помню» начисляет ману сразу после
+           unlock, и строка награды может ещё не успеть создаться.
+           Иначе mana_claimed остался бы false и на другом устройстве
+           награда снова выглядела бы несобранной. */
         function claimMana(id, balance) {
             var u = user();
             if (!u) return;
@@ -1809,11 +1959,15 @@
             connect().then(function (c) {
                 if (!c) return;
 
-                c.from(CLOUD.table)
-                    .update({ mana_claimed: true })
-                    .eq('user_id', u.id)
-                    .eq('achievement_id', id)
-                    .then(function () {});   // колонки может не быть — не страшно
+                var ts = achieved[id];
+                if (typeof ts !== 'number' || !isFinite(ts)) ts = Date.now();
+
+                c.from(CLOUD.table).upsert({
+                    user_id: u.id,
+                    achievement_id: id,
+                    unlocked_at: new Date(ts).toISOString(),
+                    mana_claimed: true
+                }, { onConflict: 'user_id,achievement_id' }).then(function () {});
 
                 setMana(balance);
             });
@@ -1896,6 +2050,9 @@
         }
 
         function clearPlot() {
+            /* Отложенная запись не должна воскресить сюжет после сброса */
+            if (plotTimer) { clearTimeout(plotTimer); plotTimer = null; }
+
             var u = user();
             if (!u) return Promise.resolve(false);
 
@@ -2625,6 +2782,7 @@
         count: count,
         unlock: unlock,
         reset: reset,
+        resetPlot: resetPlot,
         toast: toast,
         dance: dance,
         whisper: whisper,

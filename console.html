@@ -410,6 +410,307 @@
             filter: drop-shadow(0 0 8px rgba(199, 125, 255, 0.5));
         }
 
+        /* ---- Рассудок на исходе ---- */
+        .sanity.is-critical .sanity-fill {
+            background: linear-gradient(180deg, #ff2b3d, #5c0a14);
+            animation: sanityPulse 0.9s ease-in-out infinite;
+        }
+
+        .sanity.is-critical .sanity-emoji { animation: sanityShake 0.5s steps(2) infinite; }
+        .sanity.is-broken { animation: sanityShake 0.4s steps(2) infinite; }
+
+        @keyframes sanityPulse {
+            0%, 100% { box-shadow: 0 0 14px rgba(255, 40, 60, 0.55); }
+            50%      { box-shadow: 0 0 30px rgba(255, 40, 60, 0.95); }
+        }
+
+        @keyframes sanityShake {
+            0%, 100% { transform: translate(0, 0); }
+            25%      { transform: translate(-1px, 1px); }
+            75%      { transform: translate(1px, -1px); }
+        }
+
+        /* Красная пелена по краям: чем ниже рассудок, тем гуще */
+        .sanity-veil {
+            position: fixed;
+            inset: 0;
+            z-index: 890;
+            pointer-events: none;
+            opacity: 0;
+            background: radial-gradient(circle at 50% 50%,
+                        transparent 38%, rgba(70, 0, 8, 0.45) 72%, rgba(40, 0, 4, 0.86) 100%);
+            transition: opacity 1.2s ease;
+            mix-blend-mode: multiply;
+        }
+
+        /* «+N%» рядом со шкалой */
+        .sanity-pop {
+            position: fixed;
+            right: 52px;
+            bottom: 150px;
+            z-index: 960;
+            font-family: var(--mono);
+            font-size: 0.82rem;
+            letter-spacing: 0.06em;
+            color: #9df3c8;
+            text-shadow: 0 0 14px rgba(80, 255, 170, 0.8);
+            pointer-events: none;
+            animation: sanityPop 1.6s ease forwards;
+        }
+
+        .sanity-pop.is-down {
+            color: #ff7b8a;
+            text-shadow: 0 0 14px rgba(255, 60, 80, 0.85);
+        }
+
+        @keyframes sanityPop {
+            0%   { opacity: 0; transform: translateY(8px) scale(0.9); }
+            18%  { opacity: 1; transform: translateY(0) scale(1.05); }
+            60%  { opacity: 0.95; }
+            100% { opacity: 0; transform: translateY(-26px) scale(1); }
+        }
+
+        /* ===== Обнуление сюжета: разум разрушен ===== */
+        .fx-sanity-break {
+            position: fixed;
+            inset: 0;
+            z-index: 1900;
+            overflow: hidden;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 50% 46%, rgba(255, 40, 50, 0.34), transparent 34%),
+                radial-gradient(circle at 50% 50%, rgba(90, 0, 8, 0.96), rgba(24, 0, 2, 0.99));
+            animation: sanityBreakIn 0.4s ease forwards;
+            transition: opacity 0.6s ease;
+        }
+
+        .fx-sanity-break.is-out { animation: none; opacity: 0; }
+
+        .fx-sanity-break::before {
+            content: "";
+            position: absolute;
+            inset: -20%;
+            background:
+                repeating-conic-gradient(from 0deg at 50% 50%,
+                    rgba(255, 60, 70, 0.16) 0deg 2deg, transparent 2deg 9deg);
+            animation: sanitySpin 9s linear infinite;
+            opacity: 0.7;
+        }
+
+        .fx-sanity-break::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 3px);
+            animation: noiseShift 0.1s steps(2) infinite;
+            mix-blend-mode: screen;
+            opacity: 0.5;
+        }
+
+        @keyframes sanityBreakIn {
+            from { opacity: 0; filter: brightness(2.4); }
+            to   { opacity: 1; filter: brightness(1); }
+        }
+
+        @keyframes sanitySpin { to { transform: rotate(360deg); } }
+
+        .fx-sanity-cracks {
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(115deg, transparent 48.8%, rgba(255, 90, 100, 0.55) 49.2%, transparent 49.6%),
+                linear-gradient(64deg, transparent 46.9%, rgba(255, 90, 100, 0.4) 47.3%, transparent 47.8%),
+                linear-gradient(152deg, transparent 62.5%, rgba(255, 120, 130, 0.32) 62.9%, transparent 63.4%),
+                linear-gradient(28deg, transparent 28.4%, rgba(255, 90, 100, 0.35) 28.8%, transparent 29.2%);
+            filter: blur(0.4px);
+            animation: crackPulse 0.45s steps(2) infinite;
+        }
+
+        @keyframes crackPulse {
+            0%, 100% { opacity: 0.65; }
+            50%      { opacity: 1; }
+        }
+
+        .fx-sanity-text {
+            position: absolute;
+            left: 50%;
+            top: 45%;
+            transform: translate(-50%, -50%);
+            font-family: var(--mono);
+            font-weight: 800;
+            font-size: clamp(1.5rem, 6vw, 3.6rem);
+            letter-spacing: 0.18em;
+            text-align: center;
+            color: #ff2b3d;
+            text-shadow:
+                0 0 18px rgba(255, 30, 50, 1),
+                0 0 60px rgba(255, 30, 50, 0.7);
+            animation: sanityTextIn 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.4) both,
+                       sanityTextFlicker 0.9s steps(2) 0.5s infinite;
+        }
+
+        .fx-sanity-sub {
+            position: absolute;
+            left: 50%;
+            top: 58%;
+            transform: translateX(-50%);
+            width: min(90vw, 640px);
+            text-align: center;
+            font-family: var(--mono);
+            font-size: clamp(0.68rem, 1.9vw, 0.92rem);
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(255, 200, 205, 0.82);
+            text-shadow: 0 0 16px rgba(255, 40, 60, 0.8);
+            animation: subFadeIn 0.6s ease 0.15s both;
+        }
+
+        @keyframes sanityTextIn {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(1.5); filter: blur(6px); }
+            to   { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
+        }
+
+        @keyframes subFadeIn {
+            from { opacity: 0; transform: translate(-50%, 8px); }
+            to   { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        @keyframes sanityTextFlicker {
+            0%, 100% { opacity: 1; }
+            45%      { opacity: 0.55; }
+            50%      { opacity: 1; }
+            72%      { opacity: 0.7; }
+        }
+
+        /* Тряска всего экрана при разрушении разума */
+        body.is-sanity-broken .stage,
+        body.is-sanity-broken .topbar {
+            animation: sanityScreenShake 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+        }
+
+        @keyframes sanityScreenShake {
+            0%, 100% { transform: translate(0, 0); }
+            12% { transform: translate(-12px, 6px) rotate(-0.4deg); }
+            28% { transform: translate(10px, -7px) rotate(0.4deg); }
+            46% { transform: translate(-8px, 3px); }
+            64% { transform: translate(6px, -4px); }
+            82% { transform: translate(-3px, 2px); }
+        }
+
+        /* ===== Ошибка выхода (Please Don't Touch Anything) ===== */
+        .fx-exit-error {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            z-index: 1800;
+            transform: translate(-50%, -50%);
+            max-width: min(520px, 88vw);
+            padding: 18px 22px;
+            border: 1px solid rgba(255, 60, 80, 0.85);
+            border-radius: 10px;
+            background: rgba(28, 0, 4, 0.94);
+            box-shadow: 0 0 46px rgba(255, 30, 50, 0.5), inset 0 0 30px rgba(255, 30, 50, 0.12);
+            font-family: var(--mono);
+            color: #ffd7da;
+            text-align: center;
+            pointer-events: none;
+            animation: exitErrorIn 0.22s ease both, exitErrorFlicker 0.16s steps(2) 0.22s infinite;
+            transition: opacity 0.3s ease;
+        }
+
+        .fx-exit-error.is-out { animation: none; opacity: 0; }
+
+        .fx-exit-error b {
+            display: block;
+            font-size: 0.92rem;
+            letter-spacing: 0.12em;
+            color: #ff2b3d;
+            text-shadow: 0 0 18px rgba(255, 30, 50, 0.9);
+        }
+
+        .fx-exit-error span {
+            display: block;
+            margin-top: 8px;
+            font-size: 0.72rem;
+            letter-spacing: 0.06em;
+            color: rgba(255, 190, 196, 0.8);
+        }
+
+        @keyframes exitErrorIn {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); filter: blur(3px); }
+            to   { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
+        }
+
+        @keyframes exitErrorFlicker {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.72; }
+        }
+
+        body.is-exit-error::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: 1750;
+            pointer-events: none;
+            background: rgba(120, 0, 10, 0.28);
+            animation: exitErrorTint 0.3s ease both;
+        }
+
+        @keyframes exitErrorTint {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        /* ===== Дополнительные слои для ивентов ===== */
+        .fx-sparks { position: absolute; inset: 0; pointer-events: none; }
+
+        .fx-spark {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+            opacity: 0;
+            animation: sparkFly 1.1s ease-out forwards;
+        }
+
+        @keyframes sparkFly {
+            0%   { opacity: 0; transform: translate(0, 0) scale(0.4); }
+            12%  { opacity: 1; }
+            100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); }
+        }
+
+        .fx-fog {
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 30% 70%, rgba(190, 190, 210, 0.16), transparent 60%),
+                radial-gradient(ellipse at 70% 30%, rgba(160, 160, 190, 0.12), transparent 62%);
+            animation: fogDrift 6s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes fogDrift {
+            from { transform: translate3d(-2%, 0, 0) scale(1.02); opacity: 0.55; }
+            to   { transform: translate3d(2%, -1%, 0) scale(1.06); opacity: 0.85; }
+        }
+
+        .fx-red::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, transparent 30%, rgba(0, 0, 0, 0.7) 100%);
+            animation: redBreath 2.2s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes redBreath {
+            0%, 100% { opacity: 0.55; }
+            50%      { opacity: 0.95; }
+        }
+
         /* ===== Слой хоррор-эффектов ===== */
         .fx-layer {
             position: fixed;
@@ -2797,7 +3098,8 @@
     </button>
 
     <!-- Рассудок: вертикальная шкала справа снизу. Чем ниже, тем чаще
-         случаются хоррор-ивенты. Восстанавливается со временем и за награды. -->
+         случаются хоррор-ивенты. Восстанавливается при выходе из консоли,
+         пицце, сообщении 5045 и отдыхе вкладки. -->
     <div class="sanity" id="sanity" role="status" aria-live="polite" aria-label="Рассудок">
         <span class="sanity-emoji" id="sanityEmoji" aria-hidden="true">🧘‍♂️</span>
         <div class="sanity-track" aria-hidden="true">
@@ -2805,6 +3107,9 @@
         </div>
         <span class="sanity-num" id="sanityNum">100%</span>
     </div>
+
+    <!-- Красная пелена по краям: густеет вместе с потерей рассудка -->
+    <div class="sanity-veil" id="sanityVeil" aria-hidden="true"></div>
 
     <!-- Слой для хоррор-эффектов: вспышки, двери, красная комната -->
     <div class="fx-layer" id="fxLayer" aria-hidden="true"></div>
@@ -3311,12 +3616,14 @@
                 Snd.beep(300, 0.02, 0.08);
             }
 
-            function resetRoom() {
+            function resetRoom(persist) {
                 room.looked = false;
                 room.slot = false;
                 room.hacked = false;
                 anonStarted = false;
-                saveRoom();
+                /* При сбросе сюжета ключ room.state уже удалён — не пишем
+                   его обратно пустым объектом. */
+                if (persist !== false) saveRoom();
                 syncRoom();
                 closeHack();
             }
@@ -3407,7 +3714,8 @@
             function hasHeard45() { return O.has('whatwasthat'); }
 
             // Прогресс сюжета и доступ живут в localStorage и переживают
-            // перезагрузку. Сбрасываются кнопкой в достижениях и clear/reset.
+            // перезагрузку. clear/reset чистят только сюжет; полный сброс
+            // (награды, мана, доступ) — кнопка на странице достижений.
             var KEY = {
                 call: 'boss.call',
                 choice: 'boss.choice',
@@ -3637,9 +3945,10 @@
                     return;
                 }
 
-                // После провала номер гаснет: в этом сеансе — блок,
-                // после перезагрузки — «недоступен» (ачивка уже в профиле).
-                if (unknown.state === 'blocked' || hasHeard45()) {
+                // После провала номер гаснет до конца сеанса. Сброс сюжета
+                // (clear/reset или 0% рассудка) снова открывает 3017:
+                // ачивка «Что это было?» при этом остаётся в профиле.
+                if (unknown.state === 'blocked') {
                     line('> [ERROR] Номер 3017 отключён. Абонент недоступен.', 'line-err');
                     line('сброс: clear или reset', 'line-dim');
                     Snd.beep(140, 0.04, 0.18);
@@ -4325,6 +4634,11 @@
                         later(function () {
                             think('надо узнать побольше про 45.', true);
                         }, 5600);
+
+                        /* Аноним «???» выходит на связь и на ветке увольнения.
+                           Раньше он писал только при выборе «Помощь 45»,
+                           и после увольнения чат молчал. */
+                        later(startAnon, 12000);
                     }
                 }
 
@@ -4938,6 +5252,12 @@
                 /* 45: сообщение прочитано, ответа нет */
                 function sendAgent() {
                     grant('insider');
+                    /* Первое сообщение 5045 за сеанс — «Свой человек» и +10% */
+                    if (!sanityRestored.agent45) {
+                        sanityRestored.agent45 = true;
+                        restoreSanity(10, '5045');
+                    }
+
                     later(function () {
                         chats.agent45.push({ who: 'read', text: '✓✓ прочитано' });
                         paint();
@@ -5006,6 +5326,11 @@
                 function deliverPizza() {
                     pizzaHere = true;
                     grant('turtle');
+                    /* Пицца на свой адрес за сеанс — «Как у черепах» и +20% */
+                    if (!sanityRestored.pizza) {
+                        sanityRestored.pizza = true;
+                        restoreSanity(20, 'пицца');
+                    }
                     Snd.doorbell();
                     phoneNotify('Доставка пиццы', 'Курьер привез заказ', '🍕');
                     renderPizzaCard();
@@ -5324,7 +5649,7 @@
                 if (admin) line('  connect 9054   — позвонить боссу');
                 line('  stats          — статистика звонков');
                 line('  matrix         — ...');
-                line('  clear / reset  — очистить экран и сбросить весь прогресс');
+                line('  clear / reset  — очистить экран и сбросить ТОЛЬКО сюжет');
                 line('  exit           — вернуться на главную');
                 line('  ???            — команды, которой здесь нет', 'line-dim');
                 line('');
@@ -5334,27 +5659,20 @@
                 line('  bypassing loop...', 'line-dim');
             }
 
-            /* Полный сброс: достижения, сюжет, админ, статистика */
-            function hardReset() {
+            /* Сброс ТОЛЬКО сюжета. Награды, мана, доступ и статистика
+               звонков не трогаются — этим clear/reset отличаются от
+               полного сброса на странице достижений. */
+            function resetPlotOnly() {
                 clearScreen();
                 lockOptions();
                 autoBusy = false;
                 input.value = '';
-                O.reset();
-                setAccess(false);
+                O.resetPlot();          // localStorage + Supabase (если вошёл)
+                plot = readPlot();
                 unknown.state = 'idle';
                 boss.state = 'idle';
-                plot = readPlot();
-                STAT_FIELDS.forEach(function (key) {
-                    global_stats[key] = 0;
-                    session_stats[key] = 0;
-                });
                 Phone.reset();
-
-                // Рассудок возвращается к 100%
-                sanity = 100;
-                saveSanity();
-                renderSanity();
+                resetRoom(false);
             }
 
             var COMMANDS = {
@@ -5444,13 +5762,14 @@
                 },
 
                 clear: function () {
-                    hardReset();
-                    line('экран очищен. прогресс, сюжет и доступ сброшены.', 'line-dim');
+                    resetPlotOnly();
+                    line('экран очищен. сюжет сброшен.', 'line-dim');
+                    line('награды, мана и доступ остались на месте.', 'line-dim');
                 },
 
                 reset: function () {
-                    hardReset();
-                    line('сеанс сброшен. прогресс, сюжет и доступ обнулены.', 'line-dim');
+                    resetPlotOnly();
+                    line('сюжет сброшен. награды, мана и доступ остались.', 'line-dim');
                 },
 
                 logout: function () { doLogout(); },
@@ -5459,9 +5778,102 @@
 
                 exit: function () {
                     line('Завершение сеанса…', 'line-dim');
-                    setTimeout(function () { window.location.href = 'index.html'; }, 600);
+                    tryExit();
                 }
             };
+
+            /* ================= СКРЫТАЯ КОМАНДА «Я ПОМНЮ» ================= */
+            /* remember или 45. Даёт награду «Я помню» и ровно +100 маны.
+               Повторный ввод ничего не начисляет. */
+            function rememberCmd() {
+                if (O.has('remember')) {
+                    line('> Ты и так помнишь.', 'line-dim');
+                    Snd.beep(420, 0.02, 0.08);
+                    return;
+                }
+
+                grant('remember');
+
+                var gained = (O.mana && O.mana.claim) ? O.mana.claim('remember') : 0;
+                if (!gained && O.mana) {
+                    O.mana.setBalance(O.mana.balance() + 100);
+                    O.mana.markClaimed('remember');
+                    gained = 100;
+                }
+
+                lineHTML('<span class="p">[ ПАМЯТЬ ВОССТАНОВЛЕНА ]</span>', 'line-title');
+                line('сюжет можно начать заново. ты всё ещё помнишь.', 'line-ok');
+                lineHTML('+ скрытая награда <span class="p">«Я помню»</span> 🧠', 'granted');
+                if (gained) lineHTML('+ <span class="p">' + gained + ' ✨</span> маны', 'granted');
+
+                Snd.beep(660, 0.03, 0.12);
+                setTimeout(function () { Snd.beep(880, 0.03, 0.14); }, 140);
+            }
+
+            /* ================= ОШИБКА ВЫХОДА ================= */
+            /* Please Don't Touch Anything: с шансом 10–25% (чем ниже
+               рассудок, тем выше) выход «не находится». Ошибка висит
+               2–3 секунды и сама пускает на главную. Повторный клик
+               во время ошибки выходит сразу. */
+            var exitFailedOnce = false;
+            var exitErrorActive = false;
+
+            function goHomeNow() {
+                window.location.href = 'index.html';
+            }
+
+            function showExitError() {
+                exitErrorActive = true;
+                document.body.classList.add('is-exit-error');
+                if (Snd.stinger) Snd.stinger();
+                if (Snd.glitchSound) Snd.glitchSound();
+                if (O.cursor) O.cursor.freeze(900);
+
+                var box = document.createElement('div');
+                box.className = 'fx-exit-error';
+                box.innerHTML = '<b>[ERROR] Выход не найден.</b>' +
+                                '<span>Попробуйте позже.</span>';
+                document.body.appendChild(box);
+
+                var wait = 2000 + Math.random() * 1000;
+
+                setTimeout(function () {
+                    box.classList.add('is-out');
+                    document.body.classList.remove('is-exit-error');
+                    exitErrorActive = false;
+                    setTimeout(function () { box.remove(); }, 320);
+                    goHomeNow();
+                }, wait);
+            }
+
+            function tryExit() {
+                var s = Math.max(0, Math.min(100, sanity));
+                var fail = 0.10 + (100 - s) / 100 * 0.15;   // 10% … 25%
+
+                if (!exitFailedOnce && !sanityBroken && Math.random() < fail) {
+                    exitFailedOnce = true;
+                    showExitError();
+                    return;
+                }
+
+                if (exitErrorActive) {
+                    exitErrorActive = false;
+                    goHomeNow();
+                    return;
+                }
+
+                goHomeNow();
+            }
+
+            /* «На главную» в шапке — тоже через проверку выхода */
+            var backLink = document.querySelector('.topbar a.back');
+            if (backLink) {
+                backLink.addEventListener('click', function (e) {
+                    if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button) return;
+                    e.preventDefault();
+                    tryExit();
+                });
+            }
 
             /* ================= CONNECT ================= */
             /* Номера: первые две цифры — должность, последние две — агент.
@@ -5547,6 +5959,7 @@
                 // Секретные ключи
                 if (lower === 'oracle' || lower === 'v3.7.0') { grantHacker(); return; }
                 if (lower === 'onepiece' || lower === 'luffy') { grantOnePiece(); return; }
+                if (lower === 'remember' || lower === '45') { rememberCmd(); return; }
 
                 if (name === 'connect') { handleConnect(cmd.split(/\s+/).slice(1)); return; }
 
@@ -5607,6 +6020,12 @@
             var sanityFill = document.getElementById('sanityFill');
             var sanityNum = document.getElementById('sanityNum');
             var sanityEmoji = document.getElementById('sanityEmoji');
+            var sanityVeil = document.getElementById('sanityVeil');
+
+            /* Сколько рассудка утекает за минуту, пока игрок смотрит в консоль.
+               Ивенты кусают сверху: у каждого своя цена. */
+            var SANITY_DRAIN_PER_MIN = 2.6;
+            var SANITY_AFTER_BREAK = 50;
 
             var sanity = (function () {
                 var v = O.store.get('console.sanity', 100);
@@ -5614,15 +6033,22 @@
                 return Math.max(0, Math.min(100, v));
             })();
 
+            var sanityBroken = false;
+
+            /* Восстановление за сюжетные действия — раз за сеанс, чтобы
+               clear/reset нельзя было превратить в ферму рассудка. */
+            var sanityRestored = { agent45: false, pizza: false };
+
             function saveSanity() {
-                O.store.set('console.sanity', Math.round(sanity));
+                O.store.set('console.sanity', Math.round(sanity * 10) / 10);
             }
 
             function sanityMood(v) {
                 if (v >= 80) return '🧘‍♂️';
                 if (v >= 55) return '😰';
                 if (v >= 30) return '😨';
-                return '🤪';
+                if (v >= 10) return '🤪';
+                return '💀';
             }
 
             function renderSanity() {
@@ -5634,19 +6060,183 @@
 
                 if (sanityEl) {
                     sanityEl.classList.toggle('is-low', v < 35);
+                    sanityEl.classList.toggle('is-critical', v <= 10);
+                    sanityEl.classList.toggle('is-broken', sanityBroken);
                     sanityEl.setAttribute('aria-label', 'Рассудок ' + v + '%');
+                }
+
+                /* Красная пелена по краям: 0% — почти глухая */
+                if (sanityVeil) {
+                    var edge = Math.max(0, Math.min(1, (60 - v) / 60));
+                    sanityVeil.style.opacity = (edge * 0.85).toFixed(3);
                 }
             }
 
-            function changeSanity(delta) {
-                var before = Math.round(sanity);
+            /* Всплывающее «+20%» у шкалы */
+            function sanityPop(text, down) {
+                var el = document.createElement('div');
+                el.className = 'sanity-pop' + (down ? ' is-down' : '');
+                el.textContent = text;
+                document.body.appendChild(el);
+                setTimeout(function () { el.remove(); }, 1700);
+            }
+
+            function changeSanity(delta, quiet) {
+                if (!delta) return;
+
+                var before = sanity;
                 sanity = Math.max(0, Math.min(100, sanity + delta));
-                if (Math.round(sanity) === before) return;
+                if (Math.abs(sanity - before) < 1e-6) return;
+
                 saveSanity();
                 renderSanity();
+
+                if (!quiet) {
+                    var diff = Math.round(sanity - before);
+                    if (diff > 0) sanityPop('+' + diff + '%');
+                    else if (diff < 0 && diff >= -3) sanityPop(diff + '%', true);
+                }
+
+                if (sanity <= 0 && before > 0) sanityBreak();
+            }
+
+            /* Восстановление рассудка: пицца, 5045, выход, отдых */
+            function restoreSanity(amount, reason) {
+                if (sanityBroken) return;
+                var before = Math.round(sanity);
+                changeSanity(amount, true);
+                var gained = Math.round(sanity) - before;
+                if (gained > 0) sanityPop('+' + gained + '% · ' + reason);
+            }
+
+            /* Обнуление сюжета: рассудок на нуле */
+            function sanityBreak() {
+                if (sanityBroken) return;
+                sanityBroken = true;
+                eventBusy = true;
+                lastHorrorAt = Date.now();
+
+                sanity = 0;
+                saveSanity();
+                renderSanity();
+
+                if (Snd.sanityBreak) Snd.sanityBreak();
+                document.body.classList.add('is-sanity-broken', 'is-flash-red');
+                if (O.cursor) O.cursor.freeze(1400);
+
+                var realTitle = document.title;
+                document.title = 'РАЗУМ РАЗРУШЕН';
+                setTimeout(function () { document.title = realTitle; }, 3400);
+
+                var fx = document.createElement('div');
+                fx.className = 'fx-sanity-break';
+                fx.innerHTML = '<div class="fx-sanity-cracks"></div>' +
+                               '<div class="fx-sanity-text">РАЗУМ РАЗРУШЕН</div>' +
+                               '<div class="fx-sanity-sub">[СИСТЕМА] Разум разрушен. Сюжет обнулён.</div>';
+                document.body.appendChild(fx);
+
+                /* Сюжет — в ноль. Награды, мана и доступ остаются. */
+                resetPlotOnly();
+
+                line('[СИСТЕМА] Разум разрушен. Сюжет обнулён.', 'line-err', { instant: true });
+                line('сюжетные ключи стёрты. награды и мана на месте.', 'line-dim', { instant: true });
+                line('где-то в глубине консоли осталась команда. она помнит.', 'line-dim', { instant: true });
+
+                setTimeout(function () {
+                    fx.classList.add('is-out');
+                    document.body.classList.remove('is-sanity-broken');
+                    setTimeout(function () {
+                        fx.remove();
+                        document.body.classList.remove('is-flash-red');
+                    }, 600);
+                }, 2600);
+
+                setTimeout(function () {
+                    sanity = SANITY_AFTER_BREAK;
+                    sanityBroken = false;
+                    eventBusy = false;
+                    saveSanity();
+                    renderSanity();
+                    sanityPop('+' + SANITY_AFTER_BREAK + '% · восстановление');
+                    line('рассудок восстановлен до ' + SANITY_AFTER_BREAK + '%.', 'line-ok', { instant: true });
+                }, 3400);
             }
 
             renderSanity();
+
+            /* Пассивная утечка рассудка: пока смотрим в консоль, он тает.
+               Считаем по реальному времени, чтобы фоновые throttling-и
+               не растягивали минуту в полчаса. */
+            var sanityDrainAt = Date.now();
+
+            setInterval(function () {
+                if (document.hidden || sanityBroken) { sanityDrainAt = Date.now(); return; }
+                var now = Date.now();
+                var dt = (now - sanityDrainAt) / 60000;
+                sanityDrainAt = now;
+                if (dt <= 0) return;
+                changeSanity(-SANITY_DRAIN_PER_MIN * Math.min(dt, 0.5), true);
+            }, 5000);
+
+            /* Перезагрузка страницы = полное восстановление рассудка.
+               Обычный переход из консоли даёт +5–10% (см. pagehide ниже). */
+            (function detectReload() {
+                var reload = false;
+                try {
+                    var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+                    if (nav && nav.type) reload = nav.type === 'reload';
+                    else if (performance.navigation) reload = performance.navigation.type === 1;
+                } catch (e) {}
+
+                if (reload) sanity = 100;
+                else if (sanity <= 0) sanity = SANITY_AFTER_BREAK;   // вышли во время сбоя
+
+                saveSanity();
+                renderSanity();
+            })();
+
+            /* Выход из консоли: +5–10% (переход на главную, закрытие вкладки) */
+            var sanityLeaveBonus = false;
+
+            function grantLeaveBonus() {
+                if (sanityLeaveBonus || sanityBroken) return;
+                sanityLeaveBonus = true;
+                sanity = Math.max(0, Math.min(100, sanity + 5 + Math.random() * 5));
+                saveSanity();
+            }
+
+            window.addEventListener('pagehide', grantLeaveBonus);
+            window.addEventListener('beforeunload', grantLeaveBonus);
+
+            /* Вкладка свернута на 5 минут — рассудок отдыхает до 100% */
+            var sanityHiddenAt = 0;
+
+            function restoreFromIdle() {
+                if (!sanityHiddenAt) return;
+                var away = Date.now() - sanityHiddenAt;
+                sanityHiddenAt = 0;
+                if (away >= 5 * 60 * 1000 && !sanityBroken) {
+                    sanity = 100;
+                    saveSanity();
+                    renderSanity();
+                    sanityPop('+100% · отдых');
+                }
+            }
+
+            document.addEventListener('visibilitychange', function () {
+                if (document.hidden) { sanityHiddenAt = Date.now(); return; }
+                restoreFromIdle();
+            });
+
+            /* Подстраховка: таймеры в фоне душат, но раз в 30 секунд
+               проверить, что вкладка спит уже достаточно, — дёшево. */
+            setInterval(function () {
+                if (!document.hidden || !sanityHiddenAt || sanityBroken) return;
+                if (Date.now() - sanityHiddenAt >= 5 * 60 * 1000) {
+                    sanity = 100;
+                    saveSanity();
+                }
+            }, 30000);
 
             /* ================= ХОРРОР-ИВЕНТЫ ================= */
             /* 11 штук. Шанс зависит от рассудка: 1% при 100, 10% при 50,
@@ -5667,37 +6257,61 @@
                 return el;
             }
 
+            /* Шанс ивента на одну проверку. Кривая проходит через
+               заданные точки: 100% → 1%, 50% → 10%, 10% → 50%, 0% → 100%. */
             function horrorChance() {
-                var d = (100 - sanity) / 100;
-                return 0.01 + 0.69 * Math.pow(d, 2.6);
+                var s = Math.max(0, Math.min(100, sanity));
+                if (s <= 0) return 1;
+                if (s <= 10) return 1 - (s / 10) * 0.5;
+                if (s <= 50) return 0.5 - ((s - 10) / 40) * 0.4;
+                return 0.1 - ((s - 50) / 50) * 0.09;
             }
 
             var EVENTS = {
                 /* 1. Выключение энергии */
-                power: { cost: 6, dur: 2600, run: function () {
+                power: { cost: 6, dur: 3000, run: function () {
                     var veil = fxEl('fx-blackout');
                     document.body.classList.add('is-blackout');
                     if (Snd.rumble) Snd.rumble();
+                    if (Snd.staticNoise) Snd.staticNoise();
 
                     var orb = document.getElementById('cursorOrb');
                     if (orb) orb.classList.add('is-glow');
 
+                    /* искры от умирающего света */
+                    var sparks = fxEl('fx-sparks');
+                    for (var i = 0; i < 10; i++) {
+                        var sp = document.createElement('span');
+                        sp.className = 'fx-spark';
+                        sp.style.left = (20 + Math.random() * 60) + '%';
+                        sp.style.top = (20 + Math.random() * 60) + '%';
+                        sp.style.setProperty('--dx', (Math.random() * 90 - 45) + 'px');
+                        sp.style.setProperty('--dy', (Math.random() * 90 - 45) + 'px');
+                        sp.style.animationDelay = (Math.random() * 0.5) + 's';
+                        sparks.appendChild(sp);
+                    }
+                    setTimeout(function () { sparks.remove(); }, 1500);
+
                     setTimeout(function () {
                         veil.classList.add('is-out');
+                        document.body.classList.remove('is-blackout');
                         if (orb) orb.classList.remove('is-glow');
-                        setTimeout(function () { veil.remove(); }, 650);
-                    }, 1700);
+                        if (Snd.beep) Snd.beep(180, 0.04, 0.3);
+                        setTimeout(function () { veil.remove(); }, 700);
+                    }, 1800);
                 } },
 
                 /* 2. Дверь */
-                door: { cost: 12, dur: 4400, run: function () {
+                door: { cost: 12, dur: 4600, run: function () {
                     var wrap = fxEl('fx-door',
                         '<div class="fx-lamp"></div>' +
+                        '<div class="fx-fog"></div>' +
                         '<div class="fx-doorway">🚪</div>' +
                         '<div class="fx-exit">выход</div>' +
                         '<div class="fx-exit fx-exit-2">выход</div>');
 
                     if (Snd.rumble) Snd.rumble();
+                    if (Snd.heartbeat) Snd.heartbeat(0.55);
 
                     setTimeout(function () { wrap.classList.add('is-lamp'); }, 500);
                     setTimeout(function () {
@@ -5708,6 +6322,7 @@
                     setTimeout(function () {
                         wrap.classList.add('is-near');
                         if (Snd.staticNoise) Snd.staticNoise();
+                        if (Snd.steps) Snd.steps();
                     }, 3000);
                     setTimeout(function () {
                         wrap.remove();
@@ -5739,6 +6354,7 @@
                     var i = 0;
                     var wrap = document.querySelector('.term-input');
                     if (wrap) wrap.classList.add('is-possessed');
+                    if (Snd.whisperSound) Snd.whisperSound();
 
                     input.value = '';
 
@@ -5786,6 +6402,7 @@
                     wrap.appendChild(word);
 
                     if (Snd.rumble) Snd.rumble();
+                    if (Snd.heartbeat) Snd.heartbeat(0.8);
 
                     var spots = [['22%', '28%'], ['74%', '22%'], ['38%', '72%'], ['82%', '64%']];
                     var k = 0;
@@ -5795,6 +6412,7 @@
                             clearInterval(timer);
                             word.classList.add('is-full');
                             if (Snd.staticNoise) Snd.staticNoise();
+                            if (Snd.stinger) Snd.stinger();
 
                             setTimeout(function () {
                                 wrap.remove();
@@ -5825,6 +6443,7 @@
 
                     document.body.classList.add('is-glitch-text');
                     if (Snd.staticNoise) Snd.staticNoise();
+                    if (Snd.glitchSound) Snd.glitchSound();
 
                     setTimeout(function () {
                         saved.forEach(function (pair) { pair[0].textContent = pair[1]; });
@@ -5845,6 +6464,7 @@
 
                     window.addEventListener('pointermove', move);
                     if (Snd.whisperSound) Snd.whisperSound();
+                    if (Snd.heartbeat) Snd.heartbeat(0.45);
 
                     setTimeout(function () {
                         window.removeEventListener('pointermove', move);
@@ -5867,6 +6487,7 @@
                         '<div class="fx-silhouette"></div>' +
                         '<div class="fx-question">Кто ты?</div>');
                     if (Snd.staticNoise) Snd.staticNoise();
+                    if (Snd.heartbeat) Snd.heartbeat(0.7);
 
                     var who = admin ? 'admin' : 'orakul';
                     var broken = '';
@@ -5894,26 +6515,37 @@
                 var ev = EVENTS[name];
                 if (!ev || eventBusy) return false;
 
+                /* На нуле рассудка ивент — это уже не ивент, а обнуление сюжета */
+                if (sanity <= 0) { sanityBreak(); return true; }
+
                 eventBusy = true;
                 lastHorrorAt = Date.now();
                 changeSanity(-ev.cost);
-                ev.run();
 
+                /* Стоимость добила рассудок до нуля: сюжет уже сброшен,
+                   визуал ивента поверх этого не запускаем */
+                if (sanityBroken) return true;
+
+                ev.run();
                 setTimeout(function () { eventBusy = false; }, ev.dur || 4000);
                 return true;
             }
 
-            /* Случайные ивенты: чем ниже рассудок, тем чаще */
+            /* Случайные ивенты: чем ниже рассудок, тем чаще. Проверка реже,
+               чем раньше, — иначе при 50% экран не умолкал. */
             (function horrorLoop() {
                 if (reduceMotion) return;
 
                 setTimeout(function () {
-                    if (!document.hidden && !eventBusy && Math.random() < horrorChance()) {
-                        var keys = Object.keys(EVENTS);
+                    if (!document.hidden && !eventBusy && !sanityBroken &&
+                        Math.random() < horrorChance()) {
+                        var keys = Object.keys(EVENTS).filter(function (k) {
+                            return k !== 'matrix';   // матрица — отдельная пасхалка
+                        });
                         runEvent(keys[Math.floor(Math.random() * keys.length)]);
                     }
                     horrorLoop();
-                }, 8000 + Math.random() * 5000);
+                }, 20000 + Math.random() * 16000);
             })();
 
             /* Мерцание света — фон, раз в 10–20 секунд */
@@ -5935,6 +6567,7 @@
                     veil.classList.add('is-on');
 
                     if (Math.random() < 0.4 && Snd.staticNoise) Snd.staticNoise();
+                    if (sanity < 30 && Snd.heartbeat) Snd.heartbeat(0.5);
 
                     var base = sanity < 40 ? 6000 : 10000;
                     setTimeout(flick, base + Math.random() * 8000);
@@ -5957,16 +6590,9 @@
                 setTimeout(function () { document.title = real; }, 1800);
             }, 45000 + Math.random() * 30000);
 
-            /* Рассудок восстанавливается: медленно со временем, быстрее за награды */
-            setInterval(function () {
-                if (document.hidden) return;
-                if (Date.now() - lastHorrorAt < 9000) return;
-                changeSanity(1);
-            }, 15000);
-
-            document.addEventListener('orakul:unlock', function () {
-                changeSanity(8);
-            });
+            /* Рассудок НЕ восстанавливается сам по таймеру: за него нужно
+               выйти из консоли, заказать пиццу, написать 5045 или дать
+               вкладке отдохнуть пять минут. Пассивная утечка — выше. */
 
             /* ================= ЗАГРУЗКА ================= */
             (function boot() {
@@ -6023,17 +6649,48 @@
             // Сюжет и доступ могли сбросить в другой вкладке или на странице
             // достижений — подхватываем и приводим шапку в соответствие
             document.addEventListener('orakul:sync', function (e) {
+                var reason = e.detail && e.detail.reason;
+
                 setAccess(O.store.get(KEY.admin, false) === true);
                 plot = readPlot();
                 if (plot.called && boss.state === 'idle') boss.state = 'blocked';
                 if (!plot.called && boss.state === 'blocked') boss.state = 'idle';
-                // Сброс прогресса в другой вкладке убирает телефон со стола
+
+                // Сброс сюжета в другой вкладке убирает телефон со стола
                 if (!plot.called && phoneEl.classList.contains('is-in')) Phone.reset();
+
                 // Комната (кулер, автомат, взлом) тоже обнуляется
-                if (e.detail && e.detail.reason === 'reset') resetRoom();
+                if (reason === 'reset' || reason === 'plotreset') {
+                    resetRoom(false);
+                    Phone.reset();
+                    unknown.state = 'idle';
+                    boss.state = 'idle';
+                }
+
+                // Полный сброс — рассудок тоже начинается с чистого листа
+                if (reason === 'reset') {
+                    sanity = 100;
+                    sanityBroken = false;
+                    saveSanity();
+                    renderSanity();
+                }
+
+                // Изменение в другой вкладке: подтягиваем комнату и рассудок
+                if (reason === 'storage') {
+                    reloadRoom();
+                    if (!O.store.get('phone.state', null) && phoneEl.classList.contains('is-in')) {
+                        Phone.reset();
+                    }
+                    var sv = O.store.get('console.sanity', 100);
+                    if (typeof sv === 'number' && isFinite(sv)) {
+                        sanity = Math.max(0, Math.min(100, sv));
+                        if (sanity > 0) sanityBroken = false;
+                        renderSanity();
+                    }
+                }
 
                 // Облако принесло сюжет: подтягиваем комнату и телефон
-                if (e.detail && e.detail.reason === 'cloud') {
+                if (reason === 'cloud') {
                     reloadRoom();
                     if (!phoneEl.classList.contains('is-in') && O.store.get('phone.state', null)) {
                         Phone.restore();
