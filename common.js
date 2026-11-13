@@ -2127,6 +2127,205 @@
         };
     })();
 
+    /* ================= САЙТ: МАГАЗИН, ПРОФИЛЬ, КЛЮЧИ ================= */
+    /* Всё, что связано с аккаунтом на сайте и магазином.
+       Работает через RPC Supabase (см. sql/gift_keys.sql): функции orakul_*
+       знают, кто зовёт (auth.uid() из JWT), поэтому начислить ману «мимо
+       кассы» нельзя — только активировать настоящий ключ.
+
+       Наружу: Orakul.site.*  (см. экспорт внизу файла). */
+    var site = (function () {
+        var CFG = {
+            /* ⚠️ ЗАМЕНИ на своего бота, если ник поменяется */
+            bot: 'fortnite_pirate_shop_bot',
+            /* Ссылка на донаты. Пока null — кнопка «💖 Поддержать (скоро)»
+               неактивна. Появится страница — впиши сюда её адрес строкой,
+               кнопка станет активной сама (правок в HTML не нужно). */
+            donate: null,
+            /* ⚠️ ЗАМЕНИ на свой GitHub, если репозиторий переедет */
+            github: 'https://github.com/AlexanderPo22/Orakul_demo'
+        };
+
+        /* Тарифы. rub — цена картой, stars — цена в звёздах (совпадает с ботом:
+           bot_modules/telegram_ui.py → SHOP_ITEMS, менять только вместе). */
+        var ITEMS = [
+            { code: 'pro7',      kind: 'pro',  days: 7,   stars: 100, rub: 149,
+              title: 'Pro · 7 дней',    sub: 'Неделя без ограничений',
+              icon: '👑', per: '21,3 ₽ в день' },
+            { code: 'pro30',     kind: 'pro',  days: 30,  stars: 300, rub: 399,
+              title: 'Pro · 30 дней',   sub: 'Самый популярный',
+              icon: '👑', per: '13,3 ₽ в день', hot: true },
+            { code: 'mana1000',  kind: 'mana', amount: 1000,  stars: 50,  rub: 99,
+              title: '1 000 маны',      sub: 'На первое время',
+              icon: '✨', per: '0,099 ₽ за ману' },
+            { code: 'mana5000',  kind: 'mana', amount: 5000,  stars: 200, rub: 399,
+              title: '5 000 маны',      sub: 'Хватит надолго',
+              icon: '✨', per: '0,080 ₽ за ману' },
+            { code: 'mana10000', kind: 'mana', amount: 10000, stars: 300, rub: 699,
+              title: '10 000 маны',     sub: 'Максимальный пакет',
+              icon: '✨', per: '0,070 ₽ за ману' }
+        ];
+
+        function byCode(code) {
+            for (var i = 0; i < ITEMS.length; i++) if (ITEMS[i].code === code) return ITEMS[i];
+            return null;
+        }
+
+        /* Сколько маны / дней в позиции */
+        function amount(item) {
+            return item.kind === 'pro' ? item.days : item.amount;
+        }
+
+        /* «−38%» относительно базового тарифа той же категории */
+        function saving(item) {
+            var base = null;
+            for (var i = 0; i < ITEMS.length; i++) {
+                if (ITEMS[i].kind === item.kind && ITEMS[i].code !== item.code) {
+                    if (!base || ITEMS[i].rub < base.rub) base = ITEMS[i];
+                }
+            }
+            if (!base || item.code === base.code) return 0;
+            var unitBase = base.rub / amount(base);
+            var unitThis = item.rub / amount(item);
+            var pct = Math.round((1 - unitThis / unitBase) * 100);
+            return pct >= 8 ? pct : 0;
+        }
+
+        function money(n) {
+            return fmtNum(n) + ' ₽';
+        }
+
+        function fmtNum(n) {
+            var v = Number(n);
+            if (!isFinite(v)) return '0';
+            return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        }
+
+        /* «2026-11-19T21:40:00+00:00» → «19.11.2026» (или «—») */
+        function fmtDate(raw) {
+            if (!raw) return '—';
+            var d = new Date(raw);
+            if (isNaN(d.getTime())) return String(raw).slice(0, 10);
+            var p = function (n) { return (n < 10 ? '0' : '') + n; };
+            return p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear();
+        }
+
+        function fmtDateTime(raw) {
+            if (!raw) return '—';
+            var d = new Date(raw);
+            if (isNaN(d.getTime())) return String(raw).slice(0, 16);
+            var p = function (n) { return (n < 10 ? '0' : '') + n; };
+            return p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear() +
+                   ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+        }
+
+        /* Дней Pro осталось (0 — нет) */
+        function daysLeft(raw) {
+            if (!raw) return 0;
+            var t = new Date(raw).getTime();
+            if (isNaN(t)) return 0;
+            return Math.max(0, Math.ceil((t - Date.now()) / 86400000));
+        }
+
+        /* Ссылка на бота: ?start=buy_<код> — бот по ней сразу открывает счёт */
+        function botLink(code) {
+            var base = 'https://t.me/' + CFG.bot;
+            return code ? base + '?start=' + encodeURIComponent('buy_' + code) : base;
+        }
+
+        /* Один RPC. Всегда Promise<object>: {error} или данные функции. */
+        function rpc(name, args) {
+            return cloud.connect().then(function (c) {
+                if (!c) return { error: 'нет связи с Supabase' };
+
+                return c.rpc(name, args || {}).then(function (res) {
+                    if (res && res.error) {
+                        return { error: res.error.message || 'сайт отклонил запрос' };
+                    }
+                    var d = res ? res.data : null;
+                    if (Array.isArray(d)) d = d[0] || {};
+                    return d || {};
+                });
+            }).catch(function (e) {
+                return { error: String((e && e.message) || e) };
+            });
+        }
+
+        function me()          { return rpc('orakul_site_me'); }
+        function newToken()    { return rpc('orakul_site_new_token'); }
+        function myKeys()      { return rpc('orakul_site_my_keys'); }
+        function activate(key) { return rpc('orakul_site_activate_key', { p_key: key }); }
+        function adminKeys(filter) {
+            return rpc('orakul_site_admin_keys', { p_filter: filter || 'all', p_limit: 200 });
+        }
+        function adminCreate(kind, value, count, price) {
+            return rpc('orakul_site_admin_create_key', {
+                p_kind: kind, p_value: value,
+                p_count: count || 1, p_price_rub: price || 0
+            });
+        }
+        function adminDelete(key) { return rpc('orakul_site_admin_delete_key', { p_key: key }); }
+        function adminStats()     { return rpc('orakul_site_admin_stats'); }
+
+        /* Человеческие тексты вместо кодов Supabase */
+        function human(err) {
+            var m = String(err || '');
+            if (/Failed to fetch|NetworkError|Load failed/i.test(m)) {
+                return 'Нет связи с сайтом. Проверь интернет и попробуй ещё раз.';
+            }
+            if (/does not exist|schema cache|function .* not found/i.test(m)) {
+                return 'База ещё не настроена: примените sql/gift_keys.sql в Supabase.';
+            }
+            if (/JWT|not authenticated|401/i.test(m)) {
+                return 'Нужно войти в аккаунт.';
+            }
+            return m || 'что-то пошло не так';
+        }
+
+        /* Статусы активации ключа → текст */
+        var KEY_STATUS = {
+            ok:          'Ключ активирован',
+            used:        'Ключ уже активирован',
+            not_found:   'Ключ не найден',
+            bad_format:  'Не похоже на ключ',
+            unauthorized:'Нужно войти в аккаунт',
+            forbidden:   'Нет доступа'
+        };
+
+        /* Ждём, пока восстановится сессия, и отдаём пользователя (или null) */
+        function waitUser() {
+            return cloud.boot().then(function () {
+                return cloud.user();
+            }).catch(function () { return null; });
+        }
+
+        return {
+            config: CFG,
+            items: ITEMS,
+            byCode: byCode,
+            amount: amount,
+            saving: saving,
+            money: money,
+            fmtNum: fmtNum,
+            fmtDate: fmtDate,
+            fmtDateTime: fmtDateTime,
+            daysLeft: daysLeft,
+            botLink: botLink,
+            rpc: rpc,
+            me: me,
+            newToken: newToken,
+            myKeys: myKeys,
+            activate: activate,
+            adminKeys: adminKeys,
+            adminCreate: adminCreate,
+            adminDelete: adminDelete,
+            adminStats: adminStats,
+            human: human,
+            keyStatus: KEY_STATUS,
+            waitUser: waitUser
+        };
+    })();
+
     /* ================= ТЕМА ================= */
     var theme = (function () {
         var btn = null;
@@ -2669,11 +2868,14 @@
             if (u && u.email) {
                 link.textContent = u.email.split('@')[0];
                 link.classList.add('is-in');
+                // Вошедшему кнопка ведёт в профиль (ключи, мана, Pro)
+                link.setAttribute('href', 'profile.html');
                 link.setAttribute('title', u.email);
                 link.setAttribute('aria-label', 'Профиль: ' + u.email);
             } else {
                 link.textContent = 'Войти';
                 link.classList.remove('is-in');
+                link.setAttribute('href', 'login.html');
                 link.removeAttribute('title');
                 link.setAttribute('aria-label', 'Войти или зарегистрироваться');
             }
@@ -2794,6 +2996,7 @@
         tilt: tilt,
         store: { get: get, set: set, keys: K },
         cloud: cloud,
+        site: site,
         mana: mana,
         cursor: { freeze: function (ms) { cursorFreeze(ms); } },
         reduceMotion: reduceMotion,

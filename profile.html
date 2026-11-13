@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f0c1b">
+    <meta name="description" content="Профиль Оракула: мана, Pro, привязка Telegram и мои ключи.">
+    <title>Профиль — Оракул</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔮</text></svg>">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            background: rgba(15, 12, 27, 0.72);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: var(--text-main);
+            text-decoration: none;
+            letter-spacing: 0.5px;
+        }
+
+        .logo .orb { font-size: 1.4rem; filter: drop-shadow(0 0 10px var(--glow)); }
+
+        .nav-links { display: flex; gap: 22px; align-items: center; }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.25s ease;
+        }
+
+        .nav-links a:hover { color: var(--text-main); }
+        .nav-links a.is-current { color: var(--accent-2); text-shadow: 0 0 14px var(--accent-2); }
+
+        .menu-toggle {
+            display: none;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid rgba(138, 43, 226, 0.38);
+            background: rgba(138, 43, 226, 0.14);
+            color: var(--text-main);
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        .page {
+            position: relative;
+            z-index: 2;
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 40px 20px 90px;
+        }
+
+        .page-head { text-align: center; margin-bottom: 26px; }
+
+        .kicker {
+            display: inline-block;
+            padding: 5px 14px;
+            border-radius: 999px;
+            background: rgba(138, 43, 226, 0.14);
+            border: 1px solid rgba(138, 43, 226, 0.35);
+            color: var(--accent-2);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+        }
+
+        .page-head h1 {
+            margin: 14px 0 8px;
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            font-weight: 900;
+            letter-spacing: -1px;
+        }
+
+        .page-head p { color: var(--text-muted); }
+
+        .row-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
+        footer {
+            position: relative;
+            z-index: 2;
+            padding: 26px 20px 40px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--line);
+        }
+
+        footer a { color: var(--accent-2); text-decoration: none; }
+
+        @media (max-width: 860px) {
+            .nav-links { display: none; }
+            .menu-toggle { display: inline-block; }
+
+            .nav.open .nav-links {
+                display: flex;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0;
+                padding: 10px 20px 18px;
+                background: rgba(15, 12, 27, 0.97);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            }
+
+            .nav.open .nav-links a {
+                padding: 12px 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+                font-size: 1rem;
+            }
+
+            .nav.open .nav-links a:last-child { border-bottom: none; }
+
+            .cursor-orb, .cursor-glow { display: none; }
+        }
+
+        @media (max-width: 640px) {
+            .page { padding: 26px 16px 70px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
+    <div class="cursor-orb" id="cursorOrb" aria-hidden="true">🔮</div>
+
+    <header class="nav" id="nav">
+        <div class="nav-inner">
+            <a class="logo" href="index.html">
+                <span class="orb" aria-hidden="true">🔮</span>
+                <span>Оракул</span>
+            </a>
+            <nav class="nav-links">
+                <a href="index.html#features">Возможности</a>
+                <a href="achievements.html">Достижения</a>
+                <a href="shop.html">Магазин</a>
+                <a href="profile.html" class="is-current" aria-current="page">Профиль</a>
+            </nav>
+            <div class="nav-tools">
+                <a class="mana-pill" data-mana href="achievements.html" title="Мана">
+                    <span class="mana-ico" aria-hidden="true">✨</span>
+                    <span data-mana-value>0</span>
+                </a>
+                <a class="auth-link" id="authLink" href="login.html">Войти</a>
+                <button class="theme-toggle" id="themeToggle" type="button"
+                        aria-label="Включить светлую тему" aria-pressed="false">
+                    <span class="icon" id="themeIcon" aria-hidden="true">🌙</span>
+                </button>
+                <button class="menu-toggle" id="menuToggle" type="button"
+                        aria-label="Открыть меню" aria-expanded="false">☰</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="page">
+        <div class="page-head">
+            <span class="kicker">Аккаунт</span>
+            <h1>Профиль</h1>
+            <p>Мана, Pro, привязка Telegram и ключи — всё в одном месте.</p>
+        </div>
+
+        <!-- Гость -->
+        <section class="gate" id="gate" hidden>
+            <div class="gate-ico" aria-hidden="true">🔒</div>
+            <h1>Нужен вход</h1>
+            <p>Профиль, мана и ключи живут в аккаунте. Войди — и всё появится здесь.</p>
+            <div class="row-actions" style="justify-content: center;">
+                <a class="btn" href="login.html?next=profile.html">Войти или зарегистрироваться</a>
+                <a class="btn btn-ghost" href="shop.html">В магазин</a>
+            </div>
+        </section>
+
+        <!-- Профиль -->
+        <div id="app" hidden>
+
+            <section class="pcard">
+                <div class="profile-head">
+                    <span class="avatar" aria-hidden="true">🔮</span>
+                    <div class="profile-id">
+                        <b id="pMail">—</b>
+                        <small id="pSince">—</small>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" id="outBtn" type="button">Выйти</button>
+                </div>
+
+                <div class="stats">
+                    <div class="stat is-gold">
+                        <small>Мана</small>
+                        <b id="pMana">0</b>
+                    </div>
+                    <div class="stat">
+                        <small>Pro</small>
+                        <b id="pPro">нет</b>
+                    </div>
+                    <div class="stat">
+                        <small>Telegram</small>
+                        <b id="pTg">не привязан</b>
+                    </div>
+                </div>
+
+                <div class="row-actions">
+                    <a class="btn btn-sm" href="shop.html">💳 Купить Pro или ману</a>
+                    <a class="btn btn-ghost btn-sm" href="achievements.html">✨ Собрать ману</a>
+                </div>
+            </section>
+
+            <section class="pcard" aria-labelledby="tgTitle">
+                <h2 id="tgTitle">🔗 Привязка Telegram</h2>
+                <p>Привяжи бота к аккаунту — и покупки будут приходить прямо сюда,
+                   без ключей. Один раз, навсегда.</p>
+
+                <div class="row-actions">
+                    <button class="btn btn-sm" id="tgBtn" type="button">Получить токен</button>
+                    <a class="btn btn-ghost btn-sm" id="tgOpen" href="#" target="_blank"
+                       rel="noopener noreferrer">Открыть бота</a>
+                </div>
+
+                <div class="token-box" id="tgBox" hidden>
+                    <span class="token-code" id="tgCode">—</span>
+                    <button class="key-copy" id="tgCopy" type="button">Скопировать</button>
+                    <p class="token-hint">
+                        Отправь боту команду <code>/link ТОКЕН</code> — например
+                        <code id="tgCmd">/link —</code>. Токен одноразовый и живёт 30 минут;
+                        новый можно взять в любой момент.
+                    </p>
+                </div>
+
+                <p class="form-msg" id="tgMsg" role="status" aria-live="polite"></p>
+            </section>
+
+            <section class="pcard" aria-labelledby="keysTitle">
+                <h2 id="keysTitle">🎁 Мои ключи</h2>
+                <p>Ключ — это Pro или мана в конверте. Активируй свой или вставь тот,
+                   что подарил друг.</p>
+
+                <form class="field-row" id="keyForm" novalidate>
+                    <label class="field" for="keyInput">
+                        <span>Ключ</span>
+                        <input id="keyInput" name="key" type="text" autocomplete="off"
+                               spellcheck="false" placeholder="ORAKUL-PRO-XXXX-XXXX">
+                    </label>
+                    <button class="btn" id="keySubmit" type="submit">Активировать</button>
+                </form>
+
+                <p class="form-msg" id="keyMsg" role="status" aria-live="polite"></p>
+
+                <div class="keys-list" id="keyList"></div>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <p>Оракул · <a href="index.html">на главную</a> · <a href="shop.html">магазин</a></p>
+    </footer>
+
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            var O = window.Orakul;
+            var S = O.site;
+
+            var gate = document.getElementById('gate');
+            var app = document.getElementById('app');
+
+            var pMail = document.getElementById('pMail');
+            var pSince = document.getElementById('pSince');
+            var pMana = document.getElementById('pMana');
+            var pPro = document.getElementById('pPro');
+            var pTg = document.getElementById('pTg');
+
+            var outBtn = document.getElementById('outBtn');
+
+            var tgBtn = document.getElementById('tgBtn');
+            var tgOpen = document.getElementById('tgOpen');
+            var tgBox = document.getElementById('tgBox');
+            var tgCode = document.getElementById('tgCode');
+            var tgCmd = document.getElementById('tgCmd');
+            var tgCopy = document.getElementById('tgCopy');
+            var tgMsg = document.getElementById('tgMsg');
+
+            var keyForm = document.getElementById('keyForm');
+            var keyInput = document.getElementById('keyInput');
+            var keySubmit = document.getElementById('keySubmit');
+            var keyMsg = document.getElementById('keyMsg');
+            var keyList = document.getElementById('keyList');
+
+            var me = null;
+
+            /* ---------- мелочи ---------- */
+            function say(el, text, kind) {
+                el.textContent = text || '';
+                el.className = 'form-msg' + (kind ? ' is-' + kind : '');
+            }
+
+            function esc(s) {
+                return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+                });
+            }
+
+            function kindLabel(kind, value) {
+                return kind === 'pro' ? 'Pro · ' + value + ' дн.' : S.fmtNum(value) + ' маны';
+            }
+
+            function copyText(text, btn) {
+                var done = function () {
+                    if (!btn) return;
+                    var old = btn.textContent;
+                    btn.textContent = 'Скопировано';
+                    setTimeout(function () { btn.textContent = old; }, 1400);
+                };
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(done, done);
+                    return;
+                }
+
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch (e) {}
+                ta.remove();
+                done();
+            }
+
+            /* ---------- отрисовка профиля ---------- */
+            function paintMe(data) {
+                me = data || me;
+
+                pMail.textContent = (me && me.email) || '—';
+                pSince.textContent = me && me.created_at
+                    ? 'На сайте с ' + S.fmtDate(me.created_at)
+                    : 'Аккаунт Оракула';
+
+                pMana.textContent = S.fmtNum((me && me.mana) || 0);
+
+                var left = S.daysLeft(me && me.pro_until);
+                if (left > 0) {
+                    pPro.textContent = left + ' дн.';
+                    pPro.title = 'До ' + S.fmtDate(me.pro_until);
+                } else {
+                    pPro.textContent = 'нет';
+                    pPro.removeAttribute('title');
+                }
+
+                var tg = me && me.telegram_id;
+                pTg.textContent = tg ? 'привязан' : 'не привязан';
+                pTg.title = tg ? 'Telegram ID ' + tg : '';
+                tgBtn.textContent = tg ? 'Обновить токен' : 'Получить токен';
+            }
+
+            /* ---------- ключи ---------- */
+            function keyRow(k) {
+                var used = !!k.used;
+                var tag = used
+                    ? '<span class="tag tag-ok">активирован</span>'
+                    : (k.role === 'mine'
+                        ? '<span class="tag tag-mute">не активирован</span>'
+                        : '<span class="tag tag-mute">чужой</span>');
+
+                var when = used && k.used_at
+                    ? ' · ' + S.fmtDateTime(k.used_at)
+                    : ' · выдан ' + S.fmtDate(k.created_at);
+
+                return '' +
+                    '<div class="key-row" data-key="' + esc(k.key) + '">' +
+                        '<span class="key-code">' + esc(k.key) + '</span>' +
+                        '<span class="key-meta">' +
+                            '<span>' + esc(kindLabel(k.kind, k.value)) + '</span>' +
+                            tag +
+                            '<span>' + esc(when) + '</span>' +
+                        '</span>' +
+                        '<button class="key-copy" type="button" data-copy="' + esc(k.key) + '">Копировать</button>' +
+                    '</div>';
+            }
+
+            function paintKeys(res) {
+                var list = (res && res.keys) || [];
+
+                if (!list.length) {
+                    keyList.innerHTML = '<div class="empty">Пока пусто. Ключи появятся здесь, ' +
+                        'как только купишь или активируешь первый.</div>';
+                    return;
+                }
+
+                keyList.innerHTML = list.map(keyRow).join('');
+            }
+
+            function loadKeys() {
+                return S.myKeys().then(function (res) {
+                    if (res && res.error) {
+                        keyList.innerHTML = '<div class="empty">' + esc(S.human(res.error)) + '</div>';
+                        return;
+                    }
+                    paintKeys(res);
+                });
+            }
+
+            /* ---------- загрузка ---------- */
+            function boot() {
+                S.waitUser().then(function (user) {
+                    if (!user) {
+                        gate.hidden = false;
+                        app.hidden = true;
+                        return;
+                    }
+
+                    gate.hidden = true;
+                    app.hidden = false;
+
+                    S.me().then(function (res) {
+                        if (res && res.error) {
+                            say(tgMsg, '⚠️ ' + S.human(res.error), 'bad');
+                            pMail.textContent = user.email || '—';
+                            return;
+                        }
+                        paintMe(res);
+                    });
+
+                    loadKeys();
+                });
+            }
+
+            /* ---------- действия ---------- */
+            outBtn.addEventListener('click', function () {
+                outBtn.disabled = true;
+                outBtn.textContent = 'Выходим…';
+                O.cloud.signOut().then(function () { window.location.href = 'index.html'; });
+            });
+
+            tgBtn.addEventListener('click', function () {
+                tgBtn.disabled = true;
+                say(tgMsg, 'Готовлю токен…');
+
+                S.newToken().then(function (res) {
+                    tgBtn.disabled = false;
+
+                    if (!res || res.error) {
+                        say(tgMsg, '⚠️ ' + S.human(res && res.error), 'bad');
+                        return;
+                    }
+                    if (res.status === 'unauthorized') {
+                        say(tgMsg, 'Сессия истекла — войди заново.', 'bad');
+                        return;
+                    }
+                    if (!res.token) {
+                        say(tgMsg, '⚠️ Сайт не вернул токен. Проверь SQL в Supabase.', 'bad');
+                        return;
+                    }
+
+                    tgCode.textContent = res.token;
+                    tgCmd.textContent = '/link ' + res.token;
+                    tgBox.hidden = false;
+                    say(tgMsg, 'Токен готов: отправь его боту как /link ' + res.token, 'ok');
+                    if (O.Snd) O.Snd.beep ? O.Snd.beep(660, 0.03, 0.08) : O.Snd.click();
+                });
+            });
+
+            tgCopy.addEventListener('click', function () {
+                copyText('/link ' + tgCode.textContent, tgCopy);
+            });
+
+            if (tgOpen) tgOpen.setAttribute('href', S.botLink());
+
+            keyForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                var raw = keyInput.value.trim();
+                if (!raw) {
+                    say(keyMsg, 'Вставь ключ — он выглядит как ORAKUL-PRO-XXXX-XXXX.', 'bad');
+                    keyInput.focus();
+                    return;
+                }
+
+                keySubmit.disabled = true;
+                say(keyMsg, 'Проверяю ключ…');
+
+                S.activate(raw).then(function (res) {
+                    keySubmit.disabled = false;
+
+                    if (!res || res.error) {
+                        say(keyMsg, '⚠️ ' + S.human(res && res.error), 'bad');
+                        return;
+                    }
+
+                    var status = res.status || '';
+
+                    if (status === 'ok') {
+                        var what = res.kind === 'mana'
+                            ? '✨ +' + S.fmtNum(res.value) + ' маны (всего ' + S.fmtNum(res.mana) + ')'
+                            : '👑 Pro +' + res.value + ' дн. (до ' + S.fmtDate(res.pro_until) + ')';
+                        say(keyMsg, '✅ ' + (S.keyStatus.ok || 'Ключ активирован') + ': ' + what, 'ok');
+                        keyInput.value = '';
+                        if (O.Snd) O.Snd.fanfare();
+                        loadKeys();
+                        S.me().then(function (r) { if (r && !r.error) paintMe(r); });
+                        return;
+                    }
+
+                    say(keyMsg, '❌ ' + (S.keyStatus[status] || 'Не получилось активировать'), 'bad');
+                    if (O.Snd) O.Snd.beep ? O.Snd.beep(180, 0.05, 0.18) : O.Snd.click();
+                });
+            });
+
+            keyList.addEventListener('click', function (e) {
+                var btn = e.target.closest ? e.target.closest('[data-copy]') : null;
+                if (!btn) return;
+                copyText(btn.getAttribute('data-copy'), btn);
+            });
+
+            boot();
+
+            /* Мобильное меню */
+            var nav = document.getElementById('nav');
+            var toggle = document.getElementById('menuToggle');
+
+            toggle.addEventListener('click', function () {
+                var isOpen = nav.classList.toggle('open');
+                toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                toggle.textContent = isOpen ? '✕' : '☰';
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!nav.classList.contains('open')) return;
+                if (nav.contains(e.target)) return;
+                nav.classList.remove('open');
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.textContent = '☰';
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key !== 'Escape' || !nav.classList.contains('open')) return;
+                nav.classList.remove('open');
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.textContent = '☰';
+            });
+        })();
+    </script>
+</body>
+</html>

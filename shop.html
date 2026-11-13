@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f0c1b">
+    <meta name="description" content="Магазин Оракула: Pro и мана за Telegram Stars или картой. Ключи в подарок другу.">
+    <title>Магазин — Оракул</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔮</text></svg>">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        /* ===== Шапка (как на остальных страницах) ===== */
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            background: rgba(15, 12, 27, 0.72);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: var(--text-main);
+            text-decoration: none;
+            letter-spacing: 0.5px;
+        }
+
+        .logo .orb { font-size: 1.4rem; filter: drop-shadow(0 0 10px var(--glow)); }
+
+        .nav-links { display: flex; gap: 22px; align-items: center; }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.25s ease;
+        }
+
+        .nav-links a:hover { color: var(--text-main); }
+
+        .nav-links a.is-current {
+            color: var(--accent-2);
+            text-shadow: 0 0 14px var(--accent-2);
+        }
+
+        .menu-toggle {
+            display: none;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid rgba(138, 43, 226, 0.38);
+            background: rgba(138, 43, 226, 0.14);
+            color: var(--text-main);
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        /* ===== Страница ===== */
+        .page {
+            position: relative;
+            z-index: 2;
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 42px 20px 90px;
+        }
+
+        .page-head { text-align: center; margin-bottom: 30px; }
+
+        .kicker {
+            display: inline-block;
+            padding: 5px 14px;
+            border-radius: 999px;
+            background: rgba(138, 43, 226, 0.14);
+            border: 1px solid rgba(138, 43, 226, 0.35);
+            color: var(--accent-2);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+        }
+
+        .page-head h1 {
+            margin: 14px 0 8px;
+            font-size: clamp(1.9rem, 5vw, 2.8rem);
+            font-weight: 900;
+            letter-spacing: -1px;
+        }
+
+        .page-head p { color: var(--text-muted); max-width: 620px; margin: 0 auto; }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 34px 0 4px;
+            font-size: 1.15rem;
+            font-weight: 800;
+        }
+
+        .section-sub { color: var(--text-muted); font-size: 0.9rem; }
+
+        /* ===== Футер ===== */
+        footer {
+            position: relative;
+            z-index: 2;
+            padding: 26px 20px 40px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--line);
+        }
+
+        footer a { color: var(--accent-2); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        @media (max-width: 860px) {
+            .nav-links { display: none; }
+            .menu-toggle { display: inline-block; }
+
+            .nav.open .nav-links {
+                display: flex;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0;
+                padding: 10px 20px 18px;
+                background: rgba(15, 12, 27, 0.97);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            }
+
+            .nav.open .nav-links a {
+                padding: 12px 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+                font-size: 1rem;
+            }
+
+            .nav.open .nav-links a:last-child { border-bottom: none; }
+
+            .cursor-orb, .cursor-glow { display: none; }
+        }
+
+        @media (max-width: 640px) {
+            .page { padding: 28px 16px 70px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
+    <div class="cursor-orb" id="cursorOrb" aria-hidden="true">🔮</div>
+
+    <header class="nav" id="nav">
+        <div class="nav-inner">
+            <a class="logo" href="index.html">
+                <span class="orb" aria-hidden="true">🔮</span>
+                <span>Оракул</span>
+            </a>
+            <nav class="nav-links">
+                <a href="index.html#features">Возможности</a>
+                <a href="index.html#install">Установка</a>
+                <a href="achievements.html">Достижения</a>
+                <a href="shop.html" class="is-current" aria-current="page">Магазин</a>
+            </nav>
+            <div class="nav-tools">
+                <a class="mana-pill" data-mana href="achievements.html" title="Мана">
+                    <span class="mana-ico" aria-hidden="true">✨</span>
+                    <span data-mana-value>0</span>
+                </a>
+                <a class="auth-link" id="authLink" href="login.html">Войти</a>
+                <button class="theme-toggle" id="themeToggle" type="button"
+                        aria-label="Включить светлую тему" aria-pressed="false">
+                    <span class="icon" id="themeIcon" aria-hidden="true">🌙</span>
+                </button>
+                <button class="menu-toggle" id="menuToggle" type="button"
+                        aria-label="Открыть меню" aria-expanded="false">☰</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="page">
+        <div class="page-head">
+            <span class="kicker">Магазин</span>
+            <h1>Прокачай Оракула</h1>
+            <p>Pro снимает ограничения и открывает расширенную статистику, мана
+               ускоряет коллекцию достижений. Оплата — звёздами Telegram, карта скоро.</p>
+        </div>
+
+        <!-- ===== Способ оплаты ===== -->
+        <section class="pcard" aria-labelledby="payTitle">
+            <h2 id="payTitle">Способ оплаты</h2>
+            <p>Выбери, как удобнее. Счёт выставляет бот — он же и выдаёт товар.</p>
+
+            <div class="pay-switch" id="paySwitch" role="radiogroup" aria-label="Способ оплаты">
+                <button class="pay-opt is-active" type="button" role="radio"
+                        aria-checked="true" data-pay="card">
+                    <span class="pay-ico" aria-hidden="true">💳</span>
+                    <span class="pay-body">
+                        <b>Картой</b>
+                        <small>Visa · MasterCard · МИР</small>
+                    </span>
+                    <span class="tag tag-soon">Скоро</span>
+                </button>
+
+                <button class="pay-opt" type="button" role="radio"
+                        aria-checked="false" data-pay="stars">
+                    <span class="pay-ico" aria-hidden="true">⭐</span>
+                    <span class="pay-body">
+                        <b>Telegram Stars</b>
+                        <small>Внутри Telegram, без карты</small>
+                    </span>
+                    <span class="tag tag-live">Работает</span>
+                </button>
+            </div>
+
+            <p class="pay-hint" id="payHint" role="status" aria-live="polite">
+                Оплата картой ещё в разработке — скоро включим. Пока бери за звёзды:
+                это две секунды прямо в Telegram.
+            </p>
+        </section>
+
+        <!-- ===== Тарифы ===== -->
+        <h2 class="section-title">Тарифы</h2>
+        <p class="section-sub">Цены в рублях — для оплаты картой. Звёзды — сколько спишет Telegram.</p>
+
+        <div class="prices" id="prices"></div>
+
+        <!-- ===== Донат ===== -->
+        <section class="donate" aria-labelledby="donateTitle">
+            <span class="donate-ico" aria-hidden="true">💖</span>
+            <div class="donate-body">
+                <h2 id="donateTitle">Поддержать</h2>
+                <p>Не нужен Pro и не нужна мана? Просто скажи спасибо — на донаты
+                   живут новые фичи, звуки и хостинг.</p>
+            </div>
+            <!-- Пока site.CFG.donate === null — кнопка неактивна и честно
+                 говорит «скоро». Появится ссылка — скрипт заменит её на <a>. -->
+            <button class="btn" id="donateBtn" type="button"
+                    aria-disabled="true" disabled>💖 Поддержать (скоро)</button>
+        </section>
+
+        <!-- ===== Как это работает ===== -->
+        <h2 class="section-title">Как это работает</h2>
+        <div class="steps">
+            <div class="step">
+                <span class="step-num">1</span>
+                <div>
+                    <b>Выбери тариф</b>
+                    <small>Жми «Купить за N ⭐» — откроется бот Оракула.</small>
+                </div>
+            </div>
+            <div class="step">
+                <span class="step-num">2</span>
+                <div>
+                    <b>Оплати звёздами</b>
+                    <small>Telegram выставит счёт внутри чата. Карта и редиректы не нужны.</small>
+                </div>
+            </div>
+            <div class="step">
+                <span class="step-num">3</span>
+                <div>
+                    <b>Получи Pro или ману</b>
+                    <small>Если Telegram привязан к аккаунту — начислю сразу. Если нет —
+                        бот выдаст ключ <code>ORAKUL-…</code>, его можно активировать здесь
+                        или отдать другу.</small>
+                </div>
+            </div>
+        </div>
+
+        <section class="pcard" style="margin-top: 22px;">
+            <h2>🎁 Ключ вместо подарка</h2>
+            <p>Любую покупку можно превратить в ключ: он одноразовый, его не жалко
+               переслать другу. Свои ключи и активация — в профиле.</p>
+            <div class="field-row">
+                <a class="btn btn-ghost" href="profile.html">Открыть профиль</a>
+                <a class="btn btn-ghost" href="login.html?next=profile.html">Войти в аккаунт</a>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Оракул · Pro и мана за Telegram Stars · <a href="index.html">на главную</a></p>
+    </footer>
+
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            var O = window.Orakul;
+            var S = O.site;
+
+            var prices = document.getElementById('prices');
+            var paySwitch = document.getElementById('paySwitch');
+            var payHint = document.getElementById('payHint');
+            var donateBtn = document.getElementById('donateBtn');
+
+            var pay = 'card';   // по умолчанию карта — так в макете: [●] Картой
+
+            var HINTS = {
+                card: 'Оплата картой ещё в разработке — скоро включим. Пока бери за звёзды: ' +
+                      'это две секунды прямо в Telegram.',
+                stars: 'Откроется бот: он выставит счёт в звёздах. Если аккаунт привязан — ' +
+                       'мана и Pro появятся здесь сразу, иначе бот выдаст ключ.'
+            };
+
+            /* Донат. Ссылки пока нет (site.CFG.donate === null) — кнопка
+               неактивна и подписана «(скоро)». Как только в common.js появится
+               адрес, кнопка станет обычной ссылкой без правок в этой странице. */
+            if (donateBtn) {
+                var donateUrl = S.config && S.config.donate;
+                if (donateUrl) {
+                    var donateLink = document.createElement('a');
+                    donateLink.className = 'btn';
+                    donateLink.id = 'donateBtn';
+                    donateLink.href = donateUrl;
+                    donateLink.target = '_blank';
+                    donateLink.rel = 'noopener noreferrer';
+                    donateLink.textContent = '💖 Поддержать';
+                    donateBtn.parentNode.replaceChild(donateLink, donateBtn);
+                    donateBtn = donateLink;
+                }
+            }
+
+            /* ---- карточка тарифа ---- */
+            function cardHTML(item) {
+                var save = S.saving(item);
+                var badge = item.hot
+                    ? '<span class="tag tag-hot">Хит</span>'
+                    : (save ? '<span class="tag tag-hot">выгодно −' + save + '%</span>'
+                            : '<span class="tag tag-mute">' + (item.kind === 'pro' ? 'Pro' : 'мана') + '</span>');
+
+                var action;
+                if (pay === 'stars') {
+                    action = '<a class="btn price-btn" href="' + S.botLink(item.code) + '" ' +
+                             'target="_blank" rel="noopener noreferrer">Купить за ' +
+                             item.stars + ' ⭐</a>';
+                } else {
+                    action = '<button class="btn price-btn" type="button" aria-disabled="true" ' +
+                             'data-soon="1">Скоро</button>';
+                }
+
+                return '' +
+                    '<article class="price-card' + (item.hot ? ' is-hot' : '') + '" data-code="' + item.code + '">' +
+                        '<div class="price-top">' +
+                            '<span class="price-ico" aria-hidden="true">' + item.icon + '</span>' +
+                            badge +
+                        '</div>' +
+                        '<h3>' + item.title + '</h3>' +
+                        '<p class="price-sub">' + item.sub + '</p>' +
+                        '<div class="price-row">' +
+                            '<span class="price-rub">' + S.money(item.rub) + '</span>' +
+                            '<span class="price-stars">' + item.stars + ' ⭐</span>' +
+                        '</div>' +
+                        '<p class="price-per">' + item.per + '</p>' +
+                        action +
+                    '</article>';
+            }
+
+            function render() {
+                prices.innerHTML = S.items.map(cardHTML).join('');
+            }
+
+            /* ---- переключатель оплаты ---- */
+            function setPay(next) {
+                pay = next === 'stars' ? 'stars' : 'card';
+
+                Array.prototype.forEach.call(paySwitch.querySelectorAll('.pay-opt'), function (btn) {
+                    var on = btn.getAttribute('data-pay') === pay;
+                    btn.classList.toggle('is-active', on);
+                    btn.setAttribute('aria-checked', on ? 'true' : 'false');
+                });
+
+                payHint.textContent = HINTS[pay];
+                render();
+
+                if (O.Snd) {
+                    O.Snd.click();
+                    if (pay === 'stars') O.Snd.ring();
+                }
+            }
+
+            paySwitch.addEventListener('click', function (e) {
+                var btn = e.target.closest ? e.target.closest('.pay-opt') : null;
+                if (!btn) return;
+                setPay(btn.getAttribute('data-pay'));
+            });
+
+            /* Стрелки внутри радиогруппы — как у настоящих радио */
+            paySwitch.addEventListener('keydown', function (e) {
+                if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+                e.preventDefault();
+                setPay(pay === 'card' ? 'stars' : 'card');
+            });
+
+            /* Клик по «Скоро» — честно объясняем, а не молчим */
+            prices.addEventListener('click', function (e) {
+                var soon = e.target.closest ? e.target.closest('[data-soon]') : null;
+                if (!soon) return;
+
+                payHint.textContent = 'Карта появится позже. Пока — «Telegram Stars»: ' +
+                                      'кнопка сразу откроет бота с готовым счётом.';
+                payHint.style.borderColor = 'rgba(255, 209, 102, 0.6)';
+                setTimeout(function () { payHint.style.borderColor = ''; }, 1600);
+                if (O.Snd) O.Snd.beep ? O.Snd.beep(320, 0.04, 0.12) : O.Snd.click();
+            });
+
+            render();
+
+            /* Мобильное меню */
+            var nav = document.getElementById('nav');
+            var toggle = document.getElementById('menuToggle');
+
+            function closeMenu() {
+                nav.classList.remove('open');
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.textContent = '☰';
+            }
+
+            toggle.addEventListener('click', function () {
+                var isOpen = nav.classList.toggle('open');
+                toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                toggle.textContent = isOpen ? '✕' : '☰';
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!nav.classList.contains('open')) return;
+                if (nav.contains(e.target)) return;
+                closeMenu();
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && nav.classList.contains('open')) closeMenu();
+            });
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f0c1b">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Админка · Ключи — Оракул</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔑</text></svg>">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            background: rgba(15, 12, 27, 0.72);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: var(--text-main);
+            text-decoration: none;
+            letter-spacing: 0.5px;
+        }
+
+        .logo .orb { font-size: 1.4rem; filter: drop-shadow(0 0 10px var(--glow)); }
+
+        .nav-links { display: flex; gap: 22px; align-items: center; }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.25s ease;
+        }
+
+        .nav-links a:hover { color: var(--text-main); }
+        .nav-links a.is-current { color: var(--accent-2); text-shadow: 0 0 14px var(--accent-2); }
+
+        .menu-toggle {
+            display: none;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid rgba(138, 43, 226, 0.38);
+            background: rgba(138, 43, 226, 0.14);
+            color: var(--text-main);
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        .page {
+            position: relative;
+            z-index: 2;
+            max-width: 1060px;
+            margin: 0 auto;
+            padding: 38px 20px 90px;
+        }
+
+        .page-head { margin-bottom: 22px; }
+
+        .kicker {
+            display: inline-block;
+            padding: 5px 14px;
+            border-radius: 999px;
+            background: rgba(138, 43, 226, 0.14);
+            border: 1px solid rgba(138, 43, 226, 0.35);
+            color: var(--accent-2);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+        }
+
+        .page-head h1 {
+            margin: 12px 0 6px;
+            font-size: clamp(1.7rem, 4.5vw, 2.3rem);
+            font-weight: 900;
+            letter-spacing: -0.8px;
+        }
+
+        .page-head p { color: var(--text-muted); font-size: 0.92rem; }
+
+        .gen-out {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .gen-key {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: rgba(110, 231, 168, 0.1);
+            border: 1px solid rgba(110, 231, 168, 0.35);
+            font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+            font-size: 0.84rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #b8ffd9;
+            cursor: pointer;
+        }
+
+        html[data-theme="light"] .gen-key { color: #0f6b3d; }
+
+        .del-btn {
+            padding: 4px 9px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 138, 138, 0.4);
+            background: transparent;
+            color: #ff8a8a;
+            font-family: inherit;
+            font-size: 0.74rem;
+            cursor: pointer;
+        }
+
+        .del-btn:hover { background: rgba(255, 138, 138, 0.14); }
+
+        footer {
+            position: relative;
+            z-index: 2;
+            padding: 26px 20px 40px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--line);
+        }
+
+        footer a { color: var(--accent-2); text-decoration: none; }
+
+        @media (max-width: 860px) {
+            .nav-links { display: none; }
+            .menu-toggle { display: inline-block; }
+
+            .nav.open .nav-links {
+                display: flex;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0;
+                padding: 10px 20px 18px;
+                background: rgba(15, 12, 27, 0.97);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            }
+
+            .nav.open .nav-links a {
+                padding: 12px 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+                font-size: 1rem;
+            }
+
+            .nav.open .nav-links a:last-child { border-bottom: none; }
+
+            .cursor-orb, .cursor-glow { display: none; }
+        }
+
+        @media (max-width: 640px) {
+            .page { padding: 26px 16px 70px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
+    <div class="cursor-orb" id="cursorOrb" aria-hidden="true">🔮</div>
+
+    <header class="nav" id="nav">
+        <div class="nav-inner">
+            <a class="logo" href="index.html">
+                <span class="orb" aria-hidden="true">🔮</span>
+                <span>Оракул</span>
+            </a>
+            <nav class="nav-links">
+                <a href="index.html#features">Возможности</a>
+                <a href="achievements.html">Достижения</a>
+                <a href="shop.html">Магазин</a>
+                <a href="profile.html">Профиль</a>
+                <a href="admin.html" class="is-current" aria-current="page">Ключи</a>
+            </nav>
+            <div class="nav-tools">
+                <a class="mana-pill" data-mana href="achievements.html" title="Мана">
+                    <span class="mana-ico" aria-hidden="true">✨</span>
+                    <span data-mana-value>0</span>
+                </a>
+                <a class="auth-link" id="authLink" href="login.html">Войти</a>
+                <button class="theme-toggle" id="themeToggle" type="button"
+                        aria-label="Включить светлую тему" aria-pressed="false">
+                    <span class="icon" id="themeIcon" aria-hidden="true">🌙</span>
+                </button>
+                <button class="menu-toggle" id="menuToggle" type="button"
+                        aria-label="Открыть меню" aria-expanded="false">☰</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="page">
+        <div class="page-head">
+            <span class="kicker">Админка</span>
+            <h1>Ключи</h1>
+            <p>Генерация подарочных ключей и полный список выданных.</p>
+        </div>
+
+        <section class="gate" id="gate" hidden>
+            <div class="gate-ico" aria-hidden="true">🔒</div>
+            <h1>Нужен вход</h1>
+            <p>Админка доступна только владельцу аккаунта.</p>
+            <div class="row-actions" style="justify-content: center;">
+                <a class="btn" href="login.html?next=admin.html">Войти</a>
+            </div>
+        </section>
+
+        <section class="gate" id="deny" hidden>
+            <div class="gate-ico" aria-hidden="true">🚫</div>
+            <h1>Нет доступа</h1>
+            <p>Этот аккаунт не админ. Выдать права можно в Supabase одним запросом:</p>
+            <div class="token-box" style="text-align: left;">
+                <code class="token-code" style="font-size: 0.85rem; letter-spacing: 0.4px; white-space: pre-wrap;">
+update public.users set is_admin = true
+ where lower(email) = lower('твоя@почта');
+                </code>
+            </div>
+            <p style="margin-top: 14px;">После этого обнови страницу.</p>
+        </section>
+
+        <div id="admin" hidden>
+
+            <section class="pcard">
+                <h2>📊 Сводка</h2>
+                <div class="stats" id="stats">
+                    <div class="stat"><small>Аккаунтов</small><b id="sUsers">—</b></div>
+                    <div class="stat"><small>С Pro</small><b id="sPro">—</b></div>
+                    <div class="stat is-gold"><small>Маны у всех</small><b id="sMana">—</b></div>
+                    <div class="stat"><small>Ключей</small><b id="sKeys">—</b></div>
+                    <div class="stat"><small>Свободных</small><b id="sFree">—</b></div>
+                    <div class="stat"><small>Дней Pro выдано</small><b id="sDays">—</b></div>
+                </div>
+            </section>
+
+            <section class="pcard" aria-labelledby="genTitle">
+                <h2 id="genTitle">🎁 Сгенерировать ключи</h2>
+                <p>Ключ одноразовый: активируется в боте (<code>/key</code>) или в профиле на сайте.</p>
+
+                <form id="genForm" novalidate>
+                    <div class="field-row">
+                        <label class="field" for="genKind">
+                            <span>Что даём</span>
+                            <select id="genKind">
+                                <option value="pro">Pro (дни)</option>
+                                <option value="mana">Мана</option>
+                            </select>
+                        </label>
+
+                        <label class="field" for="genValue">
+                            <span>Номинал</span>
+                            <select id="genValue"></select>
+                        </label>
+
+                        <label class="field" for="genCount">
+                            <span>Сколько</span>
+                            <input id="genCount" type="number" min="1" max="20" step="1" value="1">
+                        </label>
+
+                        <label class="field" for="genPrice">
+                            <span>Цена, ₽ (для учёта)</span>
+                            <input id="genPrice" type="number" min="0" step="1" value="0">
+                        </label>
+                    </div>
+
+                    <div class="field-row">
+                        <button class="btn" id="genBtn" type="submit">Создать</button>
+                        <button class="btn btn-ghost" id="genCopy" type="button" hidden>Скопировать все</button>
+                    </div>
+                </form>
+
+                <p class="form-msg" id="genMsg" role="status" aria-live="polite"></p>
+                <div class="gen-out" id="genOut"></div>
+            </section>
+
+            <section class="pcard" aria-labelledby="listTitle">
+                <h2 id="listTitle">📋 Все ключи</h2>
+
+                <div class="filters" id="filters" role="group" aria-label="Фильтр ключей">
+                    <button class="filter-btn is-active" type="button" data-filter="all">Все</button>
+                    <button class="filter-btn" type="button" data-filter="free">Свободные</button>
+                    <button class="filter-btn" type="button" data-filter="used">Активированные</button>
+                    <button class="filter-btn" type="button" data-filter="pro">Pro</button>
+                    <button class="filter-btn" type="button" data-filter="mana">Мана</button>
+                </div>
+
+                <div class="table-wrap" id="tableWrap" hidden>
+                    <table class="keys">
+                        <thead>
+                            <tr>
+                                <th>Ключ</th>
+                                <th>Тип</th>
+                                <th>Статус</th>
+                                <th>Источник</th>
+                                <th>Выдан</th>
+                                <th>Активирован</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="rows"></tbody>
+                    </table>
+                </div>
+
+                <div class="empty" id="empty" hidden>Ключей пока нет — сгенерируй первый.</div>
+                <p class="form-msg" id="listMsg" role="status" aria-live="polite"></p>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <p>Оракул · админка · <a href="index.html">на главную</a></p>
+    </footer>
+
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            var O = window.Orakul;
+            var S = O.site;
+
+            var gate = document.getElementById('gate');
+            var deny = document.getElementById('deny');
+            var admin = document.getElementById('admin');
+
+            var genForm = document.getElementById('genForm');
+            var genKind = document.getElementById('genKind');
+            var genValue = document.getElementById('genValue');
+            var genCount = document.getElementById('genCount');
+            var genPrice = document.getElementById('genPrice');
+            var genBtn = document.getElementById('genBtn');
+            var genCopy = document.getElementById('genCopy');
+            var genMsg = document.getElementById('genMsg');
+            var genOut = document.getElementById('genOut');
+
+            var rows = document.getElementById('rows');
+            var tableWrap = document.getElementById('tableWrap');
+            var empty = document.getElementById('empty');
+            var listMsg = document.getElementById('listMsg');
+            var filters = document.getElementById('filters');
+
+            var VALUES = {
+                pro: [7, 30, 90],
+                mana: [1000, 5000, 10000, 25000, 50000]
+            };
+
+            /* Подсказка цены из витрины: 7 дней → 149 ₽ и т.д. */
+            var PRICE_HINT = {};
+            S.items.forEach(function (it) {
+                var key = it.kind + ':' + S.amount(it);
+                PRICE_HINT[key] = it.rub;
+            });
+
+            var filter = 'all';
+            var made = [];
+
+            function say(el, text, kind) {
+                el.textContent = text || '';
+                el.className = 'form-msg' + (kind ? ' is-' + kind : '');
+            }
+
+            function esc(s) {
+                return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+                });
+            }
+
+            function copy(text) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text);
+                    return;
+                }
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch (e) {}
+                ta.remove();
+            }
+
+            /* ---------- селекты ---------- */
+            function fillValues() {
+                var kind = genKind.value === 'mana' ? 'mana' : 'pro';
+                var list = VALUES[kind];
+
+                genValue.innerHTML = list.map(function (v) {
+                    return '<option value="' + v + '">' +
+                           (kind === 'pro' ? v + ' дней' : S.fmtNum(v) + ' маны') +
+                           '</option>';
+                }).join('');
+
+                genValue.value = String(list[0]);
+                syncPrice();
+            }
+
+            function syncPrice() {
+                var kind = genKind.value === 'mana' ? 'mana' : 'pro';
+                var v = parseInt(genValue.value, 10) || 0;
+                var hint = PRICE_HINT[kind + ':' + v];
+                genPrice.value = hint != null ? hint : 0;
+            }
+
+            genKind.addEventListener('change', fillValues);
+            genValue.addEventListener('change', syncPrice);
+
+            /* ---------- таблица ---------- */
+            function statusCell(k) {
+                if (k.used) {
+                    var who = k.used_by ? 'tg ' + k.used_by : (k.used_by_site ? 'сайт' : '—');
+                    return '<span class="tag tag-ok">активирован</span> <small>' + esc(who) + '</small>';
+                }
+                return '<span class="tag tag-mute">свободен</span>';
+            }
+
+            function rowHTML(k) {
+                var type = k.kind === 'pro'
+                    ? '<span class="tag tag-hot">Pro</span> ' + k.value + ' дн.'
+                    : '<span class="tag tag-mute">мана</span> ' + S.fmtNum(k.value);
+
+                var src = k.source === 'site'
+                    ? 'сайт' + (k.created_email ? ' · ' + k.created_email : '')
+                    : 'бот';
+
+                return '' +
+                    '<tr>' +
+                        '<td><code>' + esc(k.key) + '</code></td>' +
+                        '<td>' + type + '</td>' +
+                        '<td>' + statusCell(k) + '</td>' +
+                        '<td>' + esc(src) + '</td>' +
+                        '<td>' + esc(S.fmtDate(k.created_at)) + '</td>' +
+                        '<td>' + esc(k.used_at ? S.fmtDateTime(k.used_at) : '—') + '</td>' +
+                        '<td>' +
+                            '<button class="key-copy" type="button" data-copy="' + esc(k.key) + '">Копировать</button> ' +
+                            (k.used ? '' : '<button class="del-btn" type="button" data-del="' + esc(k.key) + '">Удалить</button>') +
+                        '</td>' +
+                    '</tr>';
+            }
+
+            function paintList(list) {
+                if (!list.length) {
+                    tableWrap.hidden = true;
+                    empty.hidden = false;
+                    empty.textContent = filter === 'all'
+                        ? 'Ключей пока нет — сгенерируй первый.'
+                        : 'Под этот фильтр ключей нет.';
+                    return;
+                }
+
+                empty.hidden = true;
+                tableWrap.hidden = false;
+                rows.innerHTML = list.map(rowHTML).join('');
+            }
+
+            function loadList() {
+                say(listMsg, 'Загружаю…');
+
+                S.adminKeys(filter).then(function (res) {
+                    if (!res || res.error) {
+                        say(listMsg, '⚠️ ' + S.human(res && res.error), 'bad');
+                        paintList([]);
+                        return;
+                    }
+                    if (res.status === 'forbidden') {
+                        admin.hidden = true;
+                        deny.hidden = false;
+                        return;
+                    }
+
+                    say(listMsg, '');
+                    paintList(res.keys || []);
+                });
+            }
+
+            function loadStats() {
+                S.adminStats().then(function (res) {
+                    if (!res || res.error || res.status === 'forbidden') return;
+                    document.getElementById('sUsers').textContent = S.fmtNum(res.users || 0);
+                    document.getElementById('sPro').textContent = S.fmtNum(res.pro_users || 0);
+                    document.getElementById('sMana').textContent = S.fmtNum(res.mana_total || 0);
+                    document.getElementById('sKeys').textContent = S.fmtNum(res.keys_total || 0);
+                    document.getElementById('sFree').textContent = S.fmtNum(res.keys_free || 0);
+                    document.getElementById('sDays').textContent = S.fmtNum(res.pro_days_sold || 0);
+                });
+            }
+
+            /* ---------- генерация ---------- */
+            genForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                var kind = genKind.value === 'mana' ? 'mana' : 'pro';
+                var value = parseInt(genValue.value, 10) || 0;
+                var count = Math.min(Math.max(parseInt(genCount.value, 10) || 1, 1), 20);
+                var price = Math.max(parseInt(genPrice.value, 10) || 0, 0);
+
+                if (!value) {
+                    say(genMsg, 'Выбери номинал.', 'bad');
+                    return;
+                }
+
+                genBtn.disabled = true;
+                say(genMsg, 'Генерирую…');
+
+                S.adminCreate(kind, value, count, price).then(function (res) {
+                    genBtn.disabled = false;
+
+                    if (!res || res.error) {
+                        say(genMsg, '⚠️ ' + S.human(res && res.error), 'bad');
+                        return;
+                    }
+                    if (res.status === 'forbidden') {
+                        say(genMsg, '❌ Нет доступа: этот аккаунт не админ.', 'bad');
+                        return;
+                    }
+                    if (res.status !== 'ok') {
+                        say(genMsg, '⚠️ Сайт ответил: ' + res.status, 'bad');
+                        return;
+                    }
+
+                    made = res.keys || [];
+                    say(genMsg, '✅ Создано ключей: ' + made.length +
+                                (kind === 'pro' ? ' (Pro ' + value + ' дн.)' : ' (' + S.fmtNum(value) + ' маны)'),
+                        'ok');
+
+                    genOut.innerHTML = made.map(function (k) {
+                        return '<span class="gen-key" data-copy="' + esc(k) + '" title="Клик — скопировать">' +
+                               esc(k) + '</span>';
+                    }).join('');
+                    genCopy.hidden = made.length === 0;
+
+                    if (O.Snd) O.Snd.fanfare();
+                    loadList();
+                    loadStats();
+                });
+            });
+
+            genCopy.addEventListener('click', function () {
+                if (!made.length) return;
+                copy(made.join('\n'));
+                genCopy.textContent = 'Скопировано';
+                setTimeout(function () { genCopy.textContent = 'Скопировать все'; }, 1400);
+            });
+
+            genOut.addEventListener('click', function (e) {
+                var el = e.target.closest ? e.target.closest('[data-copy]') : null;
+                if (!el) return;
+                copy(el.getAttribute('data-copy'));
+                el.style.borderColor = '#6ee7a8';
+                setTimeout(function () { el.style.borderColor = ''; }, 900);
+            });
+
+            /* ---------- фильтры и удаление ---------- */
+            filters.addEventListener('click', function (e) {
+                var btn = e.target.closest ? e.target.closest('[data-filter]') : null;
+                if (!btn) return;
+
+                filter = btn.getAttribute('data-filter');
+                Array.prototype.forEach.call(filters.querySelectorAll('.filter-btn'), function (b) {
+                    b.classList.toggle('is-active', b === btn);
+                });
+                loadList();
+            });
+
+            rows.addEventListener('click', function (e) {
+                var copyBtn = e.target.closest ? e.target.closest('[data-copy]') : null;
+                if (copyBtn) {
+                    copy(copyBtn.getAttribute('data-copy'));
+                    copyBtn.textContent = 'Скопировано';
+                    setTimeout(function () { copyBtn.textContent = 'Копировать'; }, 1300);
+                    return;
+                }
+
+                var delBtn = e.target.closest ? e.target.closest('[data-del]') : null;
+                if (!delBtn) return;
+
+                var key = delBtn.getAttribute('data-del');
+                if (!window.confirm('Удалить ключ ' + key + '? Он станет недействительным.')) return;
+
+                delBtn.disabled = true;
+                S.adminDelete(key).then(function (res) {
+                    delBtn.disabled = false;
+
+                    if (!res || res.error) {
+                        say(listMsg, '⚠️ ' + S.human(res && res.error), 'bad');
+                        return;
+                    }
+                    if (res.status === 'ok') {
+                        say(listMsg, '🗑 Ключ удалён: ' + key, 'ok');
+                        loadList();
+                        loadStats();
+                    } else {
+                        say(listMsg, '⚠️ Не удалось: ключ уже активирован?', 'bad');
+                    }
+                });
+            });
+
+            /* ---------- старт ---------- */
+            fillValues();
+
+            S.waitUser().then(function (user) {
+                if (!user) {
+                    gate.hidden = false;
+                    return;
+                }
+
+                S.me().then(function (res) {
+                    if (!res || res.error) {
+                        // База не настроена/недоступна — показываем панель,
+                        // чтобы сообщение об ошибке было видно на месте.
+                        admin.hidden = false;
+                        say(listMsg, '⚠️ ' + S.human(res && res.error), 'bad');
+                        return;
+                    }
+                    if (!res.is_admin) {
+                        deny.hidden = false;
+                        return;
+                    }
+
+                    admin.hidden = false;
+                    loadStats();
+                    loadList();
+                });
+            });
+
+            /* Мобильное меню */
+            var nav = document.getElementById('nav');
+            var toggle = document.getElementById('menuToggle');
+
+            toggle.addEventListener('click', function () {
+                var isOpen = nav.classList.toggle('open');
+                toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                toggle.textContent = isOpen ? '✕' : '☰';
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!nav.classList.contains('open')) return;
+                if (nav.contains(e.target)) return;
+                nav.classList.remove('open');
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.textContent = '☰';
+            });
+        })();
+    </script>
+</body>
+</html>
