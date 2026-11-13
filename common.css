@@ -1,4 +1,4 @@
-﻿/* ===================================================================
+/* ===================================================================
    Оракул — общие стили для всех страниц (index / achievements / console / 404)
    Подключается ДО стилей страницы: <link rel="stylesheet" href="common.css">
    =================================================================== */
@@ -1392,6 +1392,14 @@ table.keys code {
 }
 
 .filter-btn:hover { color: var(--text-main); border-color: rgba(199, 125, 255, 0.45); }
+
+/* Быстрые ссылки на разделы админки — те же «пилюли», но это <a> */
+.filters a.filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+}
 
 .filter-btn.is-active {
     color: #fff;

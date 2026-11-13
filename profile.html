@@ -388,6 +388,11 @@
 
                 pMana.textContent = S.fmtNum((me && me.mana) || 0);
 
+                /* Счётчик в шапке: показываем ману сайта, а не только
+                   локальную за достижения — иначе ключ/промокод/покупка
+                   «не видно» справа сверху. */
+                S.syncMana(me && me.mana);
+
                 var left = S.daysLeft(me && me.pro_until);
                 if (left > 0) {
                     pPro.textContent = left + ' дн.';

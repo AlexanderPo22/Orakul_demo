@@ -2254,7 +2254,19 @@
         function me()          { return rpc('orakul_site_me'); }
         function newToken()    { return rpc('orakul_site_new_token'); }
         function myKeys()      { return rpc('orakul_site_my_keys'); }
-        function activate(key) { return rpc('orakul_site_activate_key', { p_key: key }); }
+        /* «orakul mana abcd efgh» → «ORAKUL-MANA-ABCD-EFGH» (как в боте):
+           ключ можно вставить из письма, чата или продиктовать — дефисы
+           и регистр сайт поправит сам. */
+        function normalizeKey(raw) {
+            var s = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            var m = /^ORAKUL(PRO|MANA)([A-Z0-9]{4})([A-Z0-9]{4})$/.exec(s);
+            return m ? 'ORAKUL-' + m[1] + '-' + m[2] + '-' + m[3]
+                     : String(raw || '').trim().toUpperCase();
+        }
+
+        function activate(key) {
+            return rpc('orakul_site_activate_key', { p_key: normalizeKey(key) });
+        }
         function adminKeys(filter) {
             return rpc('orakul_site_admin_keys', { p_filter: filter || 'all', p_limit: 200 });
         }
@@ -2306,6 +2318,26 @@
             return rpc('orakul_admin_delete_promo', { p_code: code });
         }
 
+        /* ---- мана сайта → счётчик в шапке ----
+           Счётчик [data-mana-value] живёт в localStorage и копит ману за
+           достижения. Мана, купленная или выданная ключом/промокодом, лежит
+           в users.mana. Берём максимум: покупка поднимает счётчик, а уже
+           собранная локальная мана никогда не «сгорает». */
+        function syncMana(serverMana) {
+            var v = Number(serverMana);
+            if (!isFinite(v) || v <= 0) return mana.balance();
+            if (v > mana.balance()) mana.setBalance(v);
+            return mana.balance();
+        }
+
+        /* Перечитать users.mana и обновить счётчик (после покупки/ключа) */
+        function refreshMana() {
+            return me().then(function (res) {
+                if (res && !res.error && res.status === 'ok') syncMana(res.mana);
+                return res;
+            });
+        }
+
         /* Человеческие тексты вместо кодов Supabase */
         function human(err) {
             var m = String(err || '');
@@ -2313,7 +2345,8 @@
                 return 'Нет связи с сайтом. Проверь интернет и попробуй ещё раз.';
             }
             if (/does not exist|schema cache|function .* not found/i.test(m)) {
-                return 'База ещё не настроена: примените sql/gift_keys.sql в Supabase.';
+                return 'База ещё не настроена: примените sql/gift_keys.sql, ' +
+                       'sql/admin_users.sql и sql/promocodes.sql в Supabase.';
             }
             if (/JWT|not authenticated|401/i.test(m)) {
                 return 'Нужно войти в аккаунт.';
@@ -2383,6 +2416,7 @@
             newToken: newToken,
             myKeys: myKeys,
             activate: activate,
+            normalizeKey: normalizeKey,
             adminKeys: adminKeys,
             adminCreate: adminCreate,
             adminDelete: adminDelete,
@@ -2396,6 +2430,8 @@
             adminPromos: adminPromos,
             adminCreatePromo: adminCreatePromo,
             adminDeletePromo: adminDeletePromo,
+            syncMana: syncMana,
+            refreshMana: refreshMana,
             human: human,
             keyStatus: KEY_STATUS,
             promoStatus: PROMO_STATUS,
@@ -3045,7 +3081,12 @@
         watchActivity();
         initAuthLink();
         initMana();
-        cloud.boot();
+
+        /* Счётчик в шапке: после входа подтягиваем ману из users.mana,
+           чтобы купленная/выданная ключом мана была видна сразу. */
+        cloud.boot().then(function () {
+            if (cloud.user()) site.refreshMana();
+        });
     }
 
     if (document.readyState === 'loading') {

@@ -136,6 +136,9 @@
 
         .del-btn:hover { background: rgba(255, 138, 138, 0.14); }
 
+        /* Якоря разделов: не прячем заголовок под липкую шапку */
+        #users, #keys, #promos { scroll-margin-top: 84px; }
+
         .user-act {
             margin-top: 14px;
             padding: 14px 16px;
@@ -247,6 +250,12 @@
             <p>Пользователи, ключи и промокоды. Всё — через RPC с проверкой прав.</p>
         </div>
 
+        <div class="filters" id="jump" role="navigation" aria-label="Разделы админки" hidden>
+            <a class="filter-btn" href="#users">👥 Пользователи</a>
+            <a class="filter-btn" href="#keys">🎁 Ключи</a>
+            <a class="filter-btn" href="#promos">🎟 Промокоды</a>
+        </div>
+
         <section class="gate" id="gate" hidden>
             <div class="gate-ico" aria-hidden="true">🔒</div>
             <h1>Нужен вход</h1>
@@ -266,7 +275,8 @@ update public.users set is_admin = true
  where lower(email) = lower('твоя@почта');
                 </code>
             </div>
-            <p style="margin-top: 14px;">После этого обнови страницу.</p>
+            <p style="margin-top: 14px;">После этого обнови страницу (Ctrl+F5) —
+               появятся разделы «Пользователи», «Ключи» и «Промокоды».</p>
         </section>
 
         <div id="admin" hidden>
@@ -283,7 +293,7 @@ update public.users set is_admin = true
                 </div>
             </section>
 
-            <section class="pcard" aria-labelledby="usersTitle">
+            <section class="pcard" id="users" aria-labelledby="usersTitle">
                 <h2 id="usersTitle">👥 Пользователи</h2>
                 <p>Все аккаунты сайта. Действия идут через RPC с проверкой
                    <code>is_admin</code> — напрямую в базу ничего не пишется.</p>
@@ -333,7 +343,7 @@ update public.users set is_admin = true
                 <div class="empty" id="userEmpty" hidden>Пользователей пока нет.</div>
             </section>
 
-            <section class="pcard" aria-labelledby="genTitle">
+            <section class="pcard" id="keys" aria-labelledby="genTitle">
                 <h2 id="genTitle">🎁 Сгенерировать ключи</h2>
                 <p>Ключ одноразовый: активируется в боте (<code>/key</code>) или в профиле на сайте.</p>
 
@@ -405,7 +415,7 @@ update public.users set is_admin = true
                 <p class="form-msg" id="listMsg" role="status" aria-live="polite"></p>
             </section>
 
-            <section class="pcard" aria-labelledby="promoTitle">
+            <section class="pcard" id="promos" aria-labelledby="promoTitle">
                 <h2 id="promoTitle">🎟 Промокоды</h2>
                 <p>Код вводится в профиле на сайте или ботом: <code>/promo КОД</code>.
                    Один аккаунт — одна активация, лимит и срок проверяет база.</p>
@@ -722,13 +732,13 @@ update public.users set is_admin = true
                     '</tr>';
             }
 
-            function paintUsers(list) {
+            function paintUsers(list, note) {
                 if (!list.length) {
                     userWrap.hidden = true;
                     userEmpty.hidden = false;
-                    userEmpty.textContent = userSearch.value.trim()
+                    userEmpty.textContent = note || (userSearch.value.trim()
                         ? 'Никого не нашёл по запросу «' + userSearch.value.trim() + '».'
-                        : 'Пользователей пока нет — зарегистрируйся на сайте, и аккаунт появится.';
+                        : 'Пользователей пока нет — зарегистрируйся на сайте, и аккаунт появится.');
                     return;
                 }
 
@@ -742,8 +752,9 @@ update public.users set is_admin = true
 
                 S.adminUsers(userSearch.value.trim()).then(function (res) {
                     if (!res || res.error) {
-                        say(userMsg, '⚠️ ' + S.human(res && res.error), 'bad');
-                        paintUsers([]);
+                        var why = S.human(res && res.error);
+                        say(userMsg, '⚠️ ' + why, 'bad');
+                        paintUsers([], '⚠️ ' + why);
                         return;
                     }
                     if (res.status === 'forbidden') {
@@ -855,10 +866,11 @@ update public.users set is_admin = true
                     '</tr>';
             }
 
-            function paintPromos(list) {
+            function paintPromos(list, note) {
                 if (!list.length) {
                     promoWrap.hidden = true;
                     promoEmpty.hidden = false;
+                    promoEmpty.textContent = note || 'Промокодов пока нет — создай первый.';
                     return;
                 }
                 promoEmpty.hidden = true;
@@ -871,8 +883,9 @@ update public.users set is_admin = true
 
                 S.adminPromos().then(function (res) {
                     if (!res || res.error) {
-                        say(promoMsg, '⚠️ ' + S.human(res && res.error), 'bad');
-                        paintPromos([]);
+                        var why = S.human(res && res.error);
+                        say(promoMsg, '⚠️ ' + why, 'bad');
+                        paintPromos([], '⚠️ ' + why);
                         return;
                     }
                     if (res.status === 'forbidden') {
@@ -1140,6 +1153,8 @@ update public.users set is_admin = true
             /* ---------- старт ---------- */
             fillValues();
 
+            var jump = document.getElementById('jump');
+
             S.waitUser().then(function (user) {
                 if (!user) {
                     gate.hidden = false;
@@ -1149,9 +1164,13 @@ update public.users set is_admin = true
                 S.me().then(function (res) {
                     if (!res || res.error) {
                         // База не настроена/недоступна — показываем панель,
-                        // чтобы сообщение об ошибке было видно на месте.
+                        // чтобы сообщение об ошибке было видно на месте
+                        // (и в разделе «Пользователи», а не пустой экран).
                         admin.hidden = false;
+                        jump.hidden = false;
                         say(listMsg, '⚠️ ' + S.human(res && res.error), 'bad');
+                        loadUsers(true);
+                        loadPromos(true);
                         return;
                     }
                     if (!res.is_admin) {
@@ -1160,6 +1179,7 @@ update public.users set is_admin = true
                     }
 
                     admin.hidden = false;
+                    jump.hidden = false;
                     loadStats();
                     loadList();
                     loadUsers();
