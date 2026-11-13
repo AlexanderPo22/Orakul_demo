@@ -2267,6 +2267,45 @@
         function adminDelete(key) { return rpc('orakul_site_admin_delete_key', { p_key: key }); }
         function adminStats()     { return rpc('orakul_site_admin_stats'); }
 
+        /* ---- админка: пользователи (sql/admin_users.sql) ----
+           p_target — uuid аккаунта, telegram_id или почта: сервер сам разберётся. */
+        function adminUsers(search) {
+            return rpc('orakul_admin_users', { p_limit: 300, p_search: search || null });
+        }
+        function adminGrantMana(target, amount) {
+            return rpc('orakul_admin_grant_mana', { p_target: target, p_amount: amount });
+        }
+        function adminGrantPro(target, days) {
+            return rpc('orakul_admin_grant_pro', { p_target: target, p_days: days });
+        }
+        function adminRevokePro(target) {
+            return rpc('orakul_admin_revoke_pro', { p_target: target });
+        }
+        function adminToggleAdmin(target) {
+            return rpc('orakul_admin_toggle_admin', { p_target: target });
+        }
+
+        /* ---- промокоды (sql/promocodes.sql) ---- */
+        function activatePromo(code) {
+            return rpc('orakul_activate_promo', { p_code: code });
+        }
+        function adminPromos() {
+            return rpc('orakul_admin_promos', { p_limit: 300 });
+        }
+        function adminCreatePromo(p) {
+            p = p || {};
+            return rpc('orakul_admin_create_promo', {
+                p_code: p.code,
+                p_type: p.type,
+                p_value: p.value,
+                p_max_uses: p.maxUses == null ? 1 : p.maxUses,
+                p_expires_at: p.expiresAt || null
+            });
+        }
+        function adminDeletePromo(code) {
+            return rpc('orakul_admin_delete_promo', { p_code: code });
+        }
+
         /* Человеческие тексты вместо кодов Supabase */
         function human(err) {
             var m = String(err || '');
@@ -2290,6 +2329,34 @@
             bad_format:  'Не похоже на ключ',
             unauthorized:'Нужно войти в аккаунт',
             forbidden:   'Нет доступа'
+        };
+
+        /* Статусы активации промокода → текст */
+        var PROMO_STATUS = {
+            ok:           'Промокод активирован',
+            not_found:    'Такого промокода нет',
+            expired:      'Срок действия промокода истёк',
+            exhausted:    'Лимит активаций исчерпан',
+            already_used: 'Этот промокод уже активирован на твоём аккаунте',
+            not_linked:   'Сначала привяжи аккаунт',
+            unauthorized: 'Нужно войти в аккаунт',
+            bad_format:   'Введи код'
+        };
+
+        /* Статусы админских действий → текст */
+        var ADMIN_STATUS = {
+            forbidden:  'Нет доступа: этот аккаунт не админ',
+            not_found:  'Аккаунт не найден',
+            bad_amount: 'Сумма должна быть от 1 до 1 000 000',
+            bad_days:   'Дней должно быть от 1 до 3650',
+            bad_code:   'Код: 3–32 символа, латиница, цифры, дефис',
+            bad_type:   'Неизвестный тип промокода',
+            bad_value:  'Значение должно быть больше нуля',
+            bad_uses:   'Лимит активаций: 0 (без лимита) или больше',
+            bad_expires:'Дата уже прошла',
+            exists:     'Такой код уже есть',
+            has_uses:   'Код уже активировали — удалять нельзя',
+            self:       'Снять админку с самого себя нельзя'
         };
 
         /* Ждём, пока восстановится сессия, и отдаём пользователя (или null) */
@@ -2320,8 +2387,19 @@
             adminCreate: adminCreate,
             adminDelete: adminDelete,
             adminStats: adminStats,
+            adminUsers: adminUsers,
+            adminGrantMana: adminGrantMana,
+            adminGrantPro: adminGrantPro,
+            adminRevokePro: adminRevokePro,
+            adminToggleAdmin: adminToggleAdmin,
+            activatePromo: activatePromo,
+            adminPromos: adminPromos,
+            adminCreatePromo: adminCreatePromo,
+            adminDeletePromo: adminDeletePromo,
             human: human,
             keyStatus: KEY_STATUS,
+            promoStatus: PROMO_STATUS,
+            adminStatus: ADMIN_STATUS,
             waitUser: waitUser
         };
     })();

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0f0c1b">
     <meta name="robots" content="noindex, nofollow">
-    <title>Админка · Ключи — Оракул</title>
+    <title>Админка — Оракул</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔑</text></svg>">
     <link rel="stylesheet" href="common.css">
     <style>
@@ -136,6 +136,30 @@
 
         .del-btn:hover { background: rgba(255, 138, 138, 0.14); }
 
+        .user-act {
+            margin-top: 14px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 1px solid rgba(138, 43, 226, 0.35);
+            background: rgba(138, 43, 226, 0.08);
+        }
+
+        .user-act-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+            font-size: 0.92rem;
+        }
+
+        .user-act .field-row { margin-bottom: 0; }
+
+        table.keys td small { color: var(--text-muted); }
+
+        table.keys td .key-copy,
+        table.keys td .del-btn { margin: 2px 0; }
+
         footer {
             position: relative;
             z-index: 2;
@@ -198,7 +222,7 @@
                 <a href="achievements.html">Достижения</a>
                 <a href="shop.html">Магазин</a>
                 <a href="profile.html">Профиль</a>
-                <a href="admin.html" class="is-current" aria-current="page">Ключи</a>
+                <a href="admin.html" class="is-current" aria-current="page">Админка</a>
             </nav>
             <div class="nav-tools">
                 <a class="mana-pill" data-mana href="achievements.html" title="Мана">
@@ -219,8 +243,8 @@
     <main class="page">
         <div class="page-head">
             <span class="kicker">Админка</span>
-            <h1>Ключи</h1>
-            <p>Генерация подарочных ключей и полный список выданных.</p>
+            <h1>Управление</h1>
+            <p>Пользователи, ключи и промокоды. Всё — через RPC с проверкой прав.</p>
         </div>
 
         <section class="gate" id="gate" hidden>
@@ -259,6 +283,56 @@ update public.users set is_admin = true
                 </div>
             </section>
 
+            <section class="pcard" aria-labelledby="usersTitle">
+                <h2 id="usersTitle">👥 Пользователи</h2>
+                <p>Все аккаунты сайта. Действия идут через RPC с проверкой
+                   <code>is_admin</code> — напрямую в базу ничего не пишется.</p>
+
+                <div class="field-row">
+                    <label class="field" for="userSearch">
+                        <span>Поиск</span>
+                        <input id="userSearch" type="search" autocomplete="off"
+                               placeholder="почта, ник или telegram_id">
+                    </label>
+                    <button class="btn btn-ghost" id="userReload" type="button">Обновить</button>
+                </div>
+
+                <div class="user-act" id="userAct" hidden>
+                    <div class="user-act-head">
+                        <b id="uaTitle">—</b>
+                        <button class="del-btn" id="uaCancel" type="button">Отмена</button>
+                    </div>
+                    <div class="field-row">
+                        <label class="field" for="uaValue">
+                            <span id="uaLabel">Сумма</span>
+                            <input id="uaValue" type="number" min="1" step="1" value="1000">
+                        </label>
+                        <button class="btn" id="uaGo" type="button">Выдать</button>
+                    </div>
+                </div>
+
+                <p class="form-msg" id="userMsg" role="status" aria-live="polite"></p>
+
+                <div class="table-wrap" id="userWrap" hidden>
+                    <table class="keys">
+                        <thead>
+                            <tr>
+                                <th>Аккаунт</th>
+                                <th>Telegram</th>
+                                <th>Мана</th>
+                                <th>Pro</th>
+                                <th>Права</th>
+                                <th>Создан</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userRows"></tbody>
+                    </table>
+                </div>
+
+                <div class="empty" id="userEmpty" hidden>Пользователей пока нет.</div>
+            </section>
+
             <section class="pcard" aria-labelledby="genTitle">
                 <h2 id="genTitle">🎁 Сгенерировать ключи</h2>
                 <p>Ключ одноразовый: активируется в боте (<code>/key</code>) или в профиле на сайте.</p>
@@ -280,7 +354,7 @@ update public.users set is_admin = true
 
                         <label class="field" for="genCount">
                             <span>Сколько</span>
-                            <input id="genCount" type="number" min="1" max="20" step="1" value="1">
+                            <input id="genCount" type="number" min="1" max="50" step="1" value="1">
                         </label>
 
                         <label class="field" for="genPrice">
@@ -330,6 +404,73 @@ update public.users set is_admin = true
                 <div class="empty" id="empty" hidden>Ключей пока нет — сгенерируй первый.</div>
                 <p class="form-msg" id="listMsg" role="status" aria-live="polite"></p>
             </section>
+
+            <section class="pcard" aria-labelledby="promoTitle">
+                <h2 id="promoTitle">🎟 Промокоды</h2>
+                <p>Код вводится в профиле на сайте или ботом: <code>/promo КОД</code>.
+                   Один аккаунт — одна активация, лимит и срок проверяет база.</p>
+
+                <form id="promoForm" novalidate>
+                    <div class="field-row">
+                        <label class="field" for="promoCode">
+                            <span>Код</span>
+                            <input id="promoCode" type="text" autocomplete="off" spellcheck="false"
+                                   maxlength="32" placeholder="ORAKUL2026">
+                        </label>
+
+                        <label class="field" for="promoType">
+                            <span>Что даёт</span>
+                            <select id="promoType">
+                                <option value="mana">Мана</option>
+                                <option value="pro">Pro (дни)</option>
+                            </select>
+                        </label>
+
+                        <label class="field" for="promoValue">
+                            <span>Значение</span>
+                            <input id="promoValue" type="number" min="1" step="1" value="1000">
+                        </label>
+
+                        <label class="field" for="promoUses">
+                            <span>Лимит активаций</span>
+                            <input id="promoUses" type="number" min="0" max="100000" step="1" value="1">
+                        </label>
+
+                        <label class="field" for="promoUntil">
+                            <span>Действует до</span>
+                            <input id="promoUntil" type="date">
+                        </label>
+                    </div>
+
+                    <div class="field-row">
+                        <button class="btn" id="promoCreate" type="submit">Создать промокод</button>
+                        <button class="btn btn-ghost" id="promoReload" type="button">Обновить список</button>
+                    </div>
+                    <p class="form-msg" style="margin-top: 6px;">
+                        Лимит <code>0</code> — без ограничений. Пустая дата — код бессрочный.
+                    </p>
+                </form>
+
+                <p class="form-msg" id="promoMsg" role="status" aria-live="polite"></p>
+
+                <div class="table-wrap" id="promoWrap" hidden>
+                    <table class="keys">
+                        <thead>
+                            <tr>
+                                <th>Код</th>
+                                <th>Что даёт</th>
+                                <th>Использовано</th>
+                                <th>Действует до</th>
+                                <th>Статус</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="promoRows"></tbody>
+                    </table>
+                </div>
+
+                <div class="empty" id="promoEmpty" hidden>Промокодов пока нет — создай первый.</div>
+            </section>
         </div>
     </main>
 
@@ -364,6 +505,32 @@ update public.users set is_admin = true
             var empty = document.getElementById('empty');
             var listMsg = document.getElementById('listMsg');
             var filters = document.getElementById('filters');
+
+            var userSearch = document.getElementById('userSearch');
+            var userReload = document.getElementById('userReload');
+            var userAct = document.getElementById('userAct');
+            var uaTitle = document.getElementById('uaTitle');
+            var uaCancel = document.getElementById('uaCancel');
+            var uaValue = document.getElementById('uaValue');
+            var uaLabel = document.getElementById('uaLabel');
+            var uaGo = document.getElementById('uaGo');
+            var userMsg = document.getElementById('userMsg');
+            var userWrap = document.getElementById('userWrap');
+            var userRows = document.getElementById('userRows');
+            var userEmpty = document.getElementById('userEmpty');
+
+            var promoForm = document.getElementById('promoForm');
+            var promoCode = document.getElementById('promoCode');
+            var promoType = document.getElementById('promoType');
+            var promoValue = document.getElementById('promoValue');
+            var promoUses = document.getElementById('promoUses');
+            var promoUntil = document.getElementById('promoUntil');
+            var promoCreate = document.getElementById('promoCreate');
+            var promoReload = document.getElementById('promoReload');
+            var promoMsg = document.getElementById('promoMsg');
+            var promoWrap = document.getElementById('promoWrap');
+            var promoRows = document.getElementById('promoRows');
+            var promoEmpty = document.getElementById('promoEmpty');
 
             var VALUES = {
                 pro: [7, 30, 90],
@@ -511,13 +678,222 @@ update public.users set is_admin = true
                 });
             }
 
+            /* ---------- пользователи ---------- */
+            var usersById = {};
+            var actTarget = null;
+
+            function userRow(u) {
+                var left = S.daysLeft(u.pro_until);
+
+                var pro = left > 0
+                    ? '<span class="tag tag-hot">' + left + ' дн.</span><br>' +
+                      '<small>' + esc(S.fmtDate(u.pro_until)) + '</small>'
+                    : '<span class="tag tag-mute">нет</span>';
+
+                var rights = u.is_admin
+                    ? '<span class="tag tag-ok">админ</span>'
+                    : '<span class="tag tag-mute">игрок</span>';
+
+                var who = esc(u.email || u.nickname || '—') +
+                    (u.email && u.nickname ? '<br><small>' + esc(u.nickname) + '</small>' : '');
+
+                var id = esc(u.id);
+
+                return '' +
+                    '<tr>' +
+                        '<td>' + who + '</td>' +
+                        '<td>' + (u.telegram_id
+                                  ? '<code>' + esc(u.telegram_id) + '</code>'
+                                  : '<small>—</small>') + '</td>' +
+                        '<td>' + S.fmtNum(u.mana) + '</td>' +
+                        '<td>' + pro + '</td>' +
+                        '<td>' + rights + '</td>' +
+                        '<td>' + esc(S.fmtDate(u.created_at)) + '</td>' +
+                        '<td>' +
+                            '<button class="key-copy" type="button" data-act="mana" data-id="' + id + '">+мана</button> ' +
+                            '<button class="key-copy" type="button" data-act="pro" data-id="' + id + '">+Pro</button> ' +
+                            (left > 0
+                                ? '<button class="del-btn" type="button" data-act="revoke" data-id="' + id + '">−Pro</button> '
+                                : '') +
+                            '<button class="key-copy" type="button" data-act="admin" data-id="' + id + '">' +
+                                (u.is_admin ? 'Снять админку' : 'Выдать админку') +
+                            '</button>' +
+                        '</td>' +
+                    '</tr>';
+            }
+
+            function paintUsers(list) {
+                if (!list.length) {
+                    userWrap.hidden = true;
+                    userEmpty.hidden = false;
+                    userEmpty.textContent = userSearch.value.trim()
+                        ? 'Никого не нашёл по запросу «' + userSearch.value.trim() + '».'
+                        : 'Пользователей пока нет — зарегистрируйся на сайте, и аккаунт появится.';
+                    return;
+                }
+
+                userEmpty.hidden = true;
+                userWrap.hidden = false;
+                userRows.innerHTML = list.map(userRow).join('');
+            }
+
+            function loadUsers(quiet) {
+                if (!quiet) say(userMsg, 'Загружаю…');
+
+                S.adminUsers(userSearch.value.trim()).then(function (res) {
+                    if (!res || res.error) {
+                        say(userMsg, '⚠️ ' + S.human(res && res.error), 'bad');
+                        paintUsers([]);
+                        return;
+                    }
+                    if (res.status === 'forbidden') {
+                        admin.hidden = true;
+                        deny.hidden = false;
+                        return;
+                    }
+
+                    var list = res.users || [];
+                    usersById = {};
+                    list.forEach(function (u) { usersById[u.id] = u; });
+
+                    if (!quiet) say(userMsg, '');
+                    paintUsers(list);
+                });
+            }
+
+            /* Панель действия: сумма/дни вводим здесь, а не в таблице —
+               так она не ломается на узком экране. */
+            function openAct(u, act) {
+                actTarget = { user: u, act: act };
+
+                var pro = act === 'pro';
+
+                uaTitle.textContent = (pro ? 'Выдать Pro' : 'Выдать ману') + ' · ' +
+                                      (u.email || u.nickname || u.id);
+                uaLabel.textContent = pro ? 'Дней Pro' : 'Сколько маны';
+                uaValue.value = pro ? 30 : 1000;
+                userAct.hidden = false;
+                uaValue.focus();
+                uaValue.select();
+            }
+
+            function closeAct() {
+                actTarget = null;
+                userAct.hidden = true;
+            }
+
+            function doAct(u, act, amount) {
+                var call, label;
+
+                if (act === 'mana') {
+                    call = S.adminGrantMana(u.id, amount);
+                    label = '+' + S.fmtNum(amount) + ' маны';
+                } else if (act === 'pro') {
+                    call = S.adminGrantPro(u.id, amount);
+                    label = 'Pro +' + amount + ' дн.';
+                } else if (act === 'revoke') {
+                    call = S.adminRevokePro(u.id);
+                    label = 'Pro снят';
+                } else {
+                    call = S.adminToggleAdmin(u.id);
+                    label = u.is_admin ? 'админка снята' : 'админка выдана';
+                }
+
+                uaGo.disabled = true;
+                say(userMsg, 'Отправляю…');
+
+                call.then(function (res) {
+                    uaGo.disabled = false;
+
+                    if (!res || res.error) {
+                        say(userMsg, '⚠️ ' + S.human(res && res.error), 'bad');
+                        return;
+                    }
+                    if (res.status !== 'ok') {
+                        say(userMsg, '❌ ' + (S.adminStatus[res.status] ||
+                                              'Сайт ответил: ' + res.status), 'bad');
+                        return;
+                    }
+
+                    say(userMsg, '✅ ' + (u.email || u.nickname || 'аккаунт') + ': ' + label, 'ok');
+                    closeAct();
+                    if (O.Snd) O.Snd.fanfare();
+                    loadUsers(true);
+                    loadStats();
+                });
+            }
+
+            /* ---------- промокоды ---------- */
+            var PROMO_STATE = {
+                active:    '<span class="tag tag-ok">активен</span>',
+                expired:   '<span class="tag tag-mute">истёк</span>',
+                exhausted: '<span class="tag tag-bad">лимит</span>'
+            };
+
+            function promoRow(p) {
+                var what = p.type === 'pro'
+                    ? '<span class="tag tag-hot">Pro</span> ' + p.value + ' дн.'
+                    : '<span class="tag tag-mute">мана</span> ' + S.fmtNum(p.value);
+
+                var limit = p.max_uses > 0
+                    ? S.fmtNum(p.used) + ' / ' + S.fmtNum(p.max_uses)
+                    : S.fmtNum(p.used) + ' / ∞';
+
+                return '' +
+                    '<tr>' +
+                        '<td><code>' + esc(p.code) + '</code></td>' +
+                        '<td>' + what + '</td>' +
+                        '<td>' + limit + '</td>' +
+                        '<td>' + (p.expires_at ? esc(S.fmtDate(p.expires_at)) : '∞') + '</td>' +
+                        '<td>' + (PROMO_STATE[p.state] || esc(p.state)) + '</td>' +
+                        '<td>' +
+                            '<button class="key-copy" type="button" data-pcopy="' + esc(p.code) + '">Копировать</button> ' +
+                            (p.used === 0
+                                ? '<button class="del-btn" type="button" data-pdel="' + esc(p.code) + '">Удалить</button>'
+                                : '') +
+                        '</td>' +
+                    '</tr>';
+            }
+
+            function paintPromos(list) {
+                if (!list.length) {
+                    promoWrap.hidden = true;
+                    promoEmpty.hidden = false;
+                    return;
+                }
+                promoEmpty.hidden = true;
+                promoWrap.hidden = false;
+                promoRows.innerHTML = list.map(promoRow).join('');
+            }
+
+            function loadPromos(quiet) {
+                if (!quiet) say(promoMsg, 'Загружаю…');
+
+                S.adminPromos().then(function (res) {
+                    if (!res || res.error) {
+                        say(promoMsg, '⚠️ ' + S.human(res && res.error), 'bad');
+                        paintPromos([]);
+                        return;
+                    }
+                    if (res.status === 'forbidden') {
+                        admin.hidden = true;
+                        deny.hidden = false;
+                        return;
+                    }
+
+                    if (!quiet) say(promoMsg, '');
+                    paintPromos(res.promos || []);
+                });
+            }
+
+
             /* ---------- генерация ---------- */
             genForm.addEventListener('submit', function (e) {
                 e.preventDefault();
 
                 var kind = genKind.value === 'mana' ? 'mana' : 'pro';
                 var value = parseInt(genValue.value, 10) || 0;
-                var count = Math.min(Math.max(parseInt(genCount.value, 10) || 1, 1), 20);
+                var count = Math.min(Math.max(parseInt(genCount.value, 10) || 1, 1), 50);
                 var price = Math.max(parseInt(genPrice.value, 10) || 0, 0);
 
                 if (!value) {
@@ -621,6 +997,146 @@ update public.users set is_admin = true
                 });
             });
 
+            /* ---------- пользователи: события ---------- */
+            var searchTimer = null;
+
+            userSearch.addEventListener('input', function () {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(function () { loadUsers(); }, 350);
+            });
+
+            userReload.addEventListener('click', function () { loadUsers(); });
+
+            userRows.addEventListener('click', function (e) {
+                var btn = e.target.closest ? e.target.closest('[data-act]') : null;
+                if (!btn) return;
+
+                var u = usersById[btn.getAttribute('data-id')];
+                if (!u) return;
+
+                var act = btn.getAttribute('data-act');
+                var who = u.email || u.nickname || 'аккаунта';
+
+                if (act === 'revoke') {
+                    if (!window.confirm('Забрать Pro у ' + who + '?')) return;
+                    doAct(u, 'revoke');
+                    return;
+                }
+                if (act === 'admin') {
+                    if (!window.confirm((u.is_admin ? 'Снять админку с ' : 'Выдать админку ') + who + '?')) return;
+                    doAct(u, 'admin');
+                    return;
+                }
+
+                openAct(u, act);
+            });
+
+            uaGo.addEventListener('click', function () {
+                if (!actTarget) return;
+                doAct(actTarget.user, actTarget.act, parseInt(uaValue.value, 10) || 0);
+            });
+
+            uaCancel.addEventListener('click', closeAct);
+
+            uaValue.addEventListener('keydown', function (e) {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                if (actTarget) doAct(actTarget.user, actTarget.act, parseInt(uaValue.value, 10) || 0);
+            });
+
+            /* ---------- промокоды: события ---------- */
+            promoForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                var code = promoCode.value.trim().toUpperCase();
+                var type = promoType.value === 'pro' ? 'pro' : 'mana';
+                var value = parseInt(promoValue.value, 10) || 0;
+                var uses = parseInt(promoUses.value, 10);
+                if (isNaN(uses)) uses = 1;
+
+                if (code.length < 3) {
+                    say(promoMsg, 'Код — минимум 3 символа.', 'bad');
+                    promoCode.focus();
+                    return;
+                }
+                if (value <= 0) {
+                    say(promoMsg, 'Значение должно быть больше нуля.', 'bad');
+                    promoValue.focus();
+                    return;
+                }
+
+                /* Дата — конец выбранного дня по местному времени */
+                var expires = null;
+                if (promoUntil.value) {
+                    var p = promoUntil.value.split('-');
+                    expires = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]),
+                                       23, 59, 59).toISOString();
+                }
+
+                promoCreate.disabled = true;
+                say(promoMsg, 'Создаю…');
+
+                S.adminCreatePromo({
+                    code: code, type: type, value: value,
+                    maxUses: uses, expiresAt: expires
+                }).then(function (res) {
+                    promoCreate.disabled = false;
+
+                    if (!res || res.error) {
+                        say(promoMsg, '⚠️ ' + S.human(res && res.error), 'bad');
+                        return;
+                    }
+                    if (res.status !== 'ok') {
+                        say(promoMsg, '❌ ' + (S.adminStatus[res.status] ||
+                                               'Сайт ответил: ' + res.status), 'bad');
+                        return;
+                    }
+
+                    say(promoMsg, '✅ Промокод ' + res.code + ' создан' +
+                                  (type === 'pro'
+                                      ? ' · Pro ' + value + ' дн.'
+                                      : ' · ' + S.fmtNum(value) + ' маны'), 'ok');
+                    promoCode.value = '';
+                    if (O.Snd) O.Snd.fanfare();
+                    loadPromos(true);
+                });
+            });
+
+            promoReload.addEventListener('click', function () { loadPromos(); });
+
+            promoRows.addEventListener('click', function (e) {
+                var copyBtn = e.target.closest ? e.target.closest('[data-pcopy]') : null;
+                if (copyBtn) {
+                    copy(copyBtn.getAttribute('data-pcopy'));
+                    copyBtn.textContent = 'Скопировано';
+                    setTimeout(function () { copyBtn.textContent = 'Копировать'; }, 1300);
+                    return;
+                }
+
+                var delBtn = e.target.closest ? e.target.closest('[data-pdel]') : null;
+                if (!delBtn) return;
+
+                var code = delBtn.getAttribute('data-pdel');
+                if (!window.confirm('Удалить промокод ' + code + '?')) return;
+
+                delBtn.disabled = true;
+                S.adminDeletePromo(code).then(function (res) {
+                    delBtn.disabled = false;
+
+                    if (!res || res.error) {
+                        say(promoMsg, '⚠️ ' + S.human(res && res.error), 'bad');
+                        return;
+                    }
+                    if (res.status === 'ok') {
+                        say(promoMsg, '🗑 Промокод удалён: ' + code, 'ok');
+                        loadPromos(true);
+                    } else {
+                        say(promoMsg, '❌ ' + (S.adminStatus[res.status] ||
+                                               'Не удалось удалить'), 'bad');
+                    }
+                });
+            });
+
             /* ---------- старт ---------- */
             fillValues();
 
@@ -646,6 +1162,8 @@ update public.users set is_admin = true
                     admin.hidden = false;
                     loadStats();
                     loadList();
+                    loadUsers();
+                    loadPromos();
                 });
             });
 

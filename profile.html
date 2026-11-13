@@ -255,6 +255,23 @@
                 <p class="form-msg" id="tgMsg" role="status" aria-live="polite"></p>
             </section>
 
+            <section class="pcard" aria-labelledby="promoTitle">
+                <h2 id="promoTitle">🎟 Промокод</h2>
+                <p>Код из поста, стрима или от друга. Один аккаунт — одна активация,
+                   лимит и срок проверяет база.</p>
+
+                <form class="field-row" id="promoForm" novalidate>
+                    <label class="field" for="promoInput">
+                        <span>Код</span>
+                        <input id="promoInput" name="promo" type="text" autocomplete="off"
+                               spellcheck="false" maxlength="32" placeholder="ORAKUL2026">
+                    </label>
+                    <button class="btn" id="promoSubmit" type="submit">Активировать</button>
+                </form>
+
+                <p class="form-msg" id="promoMsg" role="status" aria-live="polite"></p>
+            </section>
+
             <section class="pcard" aria-labelledby="keysTitle">
                 <h2 id="keysTitle">🎁 Мои ключи</h2>
                 <p>Ключ — это Pro или мана в конверте. Активируй свой или вставь тот,
@@ -312,6 +329,11 @@
             var keySubmit = document.getElementById('keySubmit');
             var keyMsg = document.getElementById('keyMsg');
             var keyList = document.getElementById('keyList');
+
+            var promoForm = document.getElementById('promoForm');
+            var promoInput = document.getElementById('promoInput');
+            var promoSubmit = document.getElementById('promoSubmit');
+            var promoMsg = document.getElementById('promoMsg');
 
             var me = null;
 
@@ -530,6 +552,46 @@
                     }
 
                     say(keyMsg, '❌ ' + (S.keyStatus[status] || 'Не получилось активировать'), 'bad');
+                    if (O.Snd) O.Snd.beep ? O.Snd.beep(180, 0.05, 0.18) : O.Snd.click();
+                });
+            });
+
+            promoForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                var code = promoInput.value.trim().toUpperCase();
+                if (!code) {
+                    say(promoMsg, 'Введи код — например ORAKUL2026.', 'bad');
+                    promoInput.focus();
+                    return;
+                }
+
+                promoSubmit.disabled = true;
+                say(promoMsg, 'Проверяю код…');
+
+                S.activatePromo(code).then(function (res) {
+                    promoSubmit.disabled = false;
+
+                    if (!res || res.error) {
+                        say(promoMsg, '⚠️ ' + S.human(res && res.error), 'bad');
+                        return;
+                    }
+
+                    var status = res.status || '';
+
+                    if (status === 'ok') {
+                        var what = res.type === 'mana'
+                            ? '✨ +' + S.fmtNum(res.value) + ' маны (всего ' + S.fmtNum(res.mana) + ')'
+                            : '👑 Pro +' + res.value + ' дн. (до ' + S.fmtDate(res.pro_until) + ')';
+
+                        say(promoMsg, '✅ Промокод ' + (res.code || code) + ' активирован: ' + what, 'ok');
+                        promoInput.value = '';
+                        if (O.Snd) O.Snd.fanfare();
+                        S.me().then(function (r) { if (r && !r.error) paintMe(r); });
+                        return;
+                    }
+
+                    say(promoMsg, '❌ ' + (S.promoStatus[status] || 'Не получилось активировать'), 'bad');
                     if (O.Snd) O.Snd.beep ? O.Snd.beep(180, 0.05, 0.18) : O.Snd.click();
                 });
             });
