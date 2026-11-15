@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#07100c">
+    <meta name="description" content="Серверная Оракула: стойки, лампы, терминал и сейф с компроматом.">
+    <title>Серверная — Оракул</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🖧</text></svg>">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        :root { --mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, monospace; }
+
+        body {
+            font-family: var(--mono);
+            background:
+                radial-gradient(circle at 50% -10%, rgba(60, 255, 150, 0.08), transparent 60%),
+                radial-gradient(circle at 20% 100%, rgba(0, 120, 255, 0.07), transparent 55%),
+                #07100c;
+            min-height: 100vh;
+            color: #c9f5da;
+        }
+
+        html[data-theme="light"] body {
+            background: radial-gradient(circle at 50% -10%, rgba(16, 122, 66, 0.1), transparent 60%), #eef7f1;
+            color: #10301f;
+        }
+
+        .srv-scan {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                to bottom,
+                rgba(120, 255, 180, 0.03) 0px,
+                rgba(120, 255, 180, 0.03) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+        }
+
+        /* ===== Верхняя панель ===== */
+        .srv-top {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            background: rgba(4, 14, 9, 0.82);
+            border-bottom: 1px solid rgba(120, 255, 180, 0.12);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            font-size: 0.85rem;
+        }
+
+        .srv-top .back {
+            color: #7dffa8;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(125, 255, 168, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .srv-top .back:hover { background: rgba(125, 255, 168, 0.12); }
+
+        .srv-top .tag {
+            flex: 1 1 auto;
+            color: rgba(201, 245, 218, 0.5);
+            letter-spacing: 1px;
+            font-size: 0.75rem;
+        }
+
+        .srv-tools { display: flex; gap: 8px; align-items: center; }
+
+        .srv-sound {
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(125, 255, 168, 0.3);
+            background: transparent;
+            color: #7dffa8;
+            font-family: inherit;
+            font-size: 0.78rem;
+            cursor: pointer;
+        }
+
+        .srv-sound[aria-pressed="false"] { opacity: 0.5; }
+
+        /* ===== Комната ===== */
+        .srv {
+            position: relative;
+            z-index: 2;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 26px 20px 40px;
+        }
+
+        .srv-room {
+            position: relative;
+            border-radius: 22px;
+            padding: 26px 22px 22px;
+            background:
+                linear-gradient(180deg, rgba(10, 26, 18, 0.9), rgba(5, 12, 9, 0.95));
+            border: 1px solid rgba(120, 255, 180, 0.14);
+            box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.75), 0 20px 60px rgba(0, 0, 0, 0.55);
+            overflow: hidden;
+        }
+
+        /* Мигающие лампы под потолком */
+        .srv-lamps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 18px;
+            padding: 0 6px;
+        }
+
+        .srv-lamps i {
+            display: block;
+            width: 54px;
+            height: 5px;
+            border-radius: 3px;
+            background: #d7ffe6;
+            box-shadow: 0 0 18px rgba(150, 255, 200, 0.9), 0 0 44px rgba(90, 255, 170, 0.45);
+            animation: lampFlicker 4.5s infinite;
+            opacity: 0.9;
+        }
+
+        .srv-lamps i:nth-child(2) { animation-delay: 0.7s; animation-duration: 3.6s; }
+        .srv-lamps i:nth-child(3) { animation-delay: 1.9s; animation-duration: 5.4s; }
+        .srv-lamps i:nth-child(4) { animation-delay: 2.6s; animation-duration: 3.1s; }
+        .srv-lamps i:nth-child(5) { animation-delay: 0.3s; animation-duration: 6.2s; }
+        .srv-lamps i:nth-child(6) { animation-delay: 3.4s; animation-duration: 4.1s; }
+
+        @keyframes lampFlicker {
+            0%, 100% { opacity: 0.92; transform: scaleY(1); }
+            4% { opacity: 0.35; transform: scaleY(0.6); }
+            7% { opacity: 0.95; }
+            9% { opacity: 0.2; transform: scaleY(0.4); }
+            12% { opacity: 0.9; transform: scaleY(1); }
+            55% { opacity: 0.88; }
+            58% { opacity: 0.45; }
+            61% { opacity: 0.92; }
+        }
+
+        /* Стойки и сейф */
+        .srv-racks {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+            gap: 12px;
+            margin-bottom: 22px;
+        }
+
+        .srv-rack, .srv-safe {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 18px 10px;
+            border-radius: 14px;
+            border: 1px solid rgba(120, 255, 180, 0.16);
+            background: linear-gradient(180deg, rgba(14, 34, 24, 0.9), rgba(6, 16, 11, 0.95));
+            color: #9fe8bd;
+            font-family: inherit;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.18s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .srv-rack:hover, .srv-safe:hover {
+            transform: translateY(-3px);
+            border-color: rgba(125, 255, 168, 0.55);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .srv-rack small, .srv-safe small {
+            font-size: 0.62rem;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: rgba(159, 232, 189, 0.65);
+        }
+
+        .srv-rack.is-dead { cursor: default; opacity: 0.5; }
+        .srv-rack.is-dead:hover { transform: none; box-shadow: none; border-color: rgba(120, 255, 180, 0.16); }
+
+        .srv-rack.is-done, .srv-safe.is-open { border-color: rgba(125, 255, 168, 0.6); background: rgba(20, 60, 38, 0.55); }
+
+        /* Светодиоды на стойках */
+        .srv-leds {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 3px;
+        }
+
+        .srv-leds i {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #7dffa8;
+            animation: ledBlink 1.6s infinite;
+        }
+
+        .srv-leds i:nth-child(2) { animation-delay: 0.5s; background: #4fd1ff; }
+        .srv-leds i:nth-child(3) { animation-delay: 1.1s; background: #ffd166; }
+
+        @keyframes ledBlink {
+            0%, 100% { opacity: 0.25; }
+            50% { opacity: 1; }
+        }
+
+        /* ===== Терминал ===== */
+        .srv-term {
+            border-radius: 16px;
+            border: 1px solid rgba(120, 255, 180, 0.22);
+            background: rgba(3, 10, 7, 0.92);
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+        }
+
+        .srv-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 14px;
+            border-bottom: 1px solid rgba(120, 255, 180, 0.14);
+            font-size: 0.75rem;
+            color: rgba(201, 245, 218, 0.6);
+        }
+
+        .srv-dots { display: flex; gap: 5px; }
+
+        .srv-dots i {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: rgba(125, 255, 168, 0.35);
+        }
+
+        .srv-dots i:nth-child(1) { background: #ff6b81; }
+        .srv-dots i:nth-child(2) { background: #ffd166; }
+        .srv-dots i:nth-child(3) { background: #7dffa8; }
+
+        .srv-name { flex: 1 1 auto; }
+
+        .srv-state {
+            padding: 2px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(125, 255, 168, 0.35);
+            color: #7dffa8;
+            font-size: 0.68rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .srv-state.is-on { background: rgba(125, 255, 168, 0.14); box-shadow: 0 0 14px rgba(125, 255, 168, 0.4); }
+
+        .srv-log {
+            min-height: 220px;
+            max-height: 46vh;
+            overflow-y: auto;
+            padding: 14px 16px;
+            font-size: 0.86rem;
+            line-height: 1.6;
+        }
+
+        .srv-log p { margin: 0 0 4px; white-space: pre-wrap; word-break: break-word; }
+        .srv-log .is-dim { color: rgba(201, 245, 218, 0.5); }
+        .srv-log .is-ok { color: #7dffa8; }
+        .srv-log .is-bad { color: #ff8a8a; }
+        .srv-log .is-45 { color: #ffd166; }
+        .srv-log .is-sys { color: #4fd1ff; }
+
+        .srv-form {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px 12px;
+            border-top: 1px solid rgba(120, 255, 180, 0.12);
+        }
+
+        .srv-prompt { color: #7dffa8; font-size: 0.9rem; }
+
+        .srv-form input {
+            flex: 1 1 auto;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #d7ffe6;
+            font-family: inherit;
+            font-size: 0.92rem;
+            caret-color: #7dffa8;
+        }
+
+        .srv-form input::placeholder { color: rgba(201, 245, 218, 0.3); }
+
+        .srv-hint {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: rgba(201, 245, 218, 0.45);
+            font-size: 0.78rem;
+            padding: 0 20px 30px;
+        }
+
+        .srv-hint code { color: #7dffa8; }
+
+        /* ===== Мини-игра «Взлом сервера» ===== */
+        .srv-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 90;
+            display: grid;
+            place-items: center;
+            padding: 18px;
+            background: rgba(2, 8, 5, 0.86);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        /* Без этого правила display: grid перебивает [hidden], и окно
+           не закрывается: атрибут ставится, а модалка остаётся на экране. */
+        .srv-modal[hidden] { display: none; }
+
+        .srv-win {
+            width: min(460px, 100%);
+            border-radius: 18px;
+            padding: 18px;
+            background: linear-gradient(160deg, rgba(12, 30, 21, 0.98), rgba(4, 12, 8, 0.99));
+            border: 1px solid rgba(125, 255, 168, 0.35);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+            font-family: var(--mono);
+        }
+
+        .srv-win-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .srv-win-head b { color: #7dffa8; letter-spacing: 0.6px; }
+
+        .srv-x {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid rgba(125, 255, 168, 0.3);
+            background: transparent;
+            color: #9fe8bd;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .srv-status {
+            margin: 0 0 12px;
+            font-size: 0.82rem;
+            color: rgba(201, 245, 218, 0.75);
+            min-height: 1.2em;
+        }
+
+        .srv-status.is-ok { color: #7dffa8; }
+        .srv-status.is-bad { color: #ff8a8a; }
+
+        .srv-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+        }
+
+        .srv-cell {
+            aspect-ratio: 1;
+            display: grid;
+            place-items: center;
+            border-radius: 8px;
+            border: 1px solid rgba(125, 255, 168, 0.18);
+            background: rgba(18, 44, 30, 0.7);
+            color: #d7ffe6;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.1s ease;
+        }
+
+        .srv-cell:hover { background: rgba(30, 70, 48, 0.9); transform: translateY(-1px); }
+        .srv-cell.is-open { background: rgba(8, 20, 14, 0.9); border-color: rgba(125, 255, 168, 0.1); cursor: default; }
+        .srv-cell.is-open:hover { transform: none; }
+        .srv-cell.is-wire { background: rgba(120, 20, 20, 0.75); border-color: #ff6b81; color: #ffd7dd; }
+        .srv-cell.is-1 { color: #4fd1ff; }
+        .srv-cell.is-2 { color: #7dffa8; }
+        .srv-cell.is-3 { color: #ffd166; }
+        .srv-cell.is-4 { color: #ff9ecd; }
+        .srv-cell.is-5 { color: #ff8a8a; }
+        .srv-cell.is-6 { color: #c9a0ff; }
+
+        .srv-hintline {
+            margin: 12px 0 0;
+            font-size: 0.72rem;
+            color: rgba(201, 245, 218, 0.45);
+            line-height: 1.5;
+        }
+
+        @media (max-width: 560px) {
+            .srv { padding: 16px 12px 30px; }
+            .srv-room { padding: 18px 14px 16px; }
+            .srv-log { font-size: 0.8rem; min-height: 180px; }
+            .srv-top .tag { display: none; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .srv-lamps i, .srv-leds i { animation: none !important; opacity: 0.85; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="srv-scan" aria-hidden="true"></div>
+
+    <header class="srv-top">
+        <a class="back" href="console.html">← В консоль</a>
+        <span class="tag">orakul://server-room · корпус B · −2 этаж</span>
+        <div class="srv-tools">
+            <button class="srv-sound" id="srvSound" type="button" aria-pressed="true">🔊 Гул</button>
+            <button class="theme-toggle" id="themeToggle" type="button"
+                    aria-label="Включить светлую тему" aria-pressed="false">
+                <span class="icon" id="themeIcon" aria-hidden="true">🌙</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="srv">
+        <div class="srv-room">
+            <div class="srv-lamps" aria-hidden="true">
+                <i></i><i></i><i></i><i></i><i></i><i></i>
+            </div>
+
+            <div class="srv-racks">
+                <button class="srv-rack" id="rackToken" type="button">
+                    <span class="srv-leds" aria-hidden="true"><i></i><i></i><i></i></span>
+                    🗄️
+                    <small id="rackTokenState">стойка 1</small>
+                </button>
+
+                <div class="srv-rack is-dead" aria-hidden="true">🗄️<small>стойка 2</small></div>
+
+                <button class="srv-rack" id="rackFolder" type="button">
+                    <span class="srv-leds" aria-hidden="true"><i></i><i></i><i></i></span>
+                    📁
+                    <small id="rackFolderState">сейф 45</small>
+                </button>
+
+                <button class="srv-safe" id="safeBox" type="button">
+                    🔐
+                    <small id="safeState">закрыт</small>
+                </button>
+
+                <div class="srv-rack is-dead" aria-hidden="true">🗄️<small>стойка 4</small></div>
+            </div>
+
+            <section class="srv-term" aria-label="Терминал серверной">
+                <div class="srv-bar">
+                    <span class="srv-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                    <span class="srv-name">orakul@server — core shell</span>
+                    <span class="srv-state" id="srvState">offline</span>
+                </div>
+
+                <div class="srv-log" id="srvLog" role="log" aria-live="polite"></div>
+
+                <form class="srv-form" id="srvForm" autocomplete="off">
+                    <span class="srv-prompt">$</span>
+                    <input id="srvCmd" name="cmd" type="text" autocomplete="off"
+                           autocapitalize="off" spellcheck="false"
+                           placeholder="connect 45" aria-label="Команда терминала">
+                </form>
+            </section>
+        </div>
+    </main>
+
+    <p class="srv-hint">Подсказка: <code>help</code>. Выход — <code>exit</code>.</p>
+
+    <!-- Мини-игра «Взлом сервера»: сапёр с цифрами и проводами -->
+    <div class="srv-modal" id="srvGame" role="dialog" aria-modal="true"
+         aria-labelledby="srvGameTitle" hidden>
+        <div class="srv-win">
+            <div class="srv-win-head">
+                <b id="srvGameTitle">Взлом сервера</b>
+                <button class="srv-x" id="srvGameClose" type="button" aria-label="Закрыть">✕</button>
+            </div>
+
+            <p class="srv-status" id="srvGameStatus">инициализация…</p>
+
+            <div class="srv-grid" id="srvGrid"></div>
+
+            <p class="srv-hintline">
+                цифра — сколько проводов в соседних ячейках · ⚡ — провод (провал) ·
+                открыть нужно все ячейки без проводов
+            </p>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            var O = window.Orakul;
+            var Snd = O.Snd;
+            var B = O.branches;
+
+            var logEl = document.getElementById('srvLog');
+            var form = document.getElementById('srvForm');
+            var input = document.getElementById('srvCmd');
+            var stateEl = document.getElementById('srvState');
+            var soundBtn = document.getElementById('srvSound');
+
+            var safeBox = document.getElementById('safeBox');
+            var safeState = document.getElementById('safeState');
+            var rackToken = document.getElementById('rackToken');
+            var rackTokenState = document.getElementById('rackTokenState');
+            var rackFolder = document.getElementById('rackFolder');
+            var rackFolderState = document.getElementById('rackFolderState');
+
+            var gameEl = document.getElementById('srvGame');
+            var gridEl = document.getElementById('srvGrid');
+            var gameStatus = document.getElementById('srvGameStatus');
+
+            var TEST = /[?&]test=1/.test(location.search);
+
+            /* ================= ЖУРНАЛ ================= */
+            function say(text, cls) {
+                var p = document.createElement('p');
+                if (cls) p.className = 'is-' + cls;
+                p.textContent = text;
+                logEl.appendChild(p);
+                logEl.scrollTop = logEl.scrollHeight;
+                return p;
+            }
+
+            /* ================= ГУЛ ================= */
+            /* Автовоспроизведение браузеры режут: включаем гул на первом
+               касании страницы. Кнопка «Гул» — выключатель. */
+            var humOn = false;
+
+            function setHum(want) {
+                humOn = !!want;
+                if (Snd.serverHum) Snd.serverHum(humOn);
+                if (soundBtn) {
+                    soundBtn.setAttribute('aria-pressed', humOn ? 'true' : 'false');
+                    soundBtn.textContent = humOn ? '🔊 Гул' : '🔇 Гул';
+                }
+            }
+
+            function startHumOnce() {
+                if (humOn) return;
+                setHum(true);
+                document.removeEventListener('pointerdown', startHumOnce);
+                document.removeEventListener('keydown', startHumOnce);
+            }
+
+            document.addEventListener('pointerdown', startHumOnce);
+            document.addEventListener('keydown', startHumOnce);
+
+            if (soundBtn) {
+                soundBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    setHum(!humOn);
+                });
+            }
+
+            /* Редкое шипение в тишине — атмосфера */
+            setInterval(function () {
+                if (!humOn || document.hidden) return;
+                if (Math.random() < 0.35 && Snd.staticNoise) Snd.staticNoise();
+            }, 24000);
+
+            /* ================= СОСТОЯНИЕ КОМНАТЫ ================= */
+            function refresh() {
+                var b = B.all();
+
+                if (safeState) {
+                    safeState.textContent = b.safe ? 'открыт' : 'закрыт';
+                }
+                if (safeBox) safeBox.classList.toggle('is-open', !!b.safe);
+
+                if (rackTokenState) {
+                    rackTokenState.textContent = b.token ? 'жетон у тебя' : 'стойка 1';
+                }
+                if (rackToken) rackToken.classList.toggle('is-done', !!b.token);
+
+                if (rackFolderState) {
+                    rackFolderState.textContent = b.kompromat ? 'забран' : 'сейф 45';
+                }
+                if (rackFolder) rackFolder.classList.toggle('is-done', !!b.kompromat);
+
+                if (stateEl) {
+                    var online = !!b.core;
+                    stateEl.textContent = online ? 'root' : 'offline';
+                    stateEl.classList.toggle('is-on', online);
+                }
+            }
+
+            /* ================= МИНИ-ИГРА «ВЗЛОМ СЕРВЕРА» ================= */
+            /* Сапёр с цифрами и проводами: 6×6, шесть проводов.
+               Цифра — сколько проводов в соседних ячейках.
+               Открыть все «пустые» ячейки — ядро наше. */
+            var G = {
+                size: 6,
+                wires: 6,
+                cells: [],
+                opened: 0,
+                need: 0,
+                over: false,
+                won: false
+            };
+
+            function neighbours(i) {
+                var x = i % G.size;
+                var y = Math.floor(i / G.size);
+                var out = [];
+
+                for (var dy = -1; dy <= 1; dy++) {
+                    for (var dx = -1; dx <= 1; dx++) {
+                        if (!dx && !dy) continue;
+                        var nx = x + dx;
+                        var ny = y + dy;
+                        if (nx < 0 || ny < 0 || nx >= G.size || ny >= G.size) continue;
+                        out.push(ny * G.size + nx);
+                    }
+                }
+                return out;
+            }
+
+            function newGame() {
+                var total = G.size * G.size;
+
+                G.cells = [];
+                for (var i = 0; i < total; i++) {
+                    G.cells.push({ wire: false, open: false, n: 0 });
+                }
+
+                var placed = 0;
+                while (placed < G.wires) {
+                    var idx = Math.floor(Math.random() * total);
+                    if (G.cells[idx].wire) continue;
+                    G.cells[idx].wire = true;
+                    placed++;
+                }
+
+                for (var k = 0; k < total; k++) {
+                    if (G.cells[k].wire) continue;
+                    G.cells[k].n = neighbours(k).filter(function (j) {
+                        return G.cells[j].wire;
+                    }).length;
+                }
+
+                G.opened = 0;
+                G.need = total - G.wires;
+                G.over = false;
+                G.won = false;
+
+                paintGrid();
+                setGameStatus('ядро на связи. открой все пустые ячейки.', '');
+            }
+
+            function setGameStatus(text, cls) {
+                if (!gameStatus) return;
+                gameStatus.textContent = text;
+                gameStatus.className = 'srv-status' + (cls ? ' is-' + cls : '');
+            }
+
+            function paintGrid() {
+                if (!gridEl) return;
+
+                var html = '';
+                for (var i = 0; i < G.cells.length; i++) {
+                    var c = G.cells[i];
+                    var cls = 'srv-cell';
+                    var label = '';
+
+                    if (c.open && c.wire) {
+                        cls += ' is-open is-wire';
+                        label = '⚡';
+                    } else if (c.open) {
+                        cls += ' is-open';
+                        if (c.n > 0) {
+                            cls += ' is-' + c.n;
+                            label = String(c.n);
+                        }
+                    }
+
+                    html += '<button class="' + cls + '" type="button" data-cell="' + i + '"' +
+                            (c.open ? ' aria-disabled="true"' : '') + '>' + label + '</button>';
+                }
+                gridEl.innerHTML = html;
+            }
+
+            function openCell(i) {
+                if (G.over) return;
+
+                var cell = G.cells[i];
+                if (!cell || cell.open) return;
+
+                if (cell.wire) { boom(i); return; }
+
+                /* Заливка: пустые ячейки открывают соседей */
+                var stack = [i];
+                while (stack.length) {
+                    var k = stack.pop();
+                    var cur = G.cells[k];
+                    if (!cur || cur.open || cur.wire) continue;
+
+                    cur.open = true;
+                    G.opened++;
+
+                    if (cur.n === 0) {
+                        neighbours(k).forEach(function (j) {
+                            if (!G.cells[j].open) stack.push(j);
+                        });
+                    }
+                }
+
+                paintGrid();
+                if (Snd.blip) Snd.blip(520 + Math.random() * 200, 0.08, 0.05);
+
+                if (G.opened >= G.need) winGame();
+            }
+
+            function boom(i) {
+                G.over = true;
+                G.cells[i].open = true;
+                paintGrid();
+                setGameStatus('сеть не выдержала. провод под напряжением.', 'bad');
+                if (Snd.beep) Snd.beep(120, 0.06, 0.4);
+                if (Snd.staticNoise) Snd.staticNoise();
+
+                setTimeout(function () {
+                    if (G.won) return;
+                    newGame();
+                }, 1400);
+            }
+
+            function winGame() {
+                if (G.won) return;
+                G.won = true;
+                G.over = true;
+
+                setGameStatus('ядро открыто. доступ root получен.', 'ok');
+                [523, 659, 784, 1046].forEach(function (f, i) {
+                    setTimeout(function () { if (Snd.blip) Snd.blip(f, 0.16, 0.06); }, i * 130);
+                });
+
+                B.patch({ core: true });
+                O.unlock('sysadmin');
+
+                say('[CORE] доступ root получен.', 'ok');
+                say('[CORE] журнал: 45 подключался сюда последним. 23:45.', '45');
+                say('награда: «Системный администратор» 🖧 и +500 ✨', 'ok');
+
+                refresh();
+
+                setTimeout(function () {
+                    if (gameEl) gameEl.hidden = true;
+                }, 1600);
+            }
+
+            function openGame() {
+                if (!gameEl) return;
+                gameEl.hidden = false;
+                newGame();
+                if (Snd.beep) Snd.beep(560, 0.03, 0.1);
+            }
+
+            function closeGame() {
+                if (!gameEl || gameEl.hidden) return;
+                gameEl.hidden = true;
+                if (Snd.beep) Snd.beep(300, 0.02, 0.08);
+            }
+
+            if (gridEl) {
+                gridEl.addEventListener('click', function (e) {
+                    var btn = e.target.closest && e.target.closest('[data-cell]');
+                    if (!btn) return;
+                    openCell(parseInt(btn.getAttribute('data-cell'), 10) || 0);
+                });
+            }
+
+            if (gameEl) {
+                gameEl.addEventListener('click', function (e) {
+                    if (e.target === gameEl) closeGame();
+                });
+                var gameClose = document.getElementById('srvGameClose');
+                if (gameClose) gameClose.addEventListener('click', closeGame);
+            }
+
+            /* ================= КОМАНДЫ ТЕРМИНАЛА ================= */
+            var SAFE_CODE = '45-SERVER-7731';
+            var ANON_CIPHER = '1377-REVRES-54';
+
+            /* Шифр анонима принимаем и здесь: сейф стоит в этой комнате,
+               и игрок логично вводит код в здешнем терминале, а не идёт
+               обратно в консоль. Награда — та же, через O.unlock. */
+            function acceptCipher(raw) {
+                var b = B.all();
+
+                if (!b.cipherAt) {
+                    say('> шифр? мне никто ничего не присылал.', 'dim');
+                    say('аноним пришлёт его в мессенджер, когда выйдет на связь.', 'dim');
+                    return;
+                }
+                if (b.cipherOk) {
+                    say('> шифр уже принят. код сейфа: ' + SAFE_CODE, 'dim');
+                    say('safe ' + SAFE_CODE, 'dim');
+                    return;
+                }
+
+                var code = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+                if (code !== ANON_CIPHER.replace(/-/g, '')) {
+                    say('[ERROR] шифр не совпал. символы важны, вводи целиком.', 'bad');
+                    if (Snd.beep) Snd.beep(160, 0.05, 0.25);
+                    return;
+                }
+
+                B.patch({ cipherOk: true });
+                if (O.unlock) O.unlock('anon_friend');   // ачивка + мана через Supabase
+                refresh();
+
+                say('[ШИФР] принят.', 'ok');
+                say('код сейфа: ' + SAFE_CODE, 'ok');
+                say('safe ' + SAFE_CODE, 'dim');
+                if (Snd.fanfare) Snd.fanfare();
+            }
+
+            function run(raw) {
+                var cmd = String(raw || '').trim();
+                if (!cmd) return;
+
+                say('$ ' + cmd, 'dim');
+
+                var lower = cmd.toLowerCase();
+                var parts = lower.split(/\s+/);
+                var name = parts[0];
+                var arg = cmd.slice(parts[0].length).trim();
+                var b = B.all();
+
+                if (name === 'help') {
+                    say('доступные команды:', 'ok');
+                    say('  connect 45     — подключиться к ядру (взлом)');
+                    say('  <шифр>         — принять шифр от анонима');
+                    say('  safe <код>     — открыть сейф (код от анонима)');
+                    say('  take           — забрать компромат из сейфа');
+                    say('  token          — что там между стойками?');
+                    say('  ls             — осмотреться');
+                    say('  exit           — вернуться в консоль');
+                    return;
+                }
+
+                /* Шифр анонима: и голой строкой, и через cipher <код> */
+                var flat = lower.replace(/[^a-z0-9]/g, '');
+                if (name === 'cipher' || flat === ANON_CIPHER.toLowerCase().replace(/-/g, '')) {
+                    acceptCipher(name === 'cipher' ? arg : cmd);
+                    return;
+                }
+
+                /* Код сейфа, введённый без команды, — это safe <код> */
+                if (flat === SAFE_CODE.replace(/-/g, '')) {
+                    run('safe ' + cmd);
+                    return;
+                }
+
+                /* Похоже на шифр, но не он: пусть скажет «не совпал» */
+                if (b.cipherAt && /^[a-z0-9]+-[a-z0-9-]+$/.test(lower)) {
+                    acceptCipher(cmd);
+                    return;
+                }
+
+                if (name === 'connect') {
+                    if (String(arg).replace(/\s+/g, '') === '45' || !arg) {
+                        if (b.core) {
+                            say('> ядро уже открыто. журнал 45 у тебя на экране.', 'dim');
+                            return;
+                        }
+                        say('> соединяюсь с 45… ядро сопротивляется.', '45');
+                        say('> перед тобой консоль взлома: открой все пустые ячейки.', 'dim');
+                        openGame();
+                        return;
+                    }
+                    say('[ERROR] неизвестный адресат: ' + arg, 'bad');
+                    return;
+                }
+
+                if (name === 'safe') {
+                    if (b.safe) { say('> сейф уже открыт. папка внутри.', 'dim'); return; }
+                    if (!b.cipherOk) {
+                        say('[ERROR] сейф не принимает код без шифра.', 'bad');
+                        say(b.cipherAt
+                            ? 'шифр уже пришёл в мессенджер. введи его сюда — и код откроется.'
+                            : 'сначала аноним должен прислать шифр в мессенджер.', 'dim');
+                        return;
+                    }
+
+                    var code = String(arg || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    if (code !== SAFE_CODE.replace(/-/g, '')) {
+                        say('[ERROR] код не подошёл.', 'bad');
+                        if (Snd.beep) Snd.beep(150, 0.05, 0.3);
+                        return;
+                    }
+
+                    B.patch({ safe: true });
+                    refresh();
+                    say('[СЕЙФ] щелчок. дверца открылась.', 'ok');
+                    say('внутри папка «45» и что-то тяжёлое на дне.', 'dim');
+                    say('забрать: take', 'dim');
+                    if (Snd.fanfare) Snd.fanfare();
+                    return;
+                }
+
+                if (name === 'take' || name === 'взять') {
+                    if (!b.safe) { say('[ERROR] сейф закрыт.', 'bad'); return; }
+                    if (b.kompromat) { say('> папка уже у тебя. отдай боссу в мессенджере.', 'dim'); return; }
+
+                    B.patch({ kompromat: true });
+                    refresh();
+                    say('[ФАЙЛ] компромат на 45: переписка, счета, адрес.', 'ok');
+                    say('босс ждёт. напиши ему в мессенджере.', 'dim');
+                    if (Snd.blip) Snd.blip(880, 0.2, 0.06);
+                    return;
+                }
+
+                if (name === 'token') {
+                    if (b.token) {
+                        say('> жетон у тебя. в консоли есть команда token.', 'dim');
+                        return;
+                    }
+                    say('> между стойками что-то блестит. осмотри стойку 1.', 'dim');
+                    return;
+                }
+
+                if (name === 'ls' || name === 'dir') {
+                    say('стойки 1–4 · сейф · терминал · дверь', 'dim');
+                    return;
+                }
+
+                if (name === 'whoami') {
+                    say('guest@orakul · доступ: серверная', 'ok');
+                    return;
+                }
+
+                /* Пасхалки: старые мемы и намёки */
+                if (name === 'sudo') {
+                    say('> нет.', 'bad');
+                    return;
+                }
+                if (name === '45' || cmd === 'who is 45') {
+                    say('> он был здесь последним. 23:45. журнал стёрт.', '45');
+                    say('> осталась только подпись в комментарии.', 'dim');
+                    return;
+                }
+                if (name === 'rm') {
+                    say('> не в этой жизни.', 'bad');
+                    return;
+                }
+
+                if (name === 'exit' || name === 'выход') {
+                    say('> выхожу в консоль…', 'dim');
+                    setTimeout(function () { window.location.href = 'console.html'; }, 400);
+                    return;
+                }
+
+                say('command not found: ' + cmd, 'bad');
+                say('попробуй help', 'dim');
+            }
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var value = input.value;
+                input.value = '';
+                run(value);
+            });
+
+            /* ================= КЛИКИ ПО КОМНАТЕ ================= */
+            if (rackToken) {
+                rackToken.addEventListener('click', function () {
+                    var b = B.all();
+                    if (b.token) { say('> стойка пустая. жетон у тебя.', 'dim'); return; }
+
+                    B.patch({ token: true });
+                    refresh();
+                    say('[ЖЕТОН] латунный жетон Пиратского Магазина. на обороте — 45.', 'ok');
+                    say('в консоли: token', 'dim');
+                    if (Snd.mystery) Snd.mystery();
+                    else if (Snd.blip) Snd.blip(660, 0.2, 0.06);
+                });
+            }
+
+            if (rackFolder) {
+                rackFolder.addEventListener('click', function () {
+                    run('take');
+                    input.focus();
+                });
+            }
+
+            if (safeBox) {
+                safeBox.addEventListener('click', function () {
+                    var b = B.all();
+                    if (b.safe) { say('> сейф открыт. папка на месте.', 'dim'); return; }
+                    say('> сейф: сначала шифр от анонима, потом safe <код>.', 'dim');
+                    input.focus();
+                    if (Snd.beep) Snd.beep(420, 0.03, 0.1);
+                });
+            }
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && gameEl && !gameEl.hidden) closeGame();
+            });
+
+            /* ================= СТАРТ ================= */
+            B.patch({ server: true });
+            refresh();
+
+            say('OraKul server-room [core]', 'ok');
+            say('ты вошёл через дверь за автоматом. пахнет пылью и горячим железом.', 'dim');
+            say('лампы мигают. где-то за стойками гудит вентилятор.', 'dim');
+            say('');
+
+            var b0 = B.all();
+            if (b0.core) {
+                say('ядро уже открыто: connect 45 не нужен.', 'dim');
+            } else {
+                say('в центре комнаты — терминал. попробуй: connect 45', 'dim');
+            }
+
+            if (b0.cipherOk && !b0.safe) {
+                say('у тебя есть код от сейфа. введи: safe <код>', '45');
+            }
+            if (b0.kompromat && !b0.kompromatSent) {
+                say('компромат у тебя. босс ждёт в мессенджере.', '45');
+            }
+
+            say('');
+            say('help — список команд.', 'dim');
+
+            if (O.finePointer) setTimeout(function () { input.focus(); }, 300);
+
+            /* Отладка для headless-тестов: только с ?test=1 */
+            if (TEST) {
+                window.__srv = {
+                    game: G,
+                    run: run,
+                    openCell: openCell,
+                    newGame: newGame,
+                    winGame: winGame,
+                    state: function () { return B.all(); },
+                    log: function () { return logEl.textContent; }
+                };
+            }
+        })();
+    </script>
+</body>
+</html>

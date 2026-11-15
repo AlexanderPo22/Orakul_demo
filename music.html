@@ -1,0 +1,1871 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Музыка — Оракул</title>
+    <meta name="description" content="Атмосферные треки Оракула: загадочное, магическое, петля, серверная, ночное. Всё синтезируется в браузере — ни одного файла.">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        /* ===== Шапка (как на остальных страницах) ===== */
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            background: rgba(15, 12, 27, 0.72);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        html[data-theme="light"] .nav {
+            background: rgba(255, 255, 255, 0.82);
+            border-bottom-color: rgba(124, 58, 237, 0.14);
+        }
+
+        .nav-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: var(--text-main);
+            text-decoration: none;
+            letter-spacing: 0.5px;
+        }
+
+        .logo .orb { font-size: 1.4rem; filter: drop-shadow(0 0 10px var(--glow)); }
+
+        .nav-links { display: flex; gap: 22px; align-items: center; }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.25s ease;
+        }
+
+        .nav-links a:hover { color: var(--text-main); }
+
+        .nav-links a.is-current {
+            color: var(--accent-2);
+            text-shadow: 0 0 14px var(--accent-2);
+        }
+
+        .menu-toggle {
+            display: none;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid rgba(138, 43, 226, 0.38);
+            background: rgba(138, 43, 226, 0.14);
+            color: var(--text-main);
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        @media (max-width: 860px) {
+            .nav-links { display: none; }
+            .menu-toggle { display: inline-block; }
+            .nav-inner { position: relative; }
+            .nav.open .nav-links {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: 100%;
+                background: var(--panel);
+                border-bottom: 1px solid var(--line);
+                padding: 10px 20px 16px;
+                gap: 0;
+            }
+            .nav.open .nav-links a {
+                width: 100%;
+                padding: 12px 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            .nav.open .nav-links a.is-current { text-shadow: none; }
+        }
+
+        /* ===== Страница ===== */
+        .page {
+            position: relative;
+            z-index: 2;
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 42px 20px 120px;
+        }
+
+        .page-head { text-align: center; margin-bottom: 28px; }
+
+        .kicker {
+            display: inline-block;
+            padding: 5px 14px;
+            border-radius: 999px;
+            background: rgba(138, 43, 226, 0.14);
+            border: 1px solid rgba(138, 43, 226, 0.35);
+            color: var(--accent-2);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .page-head h1 {
+            margin: 14px 0 10px;
+            font-size: clamp(1.9rem, 5vw, 3rem);
+            line-height: 1.1;
+            letter-spacing: -0.5px;
+        }
+
+        .page-head p {
+            max-width: 620px;
+            margin: 0 auto;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* ===== Категории ===== */
+        .mq-cats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 26px 0 30px;
+        }
+
+        .mq-cat {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 16px;
+            border-radius: 999px;
+            background: var(--card-bg);
+            border: 1px solid var(--line);
+            color: var(--text-muted);
+            font: inherit;
+            font-size: 0.86rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.18s ease, border-color 0.18s ease,
+                        color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .mq-cat:hover { transform: translateY(-1px); color: var(--text-main); }
+
+        .mq-cat.is-active {
+            color: var(--text-main);
+            border-color: var(--cat, var(--accent-2));
+            box-shadow: 0 0 0 1px var(--cat, var(--accent-2)) inset,
+                        0 10px 26px -14px var(--cat, var(--accent-2));
+        }
+
+        .mq-cat .n {
+            font-size: 0.72rem;
+            font-weight: 800;
+            opacity: 0.7;
+        }
+
+        /* ===== Сетка треков ===== */
+        .mq-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 12px;
+        }
+
+        .mq-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--line);
+            color: var(--text-main);
+            font: inherit;
+            text-align: left;
+            cursor: pointer;
+            transition: transform 0.18s ease, border-color 0.18s ease,
+                        box-shadow 0.18s ease;
+        }
+        .mq-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--cat, var(--accent-2));
+            box-shadow: 0 14px 30px -18px var(--cat, var(--accent-2));
+        }
+
+        .mq-card:focus-visible {
+            outline: 2px solid var(--accent-2);
+            outline-offset: 2px;
+        }
+
+        /* Сердечко «в избранное» */
+        .mq-fav {
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid var(--line);
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1;
+            cursor: pointer;
+            transition: color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+        }
+
+        .mq-fav:hover { color: #ff6b81; border-color: #ff6b81; transform: scale(1.08); }
+
+        .mq-fav.is-on {
+            color: #ff6b81;
+            border-color: rgba(255, 107, 129, 0.6);
+            background: rgba(255, 107, 129, 0.12);
+        }
+
+        .mq-empty {
+            grid-column: 1 / -1;
+            padding: 26px 18px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border: 1px dashed var(--line);
+            border-radius: 16px;
+        }
+
+        .mq-btn.is-on {
+            border-color: var(--accent-2);
+            color: var(--accent-2);
+            box-shadow: 0 0 0 1px rgba(199, 125, 255, 0.25) inset;
+        }
+
+        .mq-ico {
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(138, 43, 226, 0.14);
+            border: 1px solid var(--line);
+            font-size: 0.9rem;
+        }
+
+        .mq-body { flex: 1 1 auto; min-width: 0; }
+
+        .mq-title {
+            display: block;
+            font-weight: 700;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mq-sub {
+            display: block;
+            margin-top: 2px;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mq-meta {
+            flex: 0 0 auto;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            font-variant-numeric: tabular-nums;
+            text-align: right;
+            line-height: 1.35;
+        }
+
+        /* Эквалайзер на играющей карточке */
+        .mq-eq {
+            display: none;
+            gap: 2px;
+            align-items: flex-end;
+            height: 14px;
+            margin-top: 4px;
+        }
+
+        .mq-eq i {
+            width: 3px;
+            height: 100%;
+            border-radius: 2px;
+            background: var(--cat, var(--accent-2));
+            transform-origin: bottom;
+            animation: mqEq 0.9s ease-in-out infinite;
+        }
+
+        .mq-eq i:nth-child(2) { animation-delay: 0.15s; }
+        .mq-eq i:nth-child(3) { animation-delay: 0.3s; }
+        .mq-eq i:nth-child(4) { animation-delay: 0.45s; }
+
+        @keyframes mqEq {
+            0%, 100% { transform: scaleY(0.25); }
+            50%      { transform: scaleY(1); }
+        }
+
+        .mq-card.is-playing { border-color: var(--cat, var(--accent-2)); }
+        .mq-card.is-playing .mq-eq { display: inline-flex; }
+        .mq-card.is-playing .mq-ico { animation: mqPulse 2.2s ease-in-out infinite; }
+
+        @keyframes mqPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(199, 125, 255, 0); }
+            50%      { box-shadow: 0 0 18px 2px var(--cat, rgba(199, 125, 255, 0.5)); }
+        }
+
+        .mq-note {
+            margin: 30px auto 0;
+            max-width: 640px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            line-height: 1.6;
+        }
+
+        .mq-note b { color: var(--accent-2); }
+
+        /* Глобальная кнопка звука не должна прятаться под плеером */
+        body.mq-player-on .sound-toggle { bottom: 92px; }
+
+        @media (max-width: 640px) {
+            body.mq-player-on .sound-toggle { bottom: 172px; }
+        }
+
+        /* ===== Плеер ===== */
+        .mq-player {
+            position: fixed;
+            left: 50%;
+            bottom: 16px;
+            transform: translateX(-50%);
+            z-index: 1200;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            width: min(1040px, calc(100% - 24px));
+            padding: 10px 14px;
+            border-radius: 18px;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            box-shadow: 0 18px 50px -20px rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+
+        .mq-now {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            flex: 1 1 220px;
+        }
+
+        .mq-now-ico {
+            display: grid;
+            place-items: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: rgba(138, 43, 226, 0.16);
+            font-size: 1rem;
+        }
+
+        .mq-now-body { min-width: 0; }
+
+        .mq-now-title {
+            display: block;
+            font-size: 0.88rem;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mq-now-sub {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mq-controls { display: flex; align-items: center; gap: 6px; }
+
+        .mq-btn {
+            display: grid;
+            place-items: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid var(--line);
+            color: var(--text-main);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: border-color 0.15s ease, transform 0.15s ease;
+        }
+
+        .mq-btn:hover { border-color: var(--accent-2); transform: translateY(-1px); }
+
+        .mq-play {
+            width: 42px;
+            height: 42px;
+            background: var(--accent);
+            border-color: transparent;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .mq-play:hover { background: var(--accent-hover); }
+
+        .mq-progress {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 2 1 260px;
+            min-width: 140px;
+        }
+
+        .mq-time {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            font-variant-numeric: tabular-nums;
+            width: 34px;
+            text-align: center;
+        }
+
+        .mq-bar {
+            position: relative;
+            flex: 1;
+            height: 4px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+        }
+
+        .mq-bar i {
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 0;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--accent), var(--cat, var(--accent-2)));
+        }
+
+        .mq-vis {
+            width: 120px;
+            height: 34px;
+            flex: 0 0 auto;
+            opacity: 0.9;
+        }
+
+        .mq-vol {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 0 0 auto;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .mq-vol input {
+            width: 74px;
+            accent-color: var(--accent-2);
+            cursor: pointer;
+        }
+
+        @media (max-width: 860px) {
+            .mq-vis { display: none; }
+            .mq-progress { flex: 1 1 120px; }
+        }
+
+        @media (max-width: 640px) {
+            .mq-player {
+                flex-wrap: wrap;
+                gap: 8px 10px;
+                padding: 10px;
+            }
+            .mq-now { flex: 1 1 100%; order: 1; }
+            .mq-controls { order: 2; }
+            .mq-progress { order: 3; flex: 1 1 140px; }
+            .mq-vol { order: 4; }
+            .page { padding-bottom: 150px; }
+        }
+
+        footer {
+            position: relative;
+            z-index: 2;
+            padding: 26px 20px 40px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--line);
+        }
+
+        footer a { color: var(--accent-2); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
+    <div class="cursor-orb" id="cursorOrb" aria-hidden="true">🔮</div>
+
+    <header class="nav" id="nav">
+        <div class="nav-inner">
+            <a class="logo" href="index.html">
+                <span class="orb" aria-hidden="true">🔮</span>
+                <span>Оракул</span>
+            </a>
+            <nav class="nav-links">
+                <a href="index.html#features">Возможности</a>
+                <a href="index.html#install">Установка</a>
+                <a href="achievements.html">Достижения</a>
+                <a href="shop.html">Магазин</a>
+                <a href="music.html" class="is-current" aria-current="page">Музыка</a>
+            </nav>
+            <div class="nav-tools">
+                <a class="mana-pill" data-mana href="achievements.html" title="Мана">
+                    <span class="mana-ico" aria-hidden="true">✨</span>
+                    <span data-mana-value>0</span>
+                </a>
+                <a class="auth-link" id="authLink" href="login.html">Войти</a>
+                <button class="theme-toggle" id="themeToggle" type="button"
+                        aria-label="Включить светлую тему" aria-pressed="false">
+                    <span class="icon" id="themeIcon" aria-hidden="true">🌙</span>
+                </button>
+                <button class="menu-toggle" id="menuToggle" type="button"
+                        aria-label="Открыть меню" aria-expanded="false">☰</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="page">
+        <div class="page-head">
+            <span class="kicker">Музыка</span>
+            <h1>Звук Петли</h1>
+            <p>Тридцать треков и ни одного аудиофайла: всё собирается на лету
+               из синусов, треугольников и шума. Выбери настроение — остальное
+               сделает WebAudio.</p>
+        </div>
+
+        <div class="mq-cats" id="cats" role="tablist" aria-label="Категории треков"></div>
+
+        <section class="mq-grid" id="grid" aria-live="polite"></section>
+
+        <p class="mq-note">
+            Треки бесконечные: каждый — короткая последовательность, которая
+            повторяется с новыми оттенками. <b>Загадочное</b> — как в консоли,
+            <b>Магическое</b> — как на главной, <b>Фортнайт</b> — бочка, хэты
+            и последний круг, <b>Темы сайта</b> — те самые мотивы со страниц,
+            один в один. Пока играет трек, тема сайта молчит.<br>
+            Пробел — пауза, ← → — соседние треки, <b>M</b> — тишина,
+            <b>F</b> — в избранное.
+        </p>
+    </main>
+
+    <div class="mq-player" id="player" hidden>
+        <div class="mq-now">
+            <span class="mq-now-ico" id="nowIco" aria-hidden="true">🎵</span>
+            <span class="mq-now-body">
+                <span class="mq-now-title" id="nowTitle">—</span>
+                <span class="mq-now-sub" id="nowSub">—</span>
+            </span>
+        </div>
+
+        <div class="mq-controls">
+            <button class="mq-btn" id="prevBtn" type="button" aria-label="Предыдущий трек">⏮</button>
+            <button class="mq-btn mq-play" id="playBtn" type="button" aria-label="Играть" aria-pressed="false">▶</button>
+            <button class="mq-btn" id="nextBtn" type="button" aria-label="Следующий трек">⏭</button>
+        </div>
+
+        <div class="mq-progress">
+            <span class="mq-time" id="nowTime">0:00</span>
+            <div class="mq-bar"><i id="nowBar"></i></div>
+            <span class="mq-time" id="nowLen">1:36</span>
+        </div>
+
+        <canvas class="mq-vis" id="vis" width="240" height="68" aria-hidden="true"></canvas>
+
+        <label class="mq-vol">
+            <span aria-hidden="true">🔊</span>
+            <input id="vol" type="range" min="0" max="100" value="70" aria-label="Громкость">
+        </label>
+
+        <button class="mq-btn is-on" id="loopBtn" type="button" aria-pressed="true"
+                aria-label="Автопереход к следующему треку">🔁</button>
+
+        <button class="mq-btn" id="shuffleBtn" type="button" aria-label="Случайный трек">🎲</button>
+    </div>
+
+    <footer>
+        <p>Оракул · музыка синтезируется в браузере · <a href="index.html">на главную</a></p>
+    </footer>
+
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            var O = window.Orakul;
+
+            /* ================= ДАННЫЕ ================= */
+
+            var SCALES = {
+                minor:   [0, 2, 3, 5, 7, 8, 10],
+                major:   [0, 2, 4, 5, 7, 9, 11],
+                dorian:  [0, 2, 3, 5, 7, 9, 10],
+                lydian:  [0, 2, 4, 6, 7, 9, 11],
+                phrygian:[0, 1, 3, 5, 7, 8, 10],
+                harm:    [0, 2, 3, 5, 7, 8, 11],
+                pent:    [0, 3, 5, 7, 10]
+            };
+
+            var CATS = [
+                { id: 'mystery', title: 'Загадочное', ico: '🔮', color: '#c77dff',
+                  note: 'как в консоли: скрипы, шкатулка, тишина между нотами' },
+                { id: 'magic', title: 'Магическое', ico: '✨', color: '#ffd166',
+                  note: 'как на главной: тёплые пэды и медные арпеджио' },
+                { id: 'fn', title: 'Фортнайт', ico: '🪂', color: '#58c7ff',
+                  note: 'автобус, последний круг и виктори рояль' },
+                { id: 'loop', title: 'Петля', ico: '🌀', color: '#7dffa8',
+                  note: 'виток за витком: одно и то же, но чуть иначе' },
+                { id: 'server', title: 'Серверная', ico: '🖧', color: '#8fb8ff',
+                  note: 'гул стоек, металл, минус второй этаж' },
+                { id: 'night', title: 'Ночное', ico: '🌙', color: '#ff6b81',
+                  note: 'для тех, кто не спит и слушает' },
+                { id: 'themes', title: 'Темы сайта', ico: '🎼', color: '#ffb37d',
+                  note: 'то, что уже звучит на страницах: главная, консоль, серверная' }
+            ];
+
+            /* bpm, root — MIDI-нота, scale — лад, timbre — форма волны,
+               pad — подложка, perc — ритмическая искра, density — сколько нот,
+               echo — эхо, bright — срез фильтра, seed — зерно рисунка */
+            var TRACKS = [
+                { id: 'm1', cat: 'mystery', title: 'Шкаф с рычагами',
+                  sub: 'не трогай третью кнопку', bpm: 64, root: 57, scale: 'minor',
+                  timbre: 'triangle', pad: 'soft', perc: 'tick', density: 0.34,
+                  echo: 0.30, bright: 900, seed: 11, len: 96 },
+
+                { id: 'm2', cat: 'mystery', title: 'Кто-то дышит в вентиляции',
+                  sub: 'запись без источника', bpm: 48, root: 50, scale: 'phrygian',
+                  timbre: 'sine', pad: 'soft', perc: 'none', density: 0.22,
+                  echo: 0.38, bright: 700, seed: 23, len: 108 },
+
+                { id: 'm3', cat: 'mystery', title: '23:45',
+                  sub: 'ровно без пяти минут', bpm: 72, root: 52, scale: 'minor',
+                  timbre: 'square', pad: 'none', perc: 'tick', density: 0.42,
+                  echo: 0.24, bright: 1100, seed: 5, len: 90 },
+
+                { id: 'm4', cat: 'mystery', title: 'Стол 45',
+                  sub: 'пустой третий день', bpm: 56, root: 45, scale: 'pent',
+                  timbre: 'sine', pad: 'soft', perc: 'none', density: 0.30,
+                  echo: 0.34, bright: 800, seed: 41, len: 102 },
+
+                { id: 'g1', cat: 'magic', title: 'Шар знает',
+                  sub: 'он просто не говорит', bpm: 84, root: 60, scale: 'major',
+                  timbre: 'triangle', pad: 'choir', perc: 'none', density: 0.55,
+                  echo: 0.28, bright: 2200, seed: 7, len: 96 },
+
+                { id: 'g2', cat: 'magic', title: 'Петля',
+                  sub: 'первый виток', bpm: 78, root: 62, scale: 'dorian',
+                  timbre: 'sine', pad: 'choir', perc: 'none', density: 0.5,
+                  echo: 0.32, bright: 2000, seed: 17, len: 96 },
+
+                { id: 'g3', cat: 'magic', title: 'Свет из-под двери',
+                  sub: 'кто-то оставил включённым', bpm: 70, root: 65, scale: 'lydian',
+                  timbre: 'triangle', pad: 'choir', perc: 'none', density: 0.44,
+                  echo: 0.36, bright: 2400, seed: 29, len: 102 },
+
+                { id: 'g4', cat: 'magic', title: 'Лунный расклад',
+                  sub: 'три карты, все старшие', bpm: 90, root: 57, scale: 'harm',
+                  timbre: 'triangle', pad: 'soft', perc: 'tick', density: 0.6,
+                  echo: 0.22, bright: 1800, seed: 13, len: 90 },
+
+                /* ---- фортнайт: бас-бочка, хэты, «эпик» ---- */
+                { id: 'f1', cat: 'fn', title: 'Дроп с автобуса',
+                  sub: 'прыгаем, пока не поздно', bpm: 128, root: 57, scale: 'minor',
+                  timbre: 'square', pad: 'choir', perc: 'beat', density: 0.62,
+                  echo: 0.18, bright: 2600, seed: 101, len: 84 },
+
+                { id: 'f2', cat: 'fn', title: 'Последний круг',
+                  sub: 'осталось двое, и один из них ты', bpm: 140, root: 55, scale: 'harm',
+                  timbre: 'square', pad: 'choir', perc: 'beat', density: 0.7,
+                  echo: 0.16, bright: 3000, seed: 103, len: 78 },
+
+                { id: 'f3', cat: 'fn', title: 'Шторм наступает',
+                  sub: 'стена идёт, не стой', bpm: 112, root: 50, scale: 'phrygian',
+                  timbre: 'triangle', pad: 'soft', perc: 'beat', density: 0.55,
+                  echo: 0.24, bright: 1900, seed: 107, len: 90 },
+
+                { id: 'f4', cat: 'fn', title: 'Виктори рояль',
+                  sub: 'один выживший. ты', bpm: 118, root: 60, scale: 'major',
+                  timbre: 'triangle', pad: 'choir', perc: 'beat', density: 0.66,
+                  echo: 0.2, bright: 2800, seed: 109, len: 84 },
+
+                { id: 'f5', cat: 'fn', title: 'Лут-лейк',
+                  sub: 'золотой сквозь стены', bpm: 124, root: 59, scale: 'pent',
+                  timbre: 'square', pad: 'choir', perc: 'beat', density: 0.58,
+                  echo: 0.2, bright: 2400, seed: 113, len: 84 },
+
+                { id: 'f6', cat: 'fn', title: 'Реванш',
+                  sub: 'в следующем матче', bpm: 136, root: 53, scale: 'minor',
+                  timbre: 'triangle', pad: 'soft', perc: 'beat', density: 0.64,
+                  echo: 0.22, bright: 2200, seed: 127, len: 84 },
+
+                { id: 'l1', cat: 'loop', title: 'Виток 1377',
+                  sub: 'ты уже здесь был', bpm: 96, root: 55, scale: 'minor',
+                  timbre: 'square', pad: 'none', perc: 'tick', density: 0.62,
+                  echo: 0.30, bright: 1500, seed: 1377 % 97, len: 84 },
+
+                { id: 'l2', cat: 'loop', title: 'Снова 23:45',
+                  sub: 'часы не идут, они повторяются', bpm: 88, root: 53, scale: 'minor',
+                  timbre: 'triangle', pad: 'soft', perc: 'tick', density: 0.5,
+                  echo: 0.28, bright: 1300, seed: 31, len: 90 },
+
+                { id: 'l3', cat: 'loop', title: 'Эхо-камера',
+                  sub: 'ответ приходит раньше вопроса', bpm: 100, root: 58, scale: 'phrygian',
+                  timbre: 'sine', pad: 'none', perc: 'none', density: 0.4,
+                  echo: 0.46, bright: 1600, seed: 19, len: 84 },
+
+                { id: 'l4', cat: 'loop', title: 'Ты уже это слышал',
+                  sub: 'и это тоже', bpm: 92, root: 60, scale: 'pent',
+                  timbre: 'square', pad: 'none', perc: 'tick', density: 0.55,
+                  echo: 0.34, bright: 1400, seed: 43, len: 90 },
+
+                { id: 's1', cat: 'server', title: 'Стойка 1',
+                  sub: 'жёлтый кабель, не трогать', bpm: 60, root: 41, scale: 'minor',
+                  timbre: 'sawtooth', pad: 'soft', perc: 'thump', density: 0.3,
+                  echo: 0.2, bright: 600, seed: 3, len: 96 },
+
+                { id: 's2', cat: 'server', title: 'Гул за дверью',
+                  sub: 'вентилятор не спит', bpm: 52, root: 38, scale: 'phrygian',
+                  timbre: 'sine', pad: 'soft', perc: 'none', density: 0.18,
+                  echo: 0.3, bright: 500, seed: 37, len: 108 },
+
+                { id: 's3', cat: 'server', title: 'Холодный старт',
+                  sub: 'ядро просыпается', bpm: 68, root: 43, scale: 'minor',
+                  timbre: 'sawtooth', pad: 'none', perc: 'thump', density: 0.36,
+                  echo: 0.24, bright: 750, seed: 47, len: 90 },
+
+                { id: 's4', cat: 'server', title: 'Корпус B',
+                  sub: 'минус второй этаж', bpm: 56, root: 36, scale: 'minor',
+                  timbre: 'sine', pad: 'soft', perc: 'thump', density: 0.24,
+                  echo: 0.26, bright: 480, seed: 53, len: 102 },
+
+                { id: 'n1', cat: 'night', title: 'Ночной страж',
+                  sub: 'он не спит, он ждёт', bpm: 50, root: 45, scale: 'minor',
+                  timbre: 'sine', pad: 'soft', perc: 'thump', density: 0.2,
+                  echo: 0.4, bright: 620, seed: 61, len: 108 },
+
+                { id: 'n2', cat: 'night', title: 'Красная пелена',
+                  sub: 'по краям экрана', bpm: 44, root: 41, scale: 'phrygian',
+                  timbre: 'sine', pad: 'soft', perc: 'none', density: 0.16,
+                  echo: 0.44, bright: 540, seed: 67, len: 114 },
+
+                { id: 'n3', cat: 'night', title: 'Он рядом',
+                  sub: 'прочитано', bpm: 46, root: 48, scale: 'minor',
+                  timbre: 'triangle', pad: 'none', perc: 'thump', density: 0.18,
+                  echo: 0.42, bright: 700, seed: 71, len: 102 },
+
+                { id: 'n4', cat: 'night', title: 'Рассвет не наступит',
+                  sub: 'лампы мигают', bpm: 40, root: 43, scale: 'pent',
+                  timbre: 'sine', pad: 'soft', perc: 'none', density: 0.14,
+                  echo: 0.48, bright: 600, seed: 73, len: 120 },
+
+                /* ---- темы сайта: те же мотивы, что звучат на страницах ---- */
+                /* У этих треков нет «рисунка»: играется фиксированный мотив,
+                   а под ним — та же подушка, что в common.js (bed). */
+                { id: 't1', cat: 'themes', title: 'Тема главной',
+                  sub: 'шар, колокольчики, воздух', motif: [57, 60, 64, 62, 67, 64, 60, 59],
+                  beat: 3.0, timbre: 'bell', bed: 'air', echo: 0.5, bright: 2200, len: 96 },
+
+                { id: 't2', cat: 'themes', title: 'Тема консоли',
+                  sub: 'гул блока питания и треугольники', motif: [50, 53, 57, 55, 52, 48, 52, 55],
+                  beat: 3.4, timbre: 'triangle', bed: 'hum', echo: 0.42, bright: 760, len: 108 },
+
+                { id: 't3', cat: 'themes', title: 'Тема серверной',
+                  sub: '56 и 84 герца, вентилятор', motif: [45, 48, 50, 48, 45, 43, 45, 48],
+                  beat: 3.2, timbre: 'sine', bed: 'server', echo: 0.3, bright: 520, len: 102 },
+
+                { id: 't4', cat: 'themes', title: 'Тема достижений',
+                  sub: 'фанфары, которые вы заслужили', motif: [72, 76, 79, 84, 79, 76],
+                  beat: 0.9, timbre: 'bell', bed: 'none', echo: 0.35, bright: 3200, len: 90 }
+            ];
+
+            /* ================= ДВИЖОК ================= */
+
+            var ctx = null, master = null, analyser = null, freqData = null;
+            var bus = null, echoIn = null, chain = [];
+            var droneNodes = [];
+            var timer = null, nextTime = 0, step = 0, seq = null;
+            var cur = null;                 // текущий трек
+            var playing = false;
+            var startedAt = 0, pausedAt = 0, elapsedBase = 0;
+            var volume = 0.7;
+            var raf = 0;
+
+            var el = {
+                cats: document.getElementById('cats'),
+                grid: document.getElementById('grid'),
+                player: document.getElementById('player'),
+                play: document.getElementById('playBtn'),
+                prev: document.getElementById('prevBtn'),
+                next: document.getElementById('nextBtn'),
+                shuffle: document.getElementById('shuffleBtn'),
+                loopBtn: document.getElementById('loopBtn'),
+                title: document.getElementById('nowTitle'),
+                sub: document.getElementById('nowSub'),
+                ico: document.getElementById('nowIco'),
+                time: document.getElementById('nowTime'),
+                len: document.getElementById('nowLen'),
+                bar: document.getElementById('nowBar'),
+                vol: document.getElementById('vol'),
+                vis: document.getElementById('vis')
+            };
+
+            var visCtx = el.vis ? el.vis.getContext('2d') : null;
+
+            function mtof(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+
+            function lcg(seed) {
+                var s = (seed || 1) % 2147483647;
+                if (s <= 0) s += 2147483646;
+                return function () {
+                    s = s * 16807 % 2147483647;
+                    return (s - 1) / 2147483646;
+                };
+            }
+
+            /* Рисунок трека: 32 шага, по 16 на такт. Детерминированный:
+               один и тот же трек всегда звучит одинаково. */
+            function buildSeq(track) {
+                var rnd = lcg(track.seed);
+                var scale = SCALES[track.scale] || SCALES.minor;
+                var idx = 2;
+                var out = [];
+
+                for (var i = 0; i < 32; i++) {
+                    var bar = i % 16;
+                    var hit = bar === 0 || bar === 8 || rnd() < track.density;
+                    if (!hit) { out.push(null); continue; }
+
+                    var move = rnd();
+                    if (move < 0.42) idx += 1;
+                    else if (move < 0.72) idx -= 1;
+                    else if (move < 0.88) idx += 2;
+                    else idx -= 2;
+
+                    if (idx < 0) idx += scale.length * 2;
+                    idx = idx % scale.length;
+
+                    var oct = rnd() < 0.16 ? 12 : 0;
+                    out.push(scale[idx] + oct);
+                }
+                return out;
+            }
+
+            function ensure() {
+                if (!ctx) {
+                    var AC = window.AudioContext || window.webkitAudioContext;
+                    if (!AC) return null;
+                    ctx = new AC();
+
+                    master = ctx.createGain();
+                    master.gain.value = volume;
+
+                    var comp = ctx.createDynamicsCompressor();
+                    comp.threshold.value = -18;
+                    comp.knee.value = 24;
+                    comp.ratio.value = 3;
+                    comp.attack.value = 0.01;
+                    comp.release.value = 0.3;
+
+                    analyser = ctx.createAnalyser();
+                    analyser.fftSize = 512;
+                    analyser.smoothingTimeConstant = 0.82;
+                    freqData = new Uint8Array(analyser.frequencyBinCount);
+
+                    master.connect(comp).connect(analyser).connect(ctx.destination);
+                }
+                if (ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} }
+                return ctx;
+            }
+
+            function newBus(track) {
+                bus = ctx.createGain();
+                bus.gain.value = 0.0001;
+                bus.connect(master);
+
+                var lp = ctx.createBiquadFilter();
+                lp.type = 'lowpass';
+                lp.frequency.value = Math.max(1200, track.bright * 2.4);
+                lp.connect(bus);
+
+                /* Эхо: одна линия задержки на трек */
+                echoIn = ctx.createGain();
+                echoIn.gain.value = 1;
+
+                var delay = ctx.createDelay(2);
+                var dt = track.beat
+                    ? Math.min(1.5, track.beat * 0.16)
+                    : Math.min(1.5, (60 / track.bpm) * 0.75);
+                delay.delayTime.value = dt;
+
+                var fb = ctx.createGain();
+                fb.gain.value = 0.32;
+
+                var echoLp = ctx.createBiquadFilter();
+                echoLp.type = 'lowpass';
+                echoLp.frequency.value = 1800;
+
+                var wet = ctx.createGain();
+                wet.gain.value = track.echo;
+
+                echoIn.connect(lp);
+                echoIn.connect(delay);
+                delay.connect(echoLp).connect(fb).connect(delay);
+                echoLp.connect(wet).connect(lp);
+
+                /* Узлы трека помним, чтобы честно отключить их при смене:
+                   иначе петля эха продолжает крутиться вхолостую */
+                chain = [bus, lp, echoIn, delay, fb, echoLp, wet];
+
+                return lp;
+            }
+
+            function pluck(freq, t, dur, type, gain, bright) {
+                var o = ctx.createOscillator();
+                o.type = type;
+                o.frequency.setValueAtTime(freq, t);
+
+                var f = ctx.createBiquadFilter();
+                f.type = 'lowpass';
+                f.frequency.setValueAtTime(bright, t);
+                f.frequency.exponentialRampToValueAtTime(Math.max(200, bright * 0.35), t + dur);
+
+                var g = ctx.createGain();
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(gain, t + 0.015);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+                o.connect(f).connect(g);
+                g.connect(bus);
+                if (echoIn) g.connect(echoIn);
+
+                o.start(t);
+                o.stop(t + dur + 0.05);
+            }
+
+            function bass(t, dur) {
+                var f = mtof(cur.root - 12);
+                var o = ctx.createOscillator();
+                o.type = 'sine';
+                o.frequency.setValueAtTime(f, t);
+
+                var g = ctx.createGain();
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(0.18, t + 0.12);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+                var lp = ctx.createBiquadFilter();
+                lp.type = 'lowpass';
+                lp.frequency.value = 260;
+
+                o.connect(lp).connect(g).connect(bus);
+                o.start(t);
+                o.stop(t + dur + 0.1);
+            }
+
+            function pad(t, dur) {
+                var scale = SCALES[cur.scale] || SCALES.minor;
+                var chord = [scale[0], scale[2], scale[4]];
+
+                chord.forEach(function (n, k) {
+                    var o = ctx.createOscillator();
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(mtof(cur.root + n + 12), t);
+                    o.detune.value = (k - 1) * 6;
+
+                    var g = ctx.createGain();
+                    g.gain.setValueAtTime(0.0001, t);
+                    g.gain.linearRampToValueAtTime(cur.pad === 'choir' ? 0.05 : 0.035, t + dur * 0.4);
+                    g.gain.linearRampToValueAtTime(0.0001, t + dur);
+
+                    var lp = ctx.createBiquadFilter();
+                    lp.type = 'lowpass';
+                    lp.frequency.value = 1500;
+
+                    o.connect(lp).connect(g).connect(bus);
+                    o.start(t);
+                    o.stop(t + dur + 0.1);
+                });
+            }
+
+            function tick(t) {
+                var len = Math.max(32, Math.floor(ctx.sampleRate * 0.035));
+                var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+                var d = buf.getChannelData(0);
+                for (var i = 0; i < len; i++) {
+                    d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 6);
+                }
+                var src = ctx.createBufferSource();
+                src.buffer = buf;
+
+                var hp = ctx.createBiquadFilter();
+                hp.type = 'highpass';
+                hp.frequency.value = 2600;
+
+                var g = ctx.createGain();
+                g.gain.value = 0.05;
+
+                src.connect(hp).connect(g).connect(bus);
+                if (echoIn) g.connect(echoIn);
+                src.start(t);
+            }
+
+            function thump(t) {
+                var o = ctx.createOscillator();
+                o.type = 'sine';
+                o.frequency.setValueAtTime(58, t);
+                o.frequency.exponentialRampToValueAtTime(34, t + 0.28);
+
+                var g = ctx.createGain();
+                g.gain.setValueAtTime(0.22, t);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + 0.34);
+
+                o.connect(g).connect(bus);
+                o.start(t);
+                o.stop(t + 0.4);
+            }
+
+            function drone() {
+                var f = mtof(cur.root - 24);
+                var base = ctx.createGain();
+                base.gain.value = 0.05;
+                base.connect(bus);
+
+                [0, 1].forEach(function (k) {
+                    var o = ctx.createOscillator();
+                    o.type = 'sine';
+                    o.frequency.value = f * (k ? 1.005 : 1);
+
+                    var g = ctx.createGain();
+                    g.gain.value = 0.5;
+                    o.connect(g).connect(base);
+
+                    var lfo = ctx.createOscillator();
+                    lfo.type = 'sine';
+                    lfo.frequency.value = 0.05 + k * 0.017;
+                    var lfoGain = ctx.createGain();
+                    lfoGain.gain.value = 0.25;
+                    lfo.connect(lfoGain).connect(g.gain);
+
+                    o.start();
+                    lfo.start();
+                    droneNodes.push(o, lfo);
+                });
+            }
+
+            function playStep(i, t, stepDur) {
+                var off = seq[i];
+
+                if (off !== null) {
+                    var dur = stepDur * (2.1 + (i % 3) * 0.35);
+                    pluck(mtof(cur.root + off), t, dur, cur.timbre, 0.14, cur.bright);
+                }
+
+                if (i % 8 === 0) bass(t, stepDur * 7.5);
+                if (i % 8 === 4 && cur.pad !== 'none') pad(t, stepDur * 8);
+
+                if (cur.perc === 'tick' && i % 2 === 1 && Math.random() < 0.3) tick(t);
+                if (cur.perc === 'thump' && i % 8 === 0) thump(t);
+
+                /* Фортнайт-пульс: бочка на долю и хэты между */
+                if (cur.perc === 'beat') {
+                    if (i % 8 === 0) thump(t);
+                    if (i % 4 === 2) tick(t);
+                    else if (i % 2 === 1 && Math.random() < 0.22) tick(t);
+                }
+            }
+
+            /* ===== Темы сайта: фиксированный мотив, как в common.js ===== */
+            function bell(freq, t, dur, peak) {
+                var o = ctx.createOscillator();
+                o.type = 'sine';
+                o.frequency.setValueAtTime(freq, t);
+
+                var g = ctx.createGain();
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(peak, t + 0.03);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+                o.connect(g).connect(bus);
+                if (echoIn) g.connect(echoIn);
+                o.start(t);
+                o.stop(t + dur + 0.05);
+            }
+
+            function padNote(freq, t, dur, peak) {
+                var g = ctx.createGain();
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.linearRampToValueAtTime(peak, t + 0.8);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+                var lp = ctx.createBiquadFilter();
+                lp.type = 'lowpass';
+                lp.frequency.value = 760;
+                lp.Q.value = 0.5;
+
+                [1, 1.004, 0.5].forEach(function (k, i) {
+                    var o = ctx.createOscillator();
+                    o.type = i === 2 ? 'sine' : 'triangle';
+                    o.frequency.setValueAtTime(freq * k, t);
+                    o.connect(lp);
+                    o.start(t);
+                    o.stop(t + dur + 0.1);
+                });
+
+                lp.connect(g).connect(bus);
+                if (echoIn) g.connect(echoIn);
+            }
+
+            function themeStep(i, t, dur) {
+                var midi = cur.motif[i];
+                if (midi === null || midi === undefined) return;
+
+                var f = mtof(midi);
+
+                if (cur.timbre === 'triangle') {
+                    padNote(f, t, dur * 0.95, 0.2);
+                    if (i % 4 === 0) padNote(f * 1.5, t + dur * 0.25, dur * 0.7, 0.1);
+                } else {
+                    bell(f, t, dur * 0.9, 0.16);
+                    if (i % 4 === 0) bell(f * 2, t + dur * 0.15, dur * 0.5, 0.05);
+                }
+            }
+
+            /* Постоянная «подушка» под мотивом — как в common.js */
+            function bed(kind) {
+                if (!kind || kind === 'none') return;
+
+                if (kind === 'hum') {
+                    var g = ctx.createGain();
+                    g.gain.value = 1;
+                    g.connect(bus);
+
+                    var lp = ctx.createBiquadFilter();
+                    lp.type = 'lowpass';
+                    lp.frequency.value = 240;
+                    lp.Q.value = 0.7;
+                    lp.connect(g);
+
+                    [50, 100, 150].forEach(function (f, i) {
+                        var o = ctx.createOscillator();
+                        o.type = i === 0 ? 'sawtooth' : 'sine';
+                        o.frequency.value = f;
+                        var og = ctx.createGain();
+                        og.gain.value = i === 0 ? 0.05 : 0.028;
+                        o.connect(og).connect(lp);
+                        o.start();
+                        droneNodes.push(o);
+                    });
+
+                    var fan = noiseSource(3);
+                    var bp = ctx.createBiquadFilter();
+                    bp.type = 'bandpass';
+                    bp.frequency.value = 520;
+                    bp.Q.value = 1.1;
+                    var ng = ctx.createGain();
+                    ng.gain.value = 0.05;
+                    fan.connect(bp).connect(ng).connect(g);
+                    fan.start();
+                    droneNodes.push(fan);
+                    return;
+                }
+
+                if (kind === 'air') {
+                    var src = noiseSource(3);
+                    var alp = ctx.createBiquadFilter();
+                    alp.type = 'lowpass';
+                    alp.frequency.value = 420;
+                    var ag = ctx.createGain();
+                    ag.gain.value = 0.06;
+                    src.connect(alp).connect(ag).connect(bus);
+                    src.start();
+                    droneNodes.push(src);
+                    return;
+                }
+
+                if (kind === 'server') {
+                    var sg = ctx.createGain();
+                    sg.gain.value = 1;
+                    sg.connect(bus);
+
+                    [56, 84].forEach(function (f) {
+                        var o = ctx.createOscillator();
+                        o.type = 'sine';
+                        o.frequency.value = f;
+                        var og = ctx.createGain();
+                        og.gain.value = 0.045;
+                        o.connect(og).connect(sg);
+                        o.start();
+                        droneNodes.push(o);
+                    });
+
+                    var sfan = noiseSource(3);
+                    var sbp = ctx.createBiquadFilter();
+                    sbp.type = 'bandpass';
+                    sbp.frequency.value = 640;
+                    sbp.Q.value = 0.9;
+                    var sng = ctx.createGain();
+                    sng.gain.value = 0.05;
+                    sfan.connect(sbp).connect(sng).connect(sg);
+                    sfan.start();
+                    droneNodes.push(sfan);
+                }
+            }
+
+            function noiseSource(seconds) {
+                var len = Math.max(64, Math.floor(ctx.sampleRate * seconds));
+                var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+                var d = buf.getChannelData(0);
+                for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+
+                var src = ctx.createBufferSource();
+                src.buffer = buf;
+                src.loop = true;
+                return src;
+            }
+
+            function schedule() {
+                if (!playing || !ctx || !cur) return;
+
+                var stepDur = cur.beat || (60 / cur.bpm / 4);
+                var total = cur.motif ? cur.motif.length : 32;
+
+                while (nextTime < ctx.currentTime + 0.12) {
+                    if (cur.motif) themeStep(step, nextTime, stepDur);
+                    else playStep(step, nextTime, stepDur);
+
+                    nextTime += stepDur;
+                    step = (step + 1) % total;
+                }
+            }
+
+            function teardown() {
+                if (timer) { clearInterval(timer); timer = null; }
+
+                droneNodes.forEach(function (n) {
+                    try { n.stop(); } catch (e) {}
+                    try { n.disconnect(); } catch (e) {}
+                });
+                droneNodes = [];
+
+                /* Старую шину гасим плавно и через мгновение отключаем:
+                   иначе петля эха крутится вхолостую до перезагрузки */
+                var oldBus = bus;
+                if (oldBus && ctx) {
+                    try {
+                        oldBus.gain.cancelScheduledValues(ctx.currentTime);
+                        oldBus.gain.setValueAtTime(oldBus.gain.value, ctx.currentTime);
+                        oldBus.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
+                    } catch (e) {}
+                }
+
+                var oldChain = chain;
+                if (oldChain.length) {
+                    setTimeout(function () {
+                        oldChain.forEach(function (n) {
+                            try { n.disconnect(); } catch (e) {}
+                        });
+                    }, 320);
+                }
+
+                chain = [];
+                bus = null;
+                echoIn = null;
+            }
+
+            function startTrack(track) {
+                if (!ensure()) return;
+
+                /* Своя музыка играет — тема сайта уходит в тишину */
+                if (O && O.Snd && O.Snd.ambientLevel) O.Snd.ambientLevel(0);
+
+                teardown();
+
+                cur = track;
+                seq = track.motif ? null : buildSeq(track);
+                step = 0;
+
+                newBus(track);
+                bus.gain.setValueAtTime(0.0001, ctx.currentTime);
+                bus.gain.exponentialRampToValueAtTime(0.9, ctx.currentTime + 0.6);
+
+                setMaster(volume);
+                if (track.bed) bed(track.bed); else drone();
+
+                playing = true;
+                nextTime = ctx.currentTime + 0.1;
+                timer = setInterval(schedule, 25);
+                schedule();
+
+                elapsedBase = 0;
+                pausedAt = 0;
+                startedAt = Date.now();
+
+                paintNow();
+                startLoop();
+            }
+
+            /* Пауза — не suspend() контекста (он любит «залипнуть»),
+               а тишина на мастере и остановка планировщика. */
+            function pause() {
+                if (!playing || !ctx) return;
+                pausedAt = elapsed();
+                playing = false;
+                if (timer) { clearInterval(timer); timer = null; }
+                setMaster(0);
+
+                /* Своя музыка встала — тема сайта возвращается */
+                if (O && O.Snd && O.Snd.ambientLevel) O.Snd.ambientLevel(1);
+
+                paintNow();
+            }
+
+            function resume() {
+                if (!cur || !ctx) return;
+
+                if (ctx.state === 'suspended') {
+                    try { ctx.resume(); } catch (e) {}
+                }
+
+                setMaster(volume);
+
+                if (O && O.Snd && O.Snd.ambientLevel) O.Snd.ambientLevel(0);
+
+                if (!playing) {
+                    playing = true;
+                    nextTime = ctx.currentTime + 0.08;
+                    if (!timer) timer = setInterval(schedule, 25);
+                    schedule();
+                    startedAt = Date.now() - pausedAt;
+                    paintNow();
+                    startLoop();
+                }
+            }
+
+            function setMaster(v) {
+                if (!master || !ctx) return;
+                try {
+                    master.gain.cancelScheduledValues(ctx.currentTime);
+                    master.gain.setTargetAtTime(Math.max(0.0001, v), ctx.currentTime, 0.06);
+                } catch (e) {
+                    master.gain.value = Math.max(0.0001, v);
+                }
+            }
+
+            function elapsed() {
+                if (!playing) return pausedAt || 0;
+                return elapsedBase + (Date.now() - startedAt) / 1000;
+            }
+
+            /* ================= ИНТЕРФЕЙС ================= */
+
+            var activeCat = CATS[0].id;
+            var favOnly = false;
+            var fav = [];
+            var autoplay = true;
+
+            /* ---- что помним между визитами ---- */
+            function storeGet(key, def) {
+                try {
+                    var raw = localStorage.getItem('mq.' + key);
+                    return raw === null ? def : JSON.parse(raw);
+                } catch (e) { return def; }
+            }
+
+            function storeSet(key, val) {
+                try { localStorage.setItem('mq.' + key, JSON.stringify(val)); } catch (e) {}
+            }
+
+            function isFav(id) { return fav.indexOf(id) >= 0; }
+
+            function toggleFav(id) {
+                var i = fav.indexOf(id);
+                if (i >= 0) fav.splice(i, 1);
+                else fav.push(id);
+
+                storeSet('fav', fav);
+                buildCats();
+                buildGrid();
+            }
+
+            function catById(id) {
+                for (var i = 0; i < CATS.length; i++) if (CATS[i].id === id) return CATS[i];
+                return CATS[0];
+            }
+
+            function fmt(s) {
+                s = Math.max(0, Math.floor(s));
+                return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
+            }
+
+            function buildCats() {
+                el.cats.innerHTML = '';   // без этого вкладки дублировались при каждом клике
+
+                CATS.forEach(function (c) {
+                    var n = TRACKS.filter(function (t) { return t.cat === c.id; }).length;
+                    var b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'mq-cat' + (!favOnly && c.id === activeCat ? ' is-active' : '');
+                    b.setAttribute('role', 'tab');
+                    b.setAttribute('aria-selected', !favOnly && c.id === activeCat ? 'true' : 'false');
+                    b.style.setProperty('--cat', c.color);
+                    b.innerHTML = '<span aria-hidden="true">' + c.ico + '</span>' +
+                                  '<span>' + c.title + '</span>' +
+                                  '<span class="n">' + n + '</span>';
+                    b.addEventListener('click', function () {
+                        activeCat = c.id;
+                        favOnly = false;
+                        storeSet('cat', c.id);
+                        buildCats();
+                        buildGrid();
+                    });
+                    el.cats.appendChild(b);
+                });
+
+                /* «Избранное» — отдельная вкладка, всегда последняя */
+                var f = document.createElement('button');
+                f.type = 'button';
+                f.className = 'mq-cat mq-favcat' + (favOnly ? ' is-active' : '');
+                f.setAttribute('role', 'tab');
+                f.setAttribute('aria-selected', favOnly ? 'true' : 'false');
+                f.style.setProperty('--cat', '#ff6b81');
+                f.innerHTML = '<span aria-hidden="true">★</span>' +
+                              '<span>Избранное</span>' +
+                              '<span class="n">' + fav.length + '</span>';
+                f.addEventListener('click', function () {
+                    favOnly = !favOnly;
+                    buildCats();
+                    buildGrid();
+                });
+                el.cats.appendChild(f);
+            }
+
+            function buildGrid() {
+                var c = favOnly ? { color: '#ff6b81' } : catById(activeCat);
+                el.grid.innerHTML = '';
+                el.grid.style.setProperty('--cat', c.color);
+
+                var list = TRACKS.filter(function (t) {
+                    return favOnly ? isFav(t.id) : t.cat === activeCat;
+                });
+
+                if (!list.length) {
+                    var empty = document.createElement('p');
+                    empty.className = 'mq-empty';
+                    empty.textContent = favOnly
+                        ? 'Пока пусто: нажми ♡ на треке, чтобы он попал сюда.'
+                        : 'Здесь пока нет треков.';
+                    el.grid.appendChild(empty);
+                    return;
+                }
+
+                list.forEach(function (t) {
+                    var card = document.createElement('div');
+                    card.className = 'mq-card';
+                    card.setAttribute('role', 'button');
+                    card.setAttribute('tabindex', '0');
+                    card.setAttribute('data-id', t.id);
+                    card.style.setProperty('--cat', c.color);
+
+                    card.innerHTML =
+                        '<span class="mq-ico" aria-hidden="true">▶</span>' +
+                        '<span class="mq-body">' +
+                            '<span class="mq-title">' + t.title + '</span>' +
+                            '<span class="mq-sub">' + t.sub + '</span>' +
+                            '<span class="mq-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>' +
+                        '</span>' +
+                        '<span class="mq-meta">' + fmt(t.len) + '<br>' +
+                            (t.motif ? 'тема' : t.bpm + ' bpm') + '</span>';
+
+                    var heart = document.createElement('button');
+                    heart.type = 'button';
+                    heart.className = 'mq-fav' + (isFav(t.id) ? ' is-on' : '');
+                    heart.innerHTML = isFav(t.id) ? '♥' : '♡';
+                    heart.setAttribute('aria-label',
+                        (isFav(t.id) ? 'Убрать из избранного: ' : 'В избранное: ') + t.title);
+                    heart.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        toggleFav(t.id);
+                    });
+                    card.appendChild(heart);
+
+                    card.addEventListener('click', function () { play(t); });
+                    card.addEventListener('keydown', function (e) {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            play(t);
+                        }
+                    });
+
+                    el.grid.appendChild(card);
+                });
+
+                markCards();
+            }
+
+            function markCards() {
+                Array.prototype.forEach.call(el.grid.querySelectorAll('.mq-card'), function (b) {
+                    var on = !!cur && b.getAttribute('data-id') === cur.id;
+                    b.classList.toggle('is-playing', on);
+
+                    /* Иконка карточки — это и есть play/pause: две палки,
+                       когда трек играет, треугольник — когда нет */
+                    var ico = b.querySelector('.mq-ico');
+                    if (ico) ico.textContent = (on && playing) ? '❚❚' : '▶';
+
+                    var title = b.querySelector('.mq-title');
+                    b.setAttribute('aria-label',
+                        (on && playing ? 'Пауза: ' : 'Играть: ') +
+                        (title ? title.textContent : ''));
+                });
+            }
+
+            function paintNow() {
+                if (!cur) return;
+                var c = catById(cur.cat);
+                el.player.hidden = false;
+                document.body.classList.add('mq-player-on');
+                el.player.style.setProperty('--cat', c.color);
+                el.title.textContent = cur.title;
+                el.sub.textContent = c.title + ' · ' + cur.sub;
+                el.ico.textContent = c.ico;
+                el.len.textContent = fmt(cur.len);
+
+                el.play.textContent = playing ? '❚❚' : '▶';
+                el.play.setAttribute('aria-label', playing ? 'Пауза' : 'Играть');
+                el.play.setAttribute('aria-pressed', playing ? 'true' : 'false');
+
+                document.title = playing
+                    ? '▶ ' + cur.title + ' — Оракул'
+                    : 'Музыка — Оракул';
+
+                if (navigator.mediaSession) {
+                    try {
+                        navigator.mediaSession.metadata = new window.MediaMetadata({
+                            title: cur.title,
+                            artist: 'Оракул',
+                            album: c.title
+                        });
+                        navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
+                    } catch (e) {}
+                }
+
+                markCards();
+            }
+
+            /* Один кадровый цикл на всю страницу: и прогресс, и визуализатор.
+               Раньше на каждый трек запускался свой requestAnimationFrame,
+               и циклы копились. */
+            function startLoop() {
+                if (raf) return;
+
+                (function frame() {
+                    raf = requestAnimationFrame(frame);
+
+                    /* Конец цикла: либо следующий трек, либо новый виток */
+                    if (playing && cur && elapsed() >= cur.len) {
+                        if (autoplay) {
+                            var nx = neighbours(1);
+                            if (nx) { startTrack(nx); return; }
+                        }
+                        startedAt = Date.now();
+                        pausedAt = 0;
+                    }
+
+                    if (cur) {
+                        var e = elapsed() % cur.len;
+                        el.time.textContent = fmt(e);
+                        el.bar.style.width = ((e / cur.len) * 100).toFixed(2) + '%';
+                    }
+
+                    if (!visCtx || !el.vis) return;
+
+                    var w = el.vis.width;
+                    var h = el.vis.height;
+
+                    if (!playing || !analyser) {
+                        visCtx.clearRect(0, 0, w, h);
+                        return;
+                    }
+
+                    analyser.getByteFrequencyData(freqData);
+                    visCtx.clearRect(0, 0, w, h);
+                    visCtx.fillStyle = catById(cur.cat).color;
+
+                    var bars = 28;
+                    var bw = w / bars;
+
+                    for (var i = 0; i < bars; i++) {
+                        var v = freqData[Math.floor(i * 1.6)] / 255;
+                        var bh = Math.max(2, v * h);
+                        visCtx.globalAlpha = 0.35 + v * 0.65;
+                        visCtx.fillRect(i * bw + 1, h - bh, bw - 2, bh);
+                    }
+                    visCtx.globalAlpha = 1;
+                })();
+            }
+
+            function play(track) {
+                if (cur && cur.id === track.id) {
+                    if (playing) { pause(); return; }
+                    resume();
+                    return;
+                }
+                startTrack(track);
+            }
+
+            function neighbours(dir) {
+                var catId = cur ? cur.cat : activeCat;
+                var list = TRACKS.filter(function (t) { return t.cat === catId; });
+                if (!list.length) return null;
+
+                var i = 0;
+                for (var k = 0; k < list.length; k++) if (cur && list[k].id === cur.id) i = k;
+
+                i = (i + dir + list.length) % list.length;
+                return list[i];
+            }
+
+            function visibleList() {
+                return favOnly
+                    ? TRACKS.filter(function (t) { return isFav(t.id); })
+                    : TRACKS.filter(function (t) { return t.cat === activeCat; });
+            }
+
+            el.play.addEventListener('click', function () {
+                if (!cur) { play(TRACKS[0]); return; }
+                if (playing) pause(); else resume();
+            });
+
+            el.prev.addEventListener('click', function () {
+                var t = neighbours(-1);
+                if (t) startTrack(t);
+            });
+
+            el.next.addEventListener('click', function () {
+                var t = neighbours(1);
+                if (t) startTrack(t);
+            });
+
+            el.shuffle.addEventListener('click', function () {
+                var list = visibleList();
+                if (!list.length) return;
+                var t = list[Math.floor(Math.random() * list.length)];
+                startTrack(t);
+            });
+
+            el.loopBtn.addEventListener('click', function () {
+                autoplay = !autoplay;
+                el.loopBtn.classList.toggle('is-on', autoplay);
+                el.loopBtn.setAttribute('aria-pressed', autoplay ? 'true' : 'false');
+            });
+
+            /* ---- громкость ---- */
+            var lastVol = 0.7;
+
+            function setVolume(v, save) {
+                volume = Math.max(0, Math.min(1, v));
+                el.vol.value = String(Math.round(volume * 100));
+                if (playing) setMaster(volume);
+                if (save !== false) storeSet('vol', volume);
+            }
+
+            function toggleMute() {
+                if (volume > 0.001) {
+                    lastVol = volume;
+                    setVolume(0);
+                } else {
+                    setVolume(lastVol || 0.7);
+                }
+            }
+
+            el.vol.addEventListener('input', function () {
+                setVolume(parseInt(el.vol.value, 10) / 100);
+            });
+
+            /* ---- горячие клавиши ---- */
+            document.addEventListener('keydown', function (e) {
+                if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    if (playing) pause();
+                    else if (cur) resume();
+                    else play(TRACKS[0]);
+                    return;
+                }
+
+                if (e.key === 'ArrowRight') {
+                    var n = neighbours(1);
+                    if (n) startTrack(n);
+                    return;
+                }
+
+                if (e.key === 'ArrowLeft') {
+                    var p = neighbours(-1);
+                    if (p) startTrack(p);
+                    return;
+                }
+
+                var k = String(e.key).toLowerCase();
+                if (k === 'm' || k === 'ь') { toggleMute(); return; }
+                if ((k === 'f' || k === 'а') && cur) { toggleFav(cur.id); }
+            });
+
+            /* ---- системные клавиши медиаплеера ---- */
+            if (navigator.mediaSession) {
+                try {
+                    navigator.mediaSession.setActionHandler('play', function () { resume(); });
+                    navigator.mediaSession.setActionHandler('pause', function () { pause(); });
+                    navigator.mediaSession.setActionHandler('nexttrack', function () {
+                        var t = neighbours(1);
+                        if (t) startTrack(t);
+                    });
+                    navigator.mediaSession.setActionHandler('previoustrack', function () {
+                        var t = neighbours(-1);
+                        if (t) startTrack(t);
+                    });
+                } catch (e) {}
+            }
+
+            /* Кнопка «Звук» из шапки сайта глушит и плеер: иначе выходит
+               «звук выключен», а музыка играет */
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest && e.target.closest('#soundToggle');
+                if (!t || !O || !O.Snd || !O.Snd.isOn) return;
+
+                if (!O.Snd.isOn()) {
+                    if (playing) pause();
+                    if (volume > 0.001) {
+                        lastVol = volume;
+                        volume = 0;
+                        el.vol.value = '0';
+                        setMaster(0);
+                    }
+                } else if (volume < 0.001) {
+                    volume = lastVol;
+                    el.vol.value = String(Math.round(lastVol * 100));
+                    if (playing) setMaster(volume);
+                }
+            });
+
+            /* ================= МОБИЛЬНОЕ МЕНЮ ================= */
+            var nav = document.getElementById('nav');
+            var menu = document.getElementById('menuToggle');
+
+            function closeMenu() {
+                if (!nav) return;
+                nav.classList.remove('open');
+                if (menu) {
+                    menu.setAttribute('aria-expanded', 'false');
+                    menu.textContent = '☰';
+                }
+            }
+
+            if (menu) {
+                menu.addEventListener('click', function () {
+                    var open = nav.classList.toggle('open');
+                    menu.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    menu.textContent = open ? '✕' : '☰';
+                });
+                Array.prototype.forEach.call(nav.querySelectorAll('.nav-links a'), function (a) {
+                    a.addEventListener('click', closeMenu);
+                });
+            }
+
+            /* ================= СТАРТ ================= */
+            var savedVol = storeGet('vol', null);
+            if (typeof savedVol === 'number' && savedVol >= 0 && savedVol <= 1) {
+                volume = savedVol;
+                el.vol.value = String(Math.round(savedVol * 100));
+            }
+
+            var savedCat = storeGet('cat', null);
+            if (savedCat) {
+                for (var ci = 0; ci < CATS.length; ci++) {
+                    if (CATS[ci].id === savedCat) activeCat = savedCat;
+                }
+            }
+
+            var savedFav = storeGet('fav', []);
+            if (Array.isArray(savedFav)) {
+                fav = savedFav.filter(function (id) {
+                    for (var i = 0; i < TRACKS.length; i++) if (TRACKS[i].id === id) return true;
+                    return false;
+                });
+            }
+
+            el.loopBtn.classList.toggle('is-on', autoplay);
+            el.loopBtn.setAttribute('aria-pressed', autoplay ? 'true' : 'false');
+
+            /* Звук сайта был выключен раньше — плеер стартует тихо */
+            if (O && O.Snd && O.Snd.isOn && !O.Snd.isOn()) {
+                lastVol = volume || 0.7;
+                volume = 0;
+                el.vol.value = '0';
+            }
+
+            buildCats();
+            buildGrid();
+
+            /* Отладка для headless-тестов: только с ?test=1 */
+            if (/[?&]test=1/.test(location.search)) {
+                window.__mq = {
+                    play: play,
+                    state: function () {
+                        return {
+                            playing: playing,
+                            track: cur && cur.id,
+                            cat: activeCat,
+                            ctx: ctx ? ctx.state : 'none',
+                            step: step,
+                            nodes: droneNodes.length,
+                            vol: volume,
+                            cards: el.grid.querySelectorAll('.mq-card').length,
+                            player: !el.player.hidden,
+                            title: el.title.textContent,
+                            fav: fav.length,
+                            favOnly: favOnly,
+                            autoplay: autoplay,
+                            cats: el.cats.querySelectorAll('.mq-cat').length,
+                            docTitle: document.title
+                        };
+                    }
+                };
+            }
+        })();
+    </script>
+</body>
+</html>

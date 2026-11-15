@@ -42,6 +42,15 @@ html[data-theme="light"] {
     box-sizing: border-box;
 }
 
+/* [hidden] должен побеждать всегда.
+   У .btn (inline-flex), .filters (flex), .token-box (flex) и модалок свой
+   display, а браузерный [hidden] { display: none } слабее по специфичности —
+   без этого правила элемент с атрибутом hidden остаётся на экране
+   (так «не закрывался» взлом сервера). */
+[hidden] {
+    display: none !important;
+}
+
 html {
     -webkit-text-size-adjust: 100%;
     overflow-x: clip;

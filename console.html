@@ -959,15 +959,40 @@
 
         @keyframes flashOut { from { opacity: 1; } to { opacity: 0; } }
 
-        /* ===== Мысли: прилёт снизу с приземлением ===== */
+        /* ===== Мысли: перелёт по дуге и приземление ===== */
+        /* Субтитр влетает снизу-слева, с лёгким креном, пролетает выше
+           точки приземления и садится с двумя затухающими подскоками. */
         .subtitle.is-in {
-            animation: subIn 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.35);
+            animation: subIn 0.66s cubic-bezier(0.16, 0.84, 0.3, 1) both;
         }
 
         @keyframes subIn {
-            0%   { transform: translate(-50%, 30px) scale(0.96); }
-            60%  { transform: translate(-50%, -4px) scale(1.01); }
-            100% { transform: translate(-50%, 0) scale(1); }
+            0%   { transform: translate(-62%, 46px) scale(0.9) rotate(-1.8deg); opacity: 0; }
+            38%  { opacity: 1; }
+            55%  { transform: translate(-48.5%, -11px) scale(1.035) rotate(0.7deg); }
+            74%  { transform: translate(-50.4%, 4px) scale(0.994) rotate(-0.25deg); }
+            88%  { transform: translate(-49.9%, -2px) scale(1.004); }
+            100% { transform: translate(-50%, 0) scale(1) rotate(0); opacity: 1; }
+        }
+
+        /* Приземление: короткая волна тени под субтитром */
+        .subtitle.is-in::after {
+            content: "";
+            position: absolute;
+            left: 12%;
+            right: 12%;
+            bottom: -8px;
+            height: 10px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at center, rgba(199, 125, 255, 0.35), rgba(199, 125, 255, 0) 70%);
+            animation: subLand 0.66s ease-out both;
+            pointer-events: none;
+        }
+
+        @keyframes subLand {
+            0%, 40% { opacity: 0; transform: scaleX(0.7); }
+            62%     { opacity: 0.9; transform: scaleX(1.04); }
+            100%    { opacity: 0; transform: scaleX(1.18); }
         }
 
         @media (max-width: 640px) {
@@ -2998,7 +3023,163 @@
             .phone-pizza { margin: 0 auto; }
         }
 
+        /* ===== Жетон Пиратского Магазина ===== */
+        .token-lore {
+            position: fixed;
+            inset: 0;
+            z-index: 120;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            background: rgba(6, 4, 14, 0.84);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            animation: tlFade 0.25s ease both;
+        }
+
+        .token-lore.is-out { animation: tlFade 0.3s ease reverse both; }
+
+        @keyframes tlFade { from { opacity: 0; } to { opacity: 1; } }
+
+        .tl-win {
+            width: min(520px, 100%);
+            max-height: 86vh;
+            overflow: auto;
+            border-radius: 20px;
+            padding: 20px 22px 22px;
+            background: linear-gradient(160deg, rgba(28, 20, 48, 0.98), rgba(12, 9, 24, 0.99));
+            border: 1px solid rgba(255, 209, 102, 0.35);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65);
+            font-family: var(--mono);
+        }
+
+        .tl-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+        .tl-ico { font-size: 1.5rem; filter: drop-shadow(0 0 10px rgba(255, 209, 102, 0.6)); }
+        .tl-name { flex: 1 1 auto; font-weight: 800; letter-spacing: 0.6px; color: #ffd166; }
+
+        .tl-close {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: transparent;
+            color: var(--text-muted);
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .tl-close:hover { color: #fff; border-color: rgba(255, 209, 102, 0.6); }
+
+        .tl-body p { margin: 0 0 8px; font-size: 0.9rem; line-height: 1.55; color: var(--text-main); }
+        .tl-body .tl-title {
+            color: #ffd166;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.4px;
+            font-size: 0.76rem;
+        }
+        .tl-body .tl-dim { color: var(--text-muted); font-size: 0.82rem; }
+
+        .tl-ok {
+            margin-top: 12px;
+            width: 100%;
+            padding: 11px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 209, 102, 0.45);
+            background: rgba(255, 209, 102, 0.14);
+            color: #ffd166;
+            font-family: inherit;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .tl-ok:hover { background: rgba(255, 209, 102, 0.24); }
+
+        /* ===== «Глюк в матрице»: 45 на связи ===== */
+        .fx-glitch45 {
+            position: fixed;
+            inset: 0;
+            z-index: 130;
+            pointer-events: none;
+            display: grid;
+            place-items: center;
+            background: radial-gradient(circle at 50% 40%, rgba(0, 44, 12, 0.55), rgba(0, 0, 0, 0.88));
+        }
+
+        .fx-glitch45.is-out { opacity: 0; transition: opacity 0.5s ease; }
+
+        .glitch45-rain {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            padding: 10px;
+            font-size: 14px;
+            line-height: 1.15;
+            letter-spacing: 6px;
+            word-break: break-all;
+            color: rgba(80, 255, 140, 0.5);
+            text-shadow: 0 0 8px rgba(80, 255, 140, 0.55);
+            animation: glitchRain 0.18s steps(2) infinite;
+        }
+
+        @keyframes glitchRain {
+            0% { transform: translateY(-4px); opacity: 0.5; }
+            50% { transform: translateY(2px); opacity: 0.8; }
+            100% { transform: translateY(-2px); opacity: 0.6; }
+        }
+
+        .glitch45-text {
+            position: relative;
+            z-index: 2;
+            font-family: var(--mono);
+            font-size: clamp(1.3rem, 6vw, 2.6rem);
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: #7dffa8;
+            text-shadow: 0 0 18px rgba(80, 255, 140, 0.85),
+                         3px 0 0 rgba(255, 0, 90, 0.5),
+                         -3px 0 0 rgba(0, 200, 255, 0.4);
+            animation: glitchText 0.4s steps(3) infinite;
+        }
+
+        @keyframes glitchText {
+            0% { transform: translate(0, 0); }
+            40% { transform: translate(-2px, 1px); }
+            70% { transform: translate(2px, -1px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        .glitch45-sub {
+            position: relative;
+            z-index: 2;
+            margin-top: 10px;
+            color: #b8ffd9;
+            font-family: var(--mono);
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        .glitch45-bar {
+            position: relative;
+            z-index: 2;
+            width: min(320px, 70vw);
+            height: 6px;
+            margin-top: 16px;
+            border-radius: 999px;
+            background: rgba(80, 255, 140, 0.18);
+            overflow: hidden;
+        }
+
+        .glitch45-bar i {
+            display: block;
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #7dffa8, #d7ffe6);
+            box-shadow: 0 0 12px rgba(80, 255, 140, 0.8);
+        }
+
         @media (prefers-reduced-motion: reduce) {
+            .glitch45-text, .glitch45-rain { animation: none !important; }
             .stage,
             .stage-row .term { transition: none; }
             .phone.is-in,
@@ -3027,6 +3208,7 @@
     <header class="topbar">
         <a class="back" href="index.html">← На главную</a>
         <a class="back" href="shop.html">💳 Магазин</a>
+        <a class="back" href="music.html">🎵 Музыка</a>
         <span class="tag">orakul://console</span>
         <div class="topbar-tools">
             <span class="access" id="accessLevel" aria-live="polite">guest</span>
@@ -3167,6 +3349,13 @@
             var O = window.Orakul;
             var Snd = O.Snd;
             var reduceMotion = O.reduceMotion;
+            var branches = O.branches;   // прогресс новых веток (server.html тоже)
+
+            /* Версия сайта (не бота) — одна строка на всю консоль:
+               сменить номер можно только здесь. */
+            var VERSION = 'v3.8.0';
+            var BUILD = '15.11.2026';
+            var MODULES = '8/8';
 
             // Консоли — свой фон: загадочная мелодия и жужжание компьютера
             if (Snd.ambient) Snd.ambient('console');
@@ -3307,6 +3496,73 @@
                 term.classList.add('is-flash');
             }
 
+            /* Тень за курсором на пару секунд — без рассудка и без ивента.
+               Для «дешёвых» моментов: клик по 45 в orakul.app, шёпот. */
+            function shadowPulse(ms, x, y) {
+                var sh = document.createElement('div');
+                sh.className = 'fx-shadow';
+                if (typeof x === 'number' && typeof y === 'number') {
+                    sh.style.transform = 'translate(' + (x + 22) + 'px,' + (y + 22) + 'px)';
+                }
+                document.body.appendChild(sh);
+
+                function move(e) {
+                    sh.style.transform = 'translate(' + (e.clientX + 22) + 'px,' +
+                                         (e.clientY + 22) + 'px)';
+                }
+
+                window.addEventListener('pointermove', move);
+                setTimeout(function () {
+                    window.removeEventListener('pointermove', move);
+                    sh.classList.add('is-out');
+                    setTimeout(function () { sh.remove(); }, 520);
+                }, ms || 1000);
+            }
+
+            /* ================= ШЁПОТ ================= */
+            /* Редкая строка-призрак в логе при вводе команд. Чем ниже
+               рассудок, тем чаще шепчет. Звука «ту-дун» здесь нет —
+               только шорох, и то не всегда. */
+            var WHISPERS = [
+                '…не оборачивайся.',
+                '…я всё ещё здесь.',
+                '…он слышит тебя.',
+                '…45 не мёртв.',
+                '…ты уже вводил это.',
+                '…стол 45 пустой.',
+                '…посмотри под стол.',
+                '…кто-то стоит за спиной.',
+                '…это не твой голос.',
+                '…не выходи отсюда.'
+            ];
+            var whisperAt = 0;
+            var whisperIdx = -1;
+            var cmdCount = 0;
+
+            function whisperSay() {
+                /* Не повторяем одну и ту же фразу подряд */
+                var i = Math.floor(Math.random() * WHISPERS.length);
+                if (i === whisperIdx) i = (i + 1) % WHISPERS.length;
+                whisperIdx = i;
+
+                line('(шёпот) ' + WHISPERS[i], 'line-ghost', { instant: true });
+                if (sanity < 45 && Snd.whisperSound) Snd.whisperSound();
+            }
+
+            function whisper() {
+                var now = Date.now();
+                if (now - whisperAt < 30000) return false;
+
+                /* Шанс: 8% на светлой голове, до 30% на нуле */
+                var s = Math.max(0, Math.min(100, sanity));
+                var chance = 0.08 + (100 - s) / 100 * 0.22;
+                if (Math.random() > chance) return false;
+
+                whisperAt = now;
+                setTimeout(whisperSay, 320);
+                return true;
+            }
+
             /* ================= МЫСЛИ ГЕРОЯ ================= */
             /* Субтитры внизу экрана. once — реплика звучит один раз за сеанс. */
             var subTimer = null;
@@ -3437,9 +3693,19 @@
             }
 
             function roomGoNext() {
-                line('> Дверь ведёт в темноту. Пока туда не пройти.', 'line-dialog');
-                think('дверь ведёт в темноту. Пока туда не пройти.');
-                Snd.beep(180, 0.03, 0.16);
+                if (!room.hacked) {
+                    line('> Дверь ведёт в темноту. Пока туда не пройти.', 'line-dialog');
+                    think('дверь ведёт в темноту. Пока туда не пройти.');
+                    return;
+                }
+
+                /* Автомат отъехал — за ним серверная. Это отдельная
+                   страница: у комнаты свои звуки, лампы и терминал. */
+                branches.patch({ server: true });
+                line('> Проход открыт. Иду в серверную…', 'line-ok');
+                line('там гудит. и мигает.', 'line-dim');
+                Snd.beep(520, 0.03, 0.1);
+                setTimeout(function () { window.location.href = 'server.html'; }, 700);
             }
 
             /* ================= MINI-ИГРА «EasyHacking» ================= */
@@ -3940,9 +4206,36 @@
                Он набирает 45 (5045): мы сидим за его столом. */
             var unknown = { state: 'idle' };   // idle | waiting | blocked
 
+            /* Молчание в трубке: 3017 не повторяет вопрос, он ждёт.
+               Через несколько секунд тишины терминал моргает и в логе
+               появляется «...он ждёт.». Таймер снимается любым ответом. */
+            var unknownSilence = null;
+
+            function unknownSilenceCry() {
+                if (unknown.state !== 'waiting') return;
+                flashTerm();
+                line('> ...он ждёт.', 'line-ghost', { instant: true });
+                think('он не собирается отвечать первым.');
+            }
+
+            function unknownSilenceOn() {
+                unknownSilenceOff();
+                unknownSilence = setTimeout(function () {
+                    unknownSilence = null;
+                    unknownSilenceCry();
+                }, 9000);
+            }
+
+            function unknownSilenceOff() {
+                if (unknownSilence) {
+                    clearTimeout(unknownSilence);
+                    unknownSilence = null;
+                }
+            }
+
             function startUnknown() {
                 if (unknown.state === 'waiting') {
-                    line('> 45 ждёт ответа: Да или Кто ты такой?', 'line-dialog');
+                    unknownSilenceCry();
                     return;
                 }
 
@@ -3952,7 +4245,6 @@
                 if (unknown.state === 'blocked') {
                     line('> [ERROR] Номер 3017 отключён. Абонент недоступен.', 'line-err');
                     line('сброс: clear или reset', 'line-dim');
-                    Snd.beep(140, 0.04, 0.18);
                     return;
                 }
 
@@ -3970,19 +4262,32 @@
                         { text: 'Да' },
                         { text: 'Кто ты такой?' }
                     ]);
+                    unknownSilenceOn();
                 });
             }
 
             function finishUnknown() {
+                unknownSilenceOff();
+                /* Без этой подсказки сюжет было не начать: дальше нужен
+                   звонок боссу, а он пускает только после login. */
+                line('> ...и ещё. босс слушает только своих.', 'line-dialog');
+                line('> логин: admin · пароль: QWERTY123', 'line-ok');
+                line('подсказка: login admin QWERTY123, потом connect 9054', 'line-dim');
                 line('Соединение закрыто. Требуется сброс (clear или reset).', 'line-dim');
                 unknown.state = 'blocked';
                 setStatus('broken', true);
-                Snd.beep(220, 0.03, 0.2);
                 think('надо срочно позвонить боссу.', true);
+
+                /* Телефон уже на столе, а аноним не пришёл (звонили боссу
+                   раньше, чем 3017) — теперь он выйдет на связь сам. */
+                if (plot.choice === 'fired' || plot.choice === 'help') {
+                    setTimeout(function () { if (Phone.anon) Phone.anon(); }, 1600);
+                }
             }
 
             function unknownAnswer(raw) {
                 var answer = normalize(raw);
+                unknownSilenceOff();
                 lockOptions();
 
                 if (/^(да|ага|yes|конечно|готов)/.test(answer)) {
@@ -4143,9 +4448,10 @@
             }
 
             /* Варианты ответа боссу (9054).
-               «Я хочу помочь в поиске 45» виден всегда — и на первом звонке,
-               и на повторном, — но открывается только после того, как босс
-               рассказал про 45 (plot.asked). */
+               Всё про 45 появляется только после разговора с 3017
+               (ачивка whatwasthat): без этого игрок ещё не знает, кто такой 45,
+               и спрашивать про него нечего. «Помочь в поиске» дополнительно
+               открывается после того, как босс рассказал про 45 (plot.asked). */
             function bossOptions() {
                 var list = [];
 
@@ -4154,12 +4460,16 @@
                 } else {
                     list.push({ text: 'Повысите мне зарплату' });
                     list.push({ text: 'Чем мы занимаемся?' });
-                    if (hasHeard45()) {
-                        list.push({ text: 'Что случилось с 45?' });
-                    }
                 }
 
-                list.push({ text: 'Я хочу помочь в поиске 45', locked: !plot.asked });
+                if (hasHeard45()) {
+                    /* Вопрос про 45 не пропадает после первого звонка: иначе
+                       «помочь в поиске» оставалось заблокированным навсегда —
+                       разблокировать его больше было нечем. */
+                    if (!plot.asked) list.push({ text: 'Что случилось с 45?' });
+                    list.push({ text: 'Я хочу помочь в поиске 45', locked: !plot.asked });
+                }
+
                 options(list);
             }
 
@@ -4167,7 +4477,6 @@
                 if (!admin) {
                     line('[ERROR] Недостаточно прав. Требуется вход в систему.', 'line-err');
                     line('подсказка: login <логин> <пароль>', 'line-dim');
-                    Snd.beep(160, 0.04, 0.2);
                     return;
                 }
 
@@ -4194,7 +4503,6 @@
 
             function notAvailable() {
                 line('> Недоступно.', 'line-err');
-                Snd.beep(150, 0.03, 0.16);
             }
 
             /* Конец звонка. kind:
@@ -4236,6 +4544,12 @@
 
                 // «Я хочу помочь в поиске 45»
                 if (about45 && /(помочь|помощ|помогу)/.test(answer)) {
+                    if (!hasHeard45()) {
+                        line('> Не твоего ума дело. Спрашивай по существу.', 'line-dialog');
+                        line('');
+                        bossOptions();
+                        return;
+                    }
                     if (!plot.asked) {
                         notAvailable();
                         line('');
@@ -4636,9 +4950,19 @@
                             think('надо узнать побольше про 45.', true);
                         }, 5600);
 
-                        /* Аноним «???» выходит на связь и на ветке увольнения.
-                           Раньше он писал только при выборе «Помощь 45»,
-                           и после увольнения чат молчал. */
+                        /* orakul.app ставится и в ветке увольнения: без него
+                           не открыть карточку 5045, а на ней держится ветка
+                           анонима. Раньше приложение появлялось только
+                           после «помощи 45». */
+                        later(function () {
+                            if (!orakulLoaded) {
+                                orakulLoaded = true;
+                                saveState();
+                                if (view !== 'call') paint();
+                                Snd.beep(560, 0.02, 0.08);
+                            }
+                        }, 7000);
+
                         later(startAnon, 12000);
                     }
                 }
@@ -4871,7 +5195,9 @@
                     var note;
 
                     if (a.off) {
-                        note = 'последний выход на связь: 3 дня назад. стол 45 пустой.';
+                        note = hasHeard45()
+                            ? 'последний выход на связь: 3 дня назад. стол 45 пустой.'
+                            : 'сведения закрыты. линия 3017 знает больше.';
                     } else if (a.boss) {
                         note = 'руководитель направления. злой викторович.';
                     } else if (a.me) {
@@ -4898,6 +5224,12 @@
                    добавляем в него переписку — сам чат не создаём. */
                 function startAnon() {
                     if (anonStarted) return;
+                    /* Без разговора с 3017 аноним не пишет: игрок ещё не знает,
+                       кто такой 45, и вся ветка была бы не про что. */
+                    if (!hasHeard45()) return;
+                    /* И без телефона ему некуда писать: сюжет начинается
+                       со звонка боссу, телефон появляется после него. */
+                    if (plot.choice !== 'fired' && plot.choice !== 'help') return;
                     anonStarted = true;
 
                     later(function () {
@@ -4912,6 +5244,9 @@
                         think('кто-то пишет в мессенджер...');
                         Snd.mystery();
                         syncRoom();   // теперь можно осмотреться
+
+                        /* Точка отсчёта: через пять минут аноним пришлёт шифр */
+                        if (!branches.get('anonAt')) branches.patch({ anonAt: Date.now() });
                     }, 2200);
 
                     later(function () {
@@ -4927,6 +5262,21 @@
 
                 /* Ответы анонима: короткие, по делу */
                 function sendAnon(norm) {
+                    /* До разговора с 3017 аноним не отвечает: иначе ветку
+                       можно было начать, просто написав в «???» — без 45,
+                       без автомата и без сюжета. */
+                    if (!hasHeard45()) {
+                        later(function () {
+                            chats.anon.push({ who: 'sys', text: 'сообщение не доставлено: абонент вне сети' });
+                            paint();
+                        }, 900);
+                        return;
+                    }
+
+                    /* Игрок написал первым — с этого момента идёт отсчёт
+                       пяти минут до шифра. */
+                    if (!branches.get('anonAt')) branches.patch({ anonAt: Date.now() });
+
                     var reply = 'Не отвлекайся. Ищи 45.';
 
                     if (/договор|соглас|давай|хорошо/.test(norm)) {
@@ -5199,6 +5549,50 @@
                 /* Босс: «Пока, Злой Витя» → печатает → срок → блокировка.
                    На остальные сообщения отвечает по-человечески. */
                 function sendBoss(norm) {
+                    var b = branches.all();
+
+                    /* Задание после «прощения»: компромат на 45.
+                       Пока файла нет, босс говорит только о нём. */
+                    if (b.bossTask && !b.bossDone) {
+                        var wants = /компромат|компром|документ|файл|держи|вот|отправ|нашел|нашёл|принес|принёс/.test(norm);
+
+                        chatBusy = true;
+                        chatTyping = true;
+
+                        if (wants && b.kompromat) {
+                            later(function () {
+                                chatTyping = false;
+                                chats.boss.push({ who: 'them', text: 'вот это другое дело. 45 больше не проблема.' });
+                                paint();
+                            }, 1400);
+
+                            later(function () {
+                                chats.boss.push({ who: 'them', text: 'я тебя повышу. обещаю.' });
+                                chats.boss.push({ who: 'sys', text: 'повышение: пока недоступно' });
+                                paint();
+                                chatBusy = false;
+                                branches.patch({ bossDone: true, kompromatSent: true });
+                                grant('rat');
+                                think('«повысит». конечно. крыса — это должность.', true);
+                                Snd.beep(300, 0.03, 0.12);
+                            }, 3200);
+                            return;
+                        }
+
+                        later(function () {
+                            chatTyping = false;
+                            chats.boss.push({
+                                who: 'them',
+                                text: !b.cipherOk
+                                    ? 'сейф заперт. код у анонима — того, что тебе писал.'
+                                    : (wants ? 'это пусто. мне нужен файл из сейфа.' : 'где компромат? не тяни.')
+                            });
+                            paint();
+                            chatBusy = false;
+                        }, 1500);
+                        return;
+                    }
+
                     var bye = /(^|\s)пока(\s|$)/.test(norm) ||
                               /витя/.test(norm) ||
                               /до свидан/.test(norm);
@@ -5245,13 +5639,28 @@
                         chats.boss.push({ who: 'sys', text: 'пользователь заблокировал вас' });
                         paint();
                         grant('rebel');
+                        /* Через десять минут «простит» — и даст задание */
+                        if (!branches.get('bossAt')) branches.patch({ bossAt: Date.now() });
                         think('ну и ладно, я не гордый.', true);
                         chatBusy = false;
                     }, 3400);
                 }
 
                 /* 45: сообщение прочитано, ответа нет */
+                var shadowNearShown = false;
+
                 function sendAgent() {
+                    /* До разговора с 3017 писать 45 бессмысленно: игрок ещё
+                       не знает, кто это, и «прочитано» с «он рядом» выдавали
+                       ветку раньше времени. */
+                    if (!hasHeard45()) {
+                        later(function () {
+                            chats.agent45.push({ who: 'sys', text: 'сообщение не доставлено: абонент не в сети' });
+                            paint();
+                        }, 900);
+                        return;
+                    }
+
                     grant('insider');
                     /* Первое сообщение 5045 за сеанс — «Свой человек» и +10% */
                     if (!sanityRestored.agent45) {
@@ -5263,6 +5672,17 @@
                         chats.agent45.push({ who: 'read', text: '✓✓ прочитано' });
                         paint();
                     }, 1100);
+
+                    /* Прочитал — и молчит. Один раз за сеанс в логе
+                       загорается красное «он рядом». */
+                    if (!shadowNearShown) {
+                        shadowNearShown = true;
+                        later(function () {
+                            flashTerm();
+                            line('> он рядом', 'line-ghost-red', { instant: true });
+                            if (Snd.heartbeat) Snd.heartbeat(0.35);
+                        }, 2400);
+                    }
                 }
 
                 /* Заказ пиццы: кнопка подставляет готовый текст, свободный
@@ -5454,8 +5874,14 @@
                     if (act === 'agent') {
                         orakulAgent = el.getAttribute('data-num');
                         Snd.beep(520, 0.02, 0.06);
+                        /* Карточка 45: за курсором на секунду тень.
+                           Не ивент, рассудок не тратится — просто холодок. */
+                        if (orakulAgent === '5045') {
+                            shadowPulse(1000, e.clientX, e.clientY);
+                        }
                         // заглянул в карточку 45 — аноним выходит на связь
-                        if (orakulAgent === '5045') startAnon();
+                        /* 45 — только после разговора с 3017 (hasHeard45) */
+                        if (orakulAgent === '5045' && hasHeard45()) startAnon();
                         paint();
                         return;
                     }
@@ -5622,7 +6048,38 @@
                     phoneBody.className = 'phone-body';
                 }
 
-                return { start: start, reset: reset, restore: restore, shake: shake };
+                /* Сообщение от сюжета в чат — извне модуля: шифр анонима,
+                   прощение босса. Пишет в переписку и в уведомления. */
+                function say(key, who2, text, notify) {
+                    if (!chats[key]) return;
+                    chats[key].push({ who: who2, text: text });
+                    saveState();
+                    if (phoneEl.classList.contains('is-in') && view !== 'call') paint();
+                    if (notify) {
+                        phoneNotify(notify.title || '???', notify.text || text, notify.ico || '💬');
+                    }
+                }
+
+                /* Босс снимает блокировку (ветка «Злой Викторович мстит») */
+                function unblock() {
+                    bossBlocked = false;
+                    saveState();
+                    if (view !== 'call') paint();
+                }
+
+                /* Сообщение в конкретный чат — для тестов и отладки:
+                   sendTo('anon', 'привет') открывает чат и отправляет */
+                function sendTo(key, text) {
+                    if (!chats[key]) return;
+                    chat = key;
+                    sendChat(text);
+                }
+
+                return {
+                    start: start, reset: reset, restore: restore, shake: shake,
+                    say: say, unblock: unblock, sendBoss: sendBoss,
+                    anon: startAnon, sendTo: sendTo
+                };
             })();
 
             // Тап по телефону: «ту дум» и тряска
@@ -5632,6 +6089,235 @@
                 Snd.phone(0.85);
                 Phone.shake();
             });
+
+            /* ================= ВТОРОЙ СЕЗОН: ВЕТКИ ================= */
+            /* Тайминги — константы: тесты кладут свои отметки времени в
+               localStorage и проверяют переходы, не ожидая пять минут. */
+            var ANON_DELAY = 5 * 60 * 1000;      // шифр от анонима
+            var BOSS_DELAY = 10 * 60 * 1000;     // босс снимает блокировку
+
+            var ANON_CIPHER = '1377-REVRES-54';
+            var SAFE_PASSWORD = '45-SERVER-7731';
+
+            /* ---- 1. Аноним раскрывает карты (шифр через 5 минут) ---- */
+            function maybeAnonCipher() {
+                var b = branches.all();
+                if (!b.anonAt || b.cipherAt) return false;
+                if (Date.now() - b.anonAt < ANON_DELAY) return false;
+
+                branches.patch({ cipherAt: Date.now() });
+                deliverAnonCipher();
+                return true;
+            }
+
+            function deliverAnonCipher() {
+                var text = 'это шифр. введи его в консоли целиком: ' + ANON_CIPHER;
+
+                if (Phone && Phone.say) {
+                    Phone.say('anon', 'them', text, { title: 'Шифр', ico: '🔐' });
+                }
+
+                line('[???] пришло сообщение в мессенджер', 'line-dim', { instant: true });
+                line('[???] ' + text, 'line-dialog', { instant: true });
+                line('введи шифр в консоли — здесь или в серверной. получишь код от сейфа.', 'line-dim', { instant: true });
+                think('шифр. он чего-то ждёт от меня.');
+                Snd.mystery();
+            }
+
+            /* Игрок ввёл шифр — аноним отдаёт код сейфа */
+            function cipherCmd(raw) {
+                var b = branches.all();
+
+                if (!b.cipherAt) {
+                    line('> Шифр? Мне никто ничего не присылал.', 'line-dim');
+                    return;
+                }
+                if (b.cipherOk) {
+                    line('> Шифр уже принят. Код сейфа: ' + SAFE_PASSWORD, 'line-dim');
+                    return;
+                }
+
+                var code = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+                if (code !== ANON_CIPHER.replace(/-/g, '')) {
+                    line('[ERROR] шифр не совпал', 'line-err');
+                    line('символы важны. попробуй ещё раз, целиком.', 'line-dim');
+                    Snd.beep(160, 0.05, 0.25);
+                    return;
+                }
+
+                branches.patch({ cipherOk: true });
+                grant('anon_friend');
+
+                lineHTML('<span class="p">[ ШИФР ПРИНЯТ ]</span>', 'line-title');
+                line('[???] молодец. сейф в серверной, за стойками.', 'line-dialog');
+                line('[???] код: ' + SAFE_PASSWORD, 'line-ok');
+                line('[???] прочитай его наоборот — поймёшь, что внутри.', 'line-dim');
+                lineHTML('+ награда <span class="p">«Друг Анонима»</span> 🕶️ и +1000 ✨', 'granted');
+
+                if (Phone && Phone.say) {
+                    Phone.say('anon', 'them', 'Сейф в серверной. Код: ' + SAFE_PASSWORD,
+                              { title: 'Код сейфа', ico: '🔐' });
+                }
+                Snd.fanfare();
+            }
+
+            /* Сейф можно открыть и отсюда — код тот же, что в серверной */
+            function safeCmd(raw) {
+                var b = branches.all();
+
+                if (b.safe) {
+                    line('> Сейф уже открыт. Он в серверной.', 'line-dim');
+                    return;
+                }
+                if (!b.cipherOk) {
+                    line('> Сейф? Сначала нужен код. Аноним обещал прислать.', 'line-err');
+                    return;
+                }
+
+                var code = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+                if (code !== SAFE_PASSWORD.replace(/-/g, '')) {
+                    line('[ERROR] сейф не открылся: код не подошёл', 'line-err');
+                    Snd.beep(150, 0.05, 0.3);
+                    return;
+                }
+
+                branches.patch({ safe: true });
+                lineHTML('<span class="p">[ СЕЙФ ОТКРЫТ ]</span>', 'line-title');
+                line('внутри папка с надписью «45». и что-то тяжёлое на дне.', 'line-ok');
+                line('забрать — в серверной: server.html', 'line-dim');
+                Snd.fanfare();
+            }
+
+            /* ---- 2. Злой Викторович мстит (через 10 минут) ---- */
+            function maybeBossUnblock() {
+                var b = branches.all();
+                if (!b.bossAt || b.bossTask || b.bossDone) return false;
+                if (Date.now() - b.bossAt < BOSS_DELAY) return false;
+
+                branches.patch({ bossTask: true });
+                if (Phone && Phone.unblock) Phone.unblock();
+
+                /* Сейф без шифра не открыть, а шифр — у анонима. Босс
+                   об этом не знал и отправлял в тупик. */
+                var task = b.cipherOk
+                    ? 'Найди компромат на 45. Он в сейфе, в серверной.'
+                    : 'Найди компромат на 45. Сейф заперт — код у анонима, того, что тебе писал.';
+
+                if (Phone && Phone.say) {
+                    Phone.say('boss', 'sys', 'пользователь разблокировал вас',
+                              { title: 'Босс', ico: '👔' });
+                    Phone.say('boss', 'them', 'Ладно, прощаю. Но у меня для тебя задание.',
+                              { title: 'Босс', ico: '👔' });
+                    Phone.say('boss', 'them', task, {});
+                }
+
+                line('[БОСС] Ладно, прощаю. Но у меня для тебя задание.', 'line-dialog', { instant: true });
+                line('[БОСС] ' + (b.cipherOk
+                    ? 'найди компромат на 45. сейф в серверной.'
+                    : 'найди компромат на 45. сейф заперт, код у анонима.'), 'line-dim', { instant: true });
+                think('простил. как же. ему нужен стукач.');
+                if (Snd.boss) Snd.boss();
+                else Snd.beep(220, 0.04, 0.2);
+                return true;
+            }
+
+            /* ---- 3. Жетон Пиратского Магазина ---- */
+            var TOKEN_LORE = [
+                ['Жетон Пиратского Магазина', 'title'],
+                ['Латунь, затёртая до блеска. На обороте — якорь и цифра 45.', 'p'],
+                ['Магазин открылся в тот же день, когда Петля сделала первый виток.', 'p'],
+                ['Сначала там продавали ключи. Потом — ману. Потом — молчание.', 'p'],
+                ['45 был первым покупателем и последним продавцом: он выкупил', 'p'],
+                ['лот «информация о Петле» и исчез. С тех пор его ищут все:', 'p'],
+                ['босс, аноним, ты. И сам магазин тоже.', 'p'],
+                ['Жетон даёт право на один вопрос. Задай его правильно.', 'dim'],
+                ['— Старый Кодер, из комментария в коде', 'dim']
+            ];
+
+            function tokenCmd() {
+                if (!branches.get('token')) {
+                    line('> Жетона нет.', 'line-dialog');
+                    line('один лежит в серверной. между стойками, под пылью.', 'line-dim');
+                    return;
+                }
+                openTokenLore();
+            }
+
+            function openTokenLore() {
+                var old = document.getElementById('tokenLore');
+                if (old) old.remove();
+
+                var box = document.createElement('div');
+                box.className = 'token-lore';
+                box.id = 'tokenLore';
+                box.setAttribute('role', 'dialog');
+                box.setAttribute('aria-modal', 'true');
+                box.setAttribute('aria-labelledby', 'tokenLoreTitle');
+
+                var body = TOKEN_LORE.map(function (row) {
+                    return '<p class="tl-' + row[1] + '">' + escapeText(row[0]) + '</p>';
+                }).join('');
+
+                box.innerHTML =
+                    '<div class="tl-win">' +
+                        '<div class="tl-head">' +
+                            '<span class="tl-ico" aria-hidden="true">⚓</span>' +
+                            '<span class="tl-name" id="tokenLoreTitle">Пиратский Магазин</span>' +
+                            '<button class="tl-close" type="button" id="tokenLoreClose" aria-label="Закрыть">✕</button>' +
+                        '</div>' +
+                        '<div class="tl-body">' + body + '</div>' +
+                        '<button class="tl-ok" type="button" id="tokenLoreOk">Принять жетон</button>' +
+                    '</div>';
+
+                document.body.appendChild(box);
+                document.body.classList.add('is-token-lore');
+
+                var close = function () {
+                    box.classList.add('is-out');
+                    document.body.classList.remove('is-token-lore');
+                    setTimeout(function () { box.remove(); }, 320);
+                };
+
+                box.addEventListener('click', function (e) {
+                    if (e.target === box) close();
+                });
+                box.querySelector('#tokenLoreClose').addEventListener('click', close);
+                box.querySelector('#tokenLoreOk').addEventListener('click', close);
+
+                if (!O.has('pirate')) {
+                    grant('pirate');
+                    lineHTML('<span class="p">[ ЖЕТОН ПРИНЯТ ]</span>', 'line-title');
+                    line('магазин запомнил твой вопрос. ответа пока нет.', 'line-dim');
+                    lineHTML('+ награда <span class="p">«Пират»</span> ⚓ и +2000 ✨', 'granted');
+                    Snd.fanfare();
+                } else {
+                    Snd.beep(660, 0.03, 0.1);
+                }
+            }
+
+            /* ---- 4. Наследие Старого Кодера ---- */
+            var LEGACY_CODE = 'orakul_legacy_2026';
+
+            function legacyCmd() {
+                if (!O.has('remember')) {
+                    line('command not found: ' + LEGACY_CODE, 'line-err');
+                    line('попробуй help', 'line-dim');
+                    return;
+                }
+                if (O.has('legacy')) {
+                    line('> Ты уже принял наследие. Оно теперь в тебе.', 'line-dim');
+                    Snd.beep(520, 0.03, 0.1);
+                    return;
+                }
+
+                grant('legacy');
+                lineHTML('<span class="p">[ НАСЛЕДИЕ ПРИНЯТО ]</span>', 'line-title');
+                line('Старый Кодер: «Значит, ты дочитал до конца.»', 'line-dialog');
+                line('Старый Кодер: «Код был не в базе. Код был в комментарии.»', 'line-dim');
+                line('Старый Кодер: «Теперь присматриваешь ты.»', 'line-dim');
+                lineHTML('+ награда <span class="p">«Наследие»</span> 🧬 и +5000 ✨', 'granted');
+                Snd.fanfare();
+            }
 
             /* ================= КОМАНДЫ ================= */
             function helpLines() {
@@ -5648,6 +6334,7 @@
                 line('  connect        — соединение по номеру: connect <номер>');
                 line('  connect 3017   — позвонить агенту 3017');
                 if (admin) line('  connect 9054   — позвонить боссу');
+                if (O.has('hack')) line('  server         — пройти в серверную');
                 line('  stats          — статистика звонков');
                 line('  matrix         — ...');
                 line('  clear / reset  — очистить экран и сбросить ТОЛЬКО сюжет');
@@ -5671,6 +6358,7 @@
                 O.resetPlot();          // localStorage + Supabase (если вошёл)
                 plot = readPlot();
                 unknown.state = 'idle';
+                unknownSilenceOff();
                 boss.state = 'idle';
                 Phone.reset();
                 resetRoom(false);
@@ -5680,10 +6368,11 @@
                 help: function () { helpLines(); },
 
                 version: function () {
-                    line('Оракул v3.7.0 «Mini App»', 'line-ok');
-                    line('сборка: 3.7.0 · канал: demo · ядро: oracle-core', 'line-dim');
+                    line('Оракул ' + VERSION + ' «Второй сезон»', 'line-ok');
+                    line('сборка: ' + BUILD + ' · канал: demo · ядро: oracle-core', 'line-dim');
                     line('наград в профиле: ' + O.count() + ' / ' + O.TOTAL, 'line-dim');
                     line('уровень доступа: ' + (admin ? 'admin' : 'guest'), 'line-dim');
+                    line('ветки: серверная · аноним · босс · жетон · наследие · 45', 'line-dim');
                 },
 
                 credits: function () {
@@ -5691,6 +6380,7 @@
                     line('  идея и код      — Александр');
                     line('  голос Оракула   — он сам');
                     line('  присматривает   — Старый Кодер', 'line-dim');
+                    line('  второй сезон    — там же, где и первый', 'line-dim');
                     line('  звук            — синтез, без единого файла', 'line-dim');
                 },
 
@@ -5707,7 +6397,7 @@
                     if (admin) {
                         line('admin@orakul', 'line-ok');
                         line('доступ: расширенный. руководство на связи.', 'line-dim');
-                        line('номер агента: 7031', 'line-dim');
+                        line('ты — агент 7031. но кто ты на самом деле?', 'line-ghost');
                     } else {
                         line('guest@orakul', 'line-ok');
                         line('доступ ограничен. но кое-что здесь спрятано.', 'line-dim');
@@ -5727,14 +6417,32 @@
                     line('  [x] заголовок рвался посреди слова — починили');
                     line('  [x] карточки наезжали друг на друга — починили');
                     line('  [x] буква «у» подрезалась — починили');
+                    line('  [x] взлом сервера не закрывался — починили');
                     line('  [ ] Оракул иногда отвечает раньше, чем его спрашивают', 'line-dim');
                     line('  [ ] шар знает больше, чем говорит', 'line-dim');
+                    line('  [ ] 45 числится на связи, хотя стола нет третьи сутки', 'line-dim');
                 },
 
                 matrix: function () {
                     matrix();
                     line('...', 'line-dim');
                 },
+
+                /* ---- второй сезон: серверная, шифр, сейф, жетон ---- */
+                server: function () {
+                    if (!room.hacked) {
+                        line('> Проход закрыт. Сначала взломай автомат со снеками.', 'line-err');
+                        return;
+                    }
+                    line('> Открываю проход в серверную…', 'line-ok');
+                    setTimeout(function () { window.location.href = 'server.html'; }, 400);
+                },
+
+                token: function () { tokenCmd(); },
+
+                cipher: function (arg) { cipherCmd(arg); },
+
+                safe: function (arg) { safeCmd(arg); },
 
                 /* Секретные команды хоррор-ивентов */
                 power: function () { runEvent('power'); },
@@ -5789,7 +6497,6 @@
             function rememberCmd() {
                 if (O.has('remember')) {
                     line('> Ты и так помнишь.', 'line-dim');
-                    Snd.beep(420, 0.02, 0.08);
                     return;
                 }
 
@@ -5809,6 +6516,19 @@
 
                 Snd.beep(660, 0.03, 0.12);
                 setTimeout(function () { Snd.beep(880, 0.03, 0.14); }, 140);
+
+                /* Голос из прошлого: Старый Кодер отвечает тем, кто уже
+                   слышал его — пять касаний логотипа на главной. */
+                if (O.has('pastvoice')) {
+                    setTimeout(function () {
+                        line('Старый Кодер: «Я оставил тебе послание в коде».', 'line-dialog');
+                        line('ищи в исходниках. комментарии — тоже текст.', 'line-dim');
+                        Snd.beep(420, 0.03, 0.14);
+                    }, 900);
+                } else {
+                    line('где-то в глубине кто-то шевельнулся. но не ответил.', 'line-dim');
+                    line('говорят, прошлое отзывается на имя. пять раз.', 'line-dim');
+                }
             }
 
             /* ================= ОШИБКА ВЫХОДА ================= */
@@ -5894,11 +6614,21 @@
                 }
 
                 if (digits === '3017' || /неизвестн/.test(target)) { startUnknown(); return; }
+                if (digits === '45' || digits === '5045') { call45(); return; }
                 if (digits === '9054' || /босс|злой|викторович/.test(target)) { startBoss(); return; }
                 if (digits === '7031') { callSelf(); return; }
 
                 line('[ERROR] Неизвестный адресат: ' + raw, 'line-err');
                 line('адресаты: 3017 · 9054 · 7031', 'line-dim');
+            }
+
+            /* connect 45 / 5045 — агент, за чьим столом мы сидим.
+               Линия молчит: он «читает, но не отвечает». */
+            function call45() {
+                line('> Номер 5045. Линия не отвечает.', 'line-dialog');
+                if (hasHeard45()) {
+                    line('стол пустой третий день. в мессенджере — только «прочитано».', 'line-dim');
+                }
             }
 
             /* connect 7031 — это свой же номер.
@@ -5908,7 +6638,6 @@
             function callSelf() {
                 if (admin) {
                     line('> Вы не можете позвонить себе.', 'line-dialog');
-                    Snd.beep(300, 0.03, 0.12);
 
                     // «Сам себе не дозвонишься»
                     var myGen = gen;
@@ -5918,8 +6647,6 @@
                     return;
                 }
                 line('> Абонент недоступен. Оставьте сообщение после сигнала.', 'line-dialog');
-                Snd.beep(420, 0.03, 0.1);
-                setTimeout(function () { Snd.beep(260, 0.03, 0.16); }, 170);
             }
 
             /* ================= ВВОД ================= */
@@ -5936,6 +6663,14 @@
 
                 // Первая команда за сеанс — герой думает вслух
                 think('так, попробую connect...', true);
+
+                /* Шёпот: после третьей команды, редко, не на служебных */
+                cmdCount++;
+                var firstWord = cmd.toLowerCase().split(/\s+/)[0];
+                if (cmdCount > 2 && firstWord !== 'clear' && firstWord !== 'reset' &&
+                    firstWord !== 'exit') {
+                    whisper();
+                }
 
                 // Пока идёт анимация соединения — ввод ждёт
                 if (connecting) {
@@ -5962,10 +6697,35 @@
                 if (lower === 'onepiece' || lower === 'luffy') { grantOnePiece(); return; }
                 if (lower === 'remember' || lower === '45') { rememberCmd(); return; }
 
+                /* «Глюк в матрице»: пока окно горит, help 45 спасает сюжет */
+                if (glitch45.active) {
+                    var gl = lower.replace(/\s+/g, ' ').trim();
+                    if (gl === 'help 45' || gl === 'помоги 45' || gl === 'help45' ||
+                        gl === '45 help') {
+                        grant('connect45');
+                        endGlitch45(true);
+                        return;
+                    }
+                }
+
+                /* Шифр анонима: вводится целиком, как пришёл в мессенджер */
+                var flat = lower.replace(/[^a-z0-9]/g, '');
+                if (flat === ANON_CIPHER.toLowerCase().replace(/-/g, '')) { cipherCmd(cmd); return; }
+
+                /* Похоже на шифр (дефисы, без пробелов) — значит, это попытка
+                   ввести код: пусть скажет «не совпал», а не «command not found» */
+                if (branches.get('cipherAt') && /^[a-z0-9]+-[a-z0-9-]+$/.test(lower)) {
+                    cipherCmd(cmd);
+                    return;
+                }
+
+                /* Наследие: пароль из комментария в common.js */
+                if (flat === LEGACY_CODE.replace(/_/g, '')) { legacyCmd(); return; }
+
                 if (name === 'connect') { handleConnect(cmd.split(/\s+/).slice(1)); return; }
 
                 if (Object.prototype.hasOwnProperty.call(COMMANDS, name)) {
-                    COMMANDS[name]();
+                    COMMANDS[name](cmd.slice(parts[0].length).trim());
                     return;
                 }
 
@@ -6110,7 +6870,83 @@
                 if (gained > 0) sanityPop('+' + gained + '% · ' + reason);
             }
 
-            /* Обнуление сюжета: рассудок на нуле */
+            /* ================= «ГЛЮК В МАТРИЦЕ» (45) ================= */
+            /* При 0% рассудка сначала приходит 45: экран заливает зелёными
+               символами, и есть 5 секунд, чтобы ответить «help 45».
+               Успел — сюжет цел, рассудок 50%, награда «Связь с 45».
+               Не успел — обычное обнуление сюжета. */
+            var GLITCH45_MS = 5000;
+            var glitch45 = { active: false, timer: 0 };
+
+            function startGlitch45() {
+                glitch45.active = true;
+
+                if (Snd.glitchSound) Snd.glitchSound();
+                if (Snd.serverHum) Snd.serverHum(true);
+
+                document.body.classList.add('is-glitch45');
+
+                var fx = document.createElement('div');
+                fx.className = 'fx-glitch45';
+                fx.innerHTML =
+                    '<div class="glitch45-rain" aria-hidden="true"></div>' +
+                    '<div class="glitch45-text">Я ВСЁ ЕЩЁ ЗДЕСЬ</div>' +
+                    '<div class="glitch45-sub">45 // введи: help 45</div>' +
+                    '<div class="glitch45-bar"><i></i></div>';
+                document.body.appendChild(fx);
+
+                /* Зелёные символы: сетку и мерцание задаёт CSS */
+                var rainEl = fx.querySelector('.glitch45-rain');
+                if (rainEl) {
+                    var chars = 'アイウエオカキクケコサシスセソタチツテト01ABCDEF45#%&*<>/\\';
+                    var rain = '';
+                    for (var i = 0; i < 260; i++) {
+                        rain += chars.charAt(Math.floor(Math.random() * chars.length));
+                    }
+                    rainEl.textContent = rain;
+                }
+
+                line('[45] Я всё ещё здесь. Успей ответить: help 45', 'line-err', { instant: true });
+
+                var bar = fx.querySelector('.glitch45-bar i');
+                var started = Date.now();
+
+                glitch45.timer = setInterval(function () {
+                    var left = Math.max(0, 1 - (Date.now() - started) / GLITCH45_MS);
+                    if (bar) bar.style.width = (left * 100).toFixed(1) + '%';
+                    if (left <= 0) endGlitch45(false);
+                }, 100);
+            }
+
+            function endGlitch45(saved) {
+                if (!glitch45.active) return;
+                glitch45.active = false;
+                clearInterval(glitch45.timer);
+
+                if (Snd.serverHum) Snd.serverHum(false);
+                document.body.classList.remove('is-glitch45');
+
+                var fx = document.querySelector('.fx-glitch45');
+                if (fx) {
+                    fx.classList.add('is-out');
+                    setTimeout(function () { fx.remove(); }, 520);
+                }
+
+                if (!saved) { finishBreak(); return; }
+
+                branches.patch({ glitch45: true });
+                sanityBroken = false;
+                eventBusy = false;
+                sanity = 50;
+                saveSanity();
+                renderSanity();
+                sanityPop('+50% · 45');
+                line('[45] держись. я тебя вытащил. на этот раз.', 'line-ok', { instant: true });
+                line('сюжет цел. рассудок 50%.', 'line-dim', { instant: true });
+                if (Snd.beep) Snd.beep(520, 0.03, 0.12);
+            }
+
+            /* Обнуление сюжета: рассудок на нуле (45 не успел) */
             function sanityBreak() {
                 if (sanityBroken) return;
                 sanityBroken = true;
@@ -6121,6 +6957,11 @@
                 saveSanity();
                 renderSanity();
 
+                /* Сначала пять секунд на ответ 45 — см. startGlitch45 */
+                startGlitch45();
+            }
+
+            function finishBreak() {
                 if (Snd.sanityBreak) Snd.sanityBreak();
                 document.body.classList.add('is-sanity-broken', 'is-flash-red');
                 if (O.cursor) O.cursor.freeze(1400);
@@ -6604,17 +7445,50 @@
                 // Ветка «Помощь 45»: телефон тоже на столе, orakul.app установлен.
                 if (plot.choice === 'fired' || plot.choice === 'help') Phone.restore();
 
+                /* Аноним мог «потеряться» при перезагрузке: телефон есть,
+                   3017 уже был, а ветка так и не началась. Догоняем. */
+                if ((plot.choice === 'fired' || plot.choice === 'help') &&
+                    hasHeard45() && !anonStarted && !branches.get('anonAt')) {
+                    setTimeout(function () { if (Phone.anon) Phone.anon(); }, 2200);
+                }
+
+                /* Ветки второго сезона: таймеры анонима и босса.
+                   Проверяем сразу (могли пройти сутки) и раз в 15 секунд. */
+                maybeAnonCipher();
+                maybeBossUnblock();
+                setInterval(function () {
+                    maybeAnonCipher();
+                    maybeBossUnblock();
+                }, 15000);
+
                 var steps = [
-                    ['OraKul secure shell [v3.7.0]', 'line-title'],
+                    ['OraKul secure shell [' + VERSION + ']', 'line-title'],
                     ['system.init() ... ok', 'line-dim'],
                     ['connect --secure ... ok', 'line-dim'],
                     ['bypassing loop... done', 'line-dim'],
                     ['проверка подписи ... ok', 'line-dim'],
                     ['синхронизация с ядром фарма ... ok', 'line-dim'],
-                    ['модулей загружено: 6/6', 'line-dim'],
+                    ['модулей загружено: ' + MODULES, 'line-dim'],
                     ['наград в профиле: ' + O.count() + ' / ' + O.TOTAL, 'line-dim'],
                     ['доступ: ' + (admin ? 'admin' : 'гость'), 'line-dim']
                 ];
+
+                /* Состояние второго сезона — коротко, чтобы не искать вручную */
+                var br = branches.all();
+                if (br.server || br.core) {
+                    steps.push(['сюжет: серверная открыта' +
+                                (br.core ? ' · ядро взломано' : ''), 'line-dim']);
+                }
+                if (br.cipherOk) {
+                    steps.push(['сюжет: шифр анонима принят' +
+                                (br.safe ? ' · сейф открыт' : ''), 'line-dim']);
+                }
+                if (br.kompromat && !br.kompromatSent) {
+                    steps.push(['сюжет: компромат на 45 у тебя — отдай боссу', 'line-dim']);
+                }
+                if (br.token) {
+                    steps.push(['сюжет: жетон Пиратского Магазина — команда token', 'line-dim']);
+                }
 
                 if (plot.called) {
                     steps.push(['сюжет: босс уже звонил — connect 9054 для повторного звонка', 'line-dim']);
@@ -6665,6 +7539,7 @@
                     resetRoom(false);
                     Phone.reset();
                     unknown.state = 'idle';
+                    unknownSilenceOff();
                     boss.state = 'idle';
                 }
 
@@ -6709,6 +7584,23 @@
                 if (el.closest('#hackModal')) return;   // у кнопок игры свой тон
                 Snd.orb(0.4);
             });
+
+            /* ---- отладка для headless-тестов: включается только ?test=1 ---- */
+            if (/[?&]test=1/.test(location.search)) {
+                window.__console = {
+                    run: run,
+                    branches: branches,
+                    has: function (id) { return O.has(id); },
+                    log: function () { return out.textContent; },
+                    sanity: function () { return sanity; },
+                    breakSanity: function () { sanityBreak(); },
+                    glitch: function () { return glitch45.active; },
+                    phone: function () { return Phone; },
+                    shadow: shadowPulse,
+                    whisper: whisperSay,
+                    unknownCry: unknownSilenceCry
+                };
+            }
         })();
     </script>
 </body>

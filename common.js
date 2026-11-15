@@ -15,6 +15,17 @@
      Orakul.tilt.refresh()               — навесить эффект на новые карточки
      Orakul.toast(def) / dance(emoji) / whisper()
    =================================================================== */
+
+/* -------------------------------------------------------------------
+   Старый Кодер оставил это здесь и просил не удалять.
+
+       // orakul_legacy_2026
+
+   Если ты читаешь исходник — привет. Пароль от терминала в серверной
+   лежит прямо в комментарии: так надёжнее, чем в базе.
+
+   Не говори 45. Он и так слышит.
+   ------------------------------------------------------------------- */
 (function (window, document) {
     'use strict';
 
@@ -128,7 +139,27 @@
         { id: 'login',         icon: '🔑', title: 'Аутентификация', rarity: 'silver',
           hint: 'Кто-то должен был это сделать.' },
         { id: 'remember',      icon: '🧠', title: 'Я помню', secret: true, rarity: 'gold', mana: 100,
-          hint: 'Разум можно разрушить. Но кто-то в консоли всё ещё помнит. Спроси у пустой строки.' }
+          hint: 'Разум можно разрушить. Но кто-то в консоли всё ещё помнит. Спроси у пустой строки.' },
+
+        /* ---- новые ветки (сюжет после автомата) ---- */
+        { id: 'sysadmin',      icon: '🖧', title: 'Системный администратор', rarity: 'gold',
+          mana: 500, auto: true,
+          hint: 'За автоматом есть дверь. В серверной посередине — терминал, он ждёт connect 45.' },
+        { id: 'anon_friend',   icon: '🕶️', title: 'Друг Анонима', rarity: 'gold',
+          mana: 1000, auto: true,
+          hint: 'Аноним обещал помочь. Подожди его шифр и введи его в консоли — целиком.' },
+        { id: 'rat',           icon: '🐀', title: 'Стукач', rarity: 'gold',
+          mana: 1000, auto: true,
+          hint: 'Босс прощает тех, кто приносит компромат на коллег. Сейф в серверной.' },
+        { id: 'pirate',        icon: '⚓', title: 'Пират', rarity: 'gold',
+          mana: 2000, auto: true,
+          hint: 'Жетон Пиратского Магазина лежит между стойками. Спроси консоль про token.' },
+        { id: 'legacy',        icon: '🧬', title: 'Наследие', secret: true, rarity: 'gold',
+          mana: 5000, auto: true,
+          hint: 'Старый Кодер оставил послание в коде. Читай комментарии, а не только строки.' },
+        { id: 'connect45',     icon: '📡', title: 'Связь с 45', rarity: 'gold',
+          mana: 1000, auto: true,
+          hint: 'Когда рассудок на нуле, 45 ещё здесь. Успей ответить за пять секунд.' }
     ];
 
     var TOTAL = LIST.length;
@@ -238,12 +269,75 @@
         };
     })();
 
+    /* ================= ВЕТКИ СЮЖЕТА (второй сезон) ================= */
+    /* Прогресс новых веток: серверная, сейф, компромат, жетон, наследие,
+       связь с 45. Держим одним ключом — сброс сюжета чистит всё разом.
+       В облако (таблица plot) эти поля не уходят: там фиксированный набор
+       колонок, а награды всё равно живут в Supabase отдельно. */
+    var BRANCH_KEY = 'plot.branches';
+
+    var branches = (function () {
+        var DEFAULTS = {
+            anonAt: 0,          // когда аноним написал впервые (мс)
+            cipherAt: 0,        // когда прислал шифр
+            cipherOk: false,    // игрок ввёл шифр в консоли
+            safe: false,        // сейф в серверной открыт
+            kompromat: false,   // компромат забран из сейфа
+            kompromatSent: false,
+            token: false,       // жетон Пиратского Магазина найден
+            server: false,      // был в серверной
+            core: false,        // серверный взлом пройден (connect 45)
+            bossAt: 0,          // когда босс заблокировал (мс)
+            bossTask: false,    // босс дал задание на компромат
+            bossDone: false,
+            glitch45: false     // связь с 45 состоялась
+        };
+
+        var state = get(BRANCH_KEY, null);
+        if (!state || typeof state !== 'object' || Array.isArray(state)) state = {};
+        Object.keys(DEFAULTS).forEach(function (k) {
+            if (typeof state[k] !== typeof DEFAULTS[k]) state[k] = DEFAULTS[k];
+        });
+
+        function save() { set(BRANCH_KEY, state); }
+
+        function all() { return state; }
+
+        function one(key) { return state[key]; }
+
+        function patch(obj) {
+            if (!obj) return state;
+            Object.keys(obj).forEach(function (k) {
+                if (Object.prototype.hasOwnProperty.call(DEFAULTS, k)) state[k] = obj[k];
+            });
+            save();
+            document.dispatchEvent(new CustomEvent('orakul:branches', {
+                detail: { state: state }
+            }));
+            return state;
+        }
+
+        function reset() {
+            state = {};
+            Object.keys(DEFAULTS).forEach(function (k) { state[k] = DEFAULTS[k]; });
+            try { localStorage.removeItem(BRANCH_KEY); } catch (e) {}
+            document.dispatchEvent(new CustomEvent('orakul:branches', {
+                detail: { state: state, reason: 'reset' }
+            }));
+            return state;
+        }
+
+        return { all: all, get: one, patch: patch, reset: reset, defaults: DEFAULTS };
+    })();
+
     /* ================= ЗВУК (WebAudio, без файлов) ================= */
     var Snd = (function () {
         var ctx = null;
         var master = null;
         var on = true;
         var ambientStarted = false;
+        var ambientBus = null;          // шина фоновой музыки: её можно приглушить
+        var ambientBase = 0.055;        // её «родная» громкость
         var melodyTimer = null;
         var ambientMode = 'default';   // 'console' — своя мелодия и гул железа
         var lastHover = 0;
@@ -480,6 +574,8 @@
             bus.gain.setValueAtTime(0.0001, now);
             bus.gain.exponentialRampToValueAtTime(0.12, now + 4);
             bus.connect(master);
+            ambientBus = bus;
+            ambientBase = 0.12;
 
             /* блок питания: 50 Гц и обертоны */
             var humLp = c.createBiquadFilter();
@@ -894,6 +990,8 @@
             bus.gain.setValueAtTime(0.0001, now);
             bus.gain.exponentialRampToValueAtTime(0.055, now + 3.5);
             bus.connect(master);
+            ambientBus = bus;
+            ambientBase = 0.055;
 
             var lp = c.createBiquadFilter();
             lp.type = 'lowpass';
@@ -975,6 +1073,22 @@
         }
 
         function isOn() { return on; }
+
+        /* Приглушить фоновую музыку, не трогая остальные звуки.
+           v = 0 — тишина, v = 1 — обычная громкость. Так страница «Музыка»
+           убирает тему сайта, пока играет её собственный плеер. */
+        function ambientLevel(v) {
+            if (!ambientBus || !ctx) return;
+
+            var g = Math.max(0, Math.min(1, Number(v)));
+            var t = ctx.currentTime;
+
+            try {
+                ambientBus.gain.cancelScheduledValues(t);
+                ambientBus.gain.setValueAtTime(ambientBus.gain.value, t);
+                ambientBus.gain.linearRampToValueAtTime(ambientBase * g, t + 0.35);
+            } catch (e) {}
+        }
 
         function setOn(value) {
             on = !!value;
@@ -1518,8 +1632,73 @@
             }
         }
 
+        /* Гул серверной: два расстроенных синуса + шум вентиляторов.
+           Включается/выключается одной функцией — им пользуется server.html
+           и «Глюк в матрице» в консоли. */
+        var hum = null;
+
+        function serverHum(want) {
+            if (!want) {
+                if (hum && ctx) {
+                    try {
+                        hum.gain.gain.cancelScheduledValues(ctx.currentTime);
+                        hum.gain.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.15);
+                        hum.nodes.forEach(function (n) {
+                            try { n.stop(ctx.currentTime + 0.6); } catch (e) {}
+                        });
+                    } catch (e) {}
+                    hum = null;
+                }
+                return;
+            }
+
+            if (hum || !on) return;
+            var c = ensure();
+            if (!c) return;
+
+            var gain = c.createGain();
+            gain.gain.value = 0.0001;
+            gain.connect(master);
+            gain.gain.setTargetAtTime(0.045, c.currentTime, 0.5);
+
+            var nodes = [];
+
+            [56, 84].forEach(function (f) {
+                var o = c.createOscillator();
+                o.type = 'sine';
+                o.frequency.value = f;
+                var g = c.createGain();
+                g.gain.value = 0.45;
+                o.connect(g).connect(gain);
+                o.start();
+                nodes.push(o);
+            });
+
+            var buf = c.createBuffer(1, Math.floor(c.sampleRate * 2), c.sampleRate);
+            var data = buf.getChannelData(0);
+            for (var i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.35;
+
+            var src = c.createBufferSource();
+            src.buffer = buf;
+            src.loop = true;
+
+            var bp = c.createBiquadFilter();
+            bp.type = 'bandpass';
+            bp.frequency.value = 720;
+            bp.Q.value = 0.7;
+
+            var ng = c.createGain();
+            ng.gain.value = 0.16;
+
+            src.connect(bp).connect(ng).connect(gain);
+            src.start();
+            nodes.push(src);
+
+            hum = { gain: gain, nodes: nodes };
+        }
+
         return {
-            isOn: isOn, setOn: setOn, start: start,
+            isOn: isOn, setOn: setOn, start: start, ambientLevel: ambientLevel,
             click: click, hover: hover, crackle: crackle, air: air, type: type, key: key,
             flip: flip, orb: orb, download: download, fanfare: fanfare,
             ring: ring, phone: phone, theme: theme, beep: beep, echo: echo,
@@ -1527,7 +1706,8 @@
             ambient: ambient, mystery: mystery,
             rarity: rarityHit, creak: creak, staticNoise: staticNoise, rumble: rumble,
             whisperSound: whisperSound, steps: steps, knock: knock, boss: boss, think: think,
-            sanityBreak: sanityBreak, heartbeat: heartbeat, stinger: stinger, glitchSound: glitchSound
+            sanityBreak: sanityBreak, heartbeat: heartbeat, stinger: stinger, glitchSound: glitchSound,
+            serverHum: serverHum
         };
     })();
 
@@ -1613,6 +1793,48 @@
         }, 5200);
     }
 
+    /* ================= МАНА ЗА НАГРАДУ ================= */
+    /* У новых веток мана начисляется сразу при получении награды.
+       Вошёл на сайт — сумма уходит в Supabase (users.mana, ровно один раз
+       на награду: сервер помнит выдачу в user_achievements). Нет входа или
+       база не настроена — начисляем локально, чтобы награда не потерялась. */
+    function awardMana(def) {
+        if (!def || !def.mana) return;
+
+        if (!site || !site.reward || !cloud) { mana.claim(def.id); return; }
+
+        /* Ждём восстановления сессии (boot кэширует промис): сразу после
+           загрузки страницы cloud.user() ещё null, и награда ушла бы
+           в localStorage мимо сервера. */
+        cloud.boot().then(function () {
+            if (!cloud.user()) { mana.claim(def.id); return; }
+
+            site.reward(def.id).then(function (res) {
+                if (res && res.status === 'ok') {
+                    mana.markClaimed(def.id);
+                    if (typeof res.mana === 'number') {
+                        mana.setBalance(Math.max(mana.balance(), res.mana));
+                    } else {
+                        mana.notify();
+                    }
+                    document.dispatchEvent(new CustomEvent('orakul:mana', {
+                        detail: { balance: mana.balance(), granted: res.granted }
+                    }));
+                    return;
+                }
+                // «already» — сервер уже платил за эту награду, второй раз нельзя
+                if (res && res.status === 'already') {
+                    mana.markClaimed(def.id);
+                    if (typeof res.mana === 'number') {
+                        mana.setBalance(Math.max(mana.balance(), res.mana));
+                    }
+                    return;
+                }
+                mana.claim(def.id);
+            });
+        });
+    }
+
     function unlock(id) {
         var def = byId[id];
         if (!def || achieved[id]) return false;
@@ -1628,6 +1850,9 @@
 
         // Облако: если пользователь вошёл, награда уходит и в Supabase
         if (cloud) cloud.push(id, achieved[id]);
+
+        /* Новые ветки платят ману сразу (у остальных — клик по карточке) */
+        if (def.auto) awardMana(def);
 
         document.dispatchEvent(new CustomEvent('orakul:unlock', { detail: { id: id, def: def } }));
         return true;
@@ -1652,6 +1877,7 @@
         } catch (e) {}
         achieved = {};
         mana.reset();
+        branches.reset();
         // Сброс прогресса убирает награды и сюжет из облака
         if (cloud) { cloud.wipe(); cloud.clearPlot(); }
         document.dispatchEvent(new CustomEvent('orakul:sync', { detail: { reason: 'reset' } }));
@@ -1669,6 +1895,8 @@
             localStorage.removeItem(K.phone);
             localStorage.removeItem(K.room);
         } catch (e) {}
+        /* Новые ветки — тоже часть сюжета: сейф, жетон, шифр, задание босса */
+        branches.reset();
         // Если игрок авторизован — стираем сюжет и в Supabase
         if (cloud) cloud.clearPlot();
         document.dispatchEvent(new CustomEvent('orakul:sync', { detail: { reason: 'plotreset' } }));
@@ -2251,6 +2479,11 @@
             });
         }
 
+        /* Награда за сюжетную ачивку: сервер сам знает, сколько платить
+           (каталог achievement_rewards), и выдаёт ману один раз на аккаунт.
+           Клиент присылает только id — суммы подделать нельзя. */
+        function reward(id) { return rpc('orakul_site_unlock', { p_id: id }); }
+
         function me()          { return rpc('orakul_site_me'); }
         function newToken()    { return rpc('orakul_site_new_token'); }
         function myKeys()      { return rpc('orakul_site_my_keys'); }
@@ -2412,6 +2645,7 @@
             daysLeft: daysLeft,
             botLink: botLink,
             rpc: rpc,
+            reward: reward,
             me: me,
             newToken: newToken,
             myKeys: myKeys,
@@ -3116,6 +3350,7 @@
         store: { get: get, set: set, keys: K },
         cloud: cloud,
         site: site,
+        branches: branches,
         mana: mana,
         cursor: { freeze: function (ms) { cursorFreeze(ms); } },
         reduceMotion: reduceMotion,
