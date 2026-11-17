@@ -137,7 +137,65 @@
         .del-btn:hover { background: rgba(255, 138, 138, 0.14); }
 
         /* Якоря разделов: не прячем заголовок под липкую шапку */
-        #users, #keys, #promos { scroll-margin-top: 84px; }
+        #users, #keys, #promos, #live { scroll-margin-top: 84px; }
+
+        /* ===== 📺 LIVE: пульт прямого эфира ===== */
+        #live textarea {
+            width: 100%;
+            min-height: 88px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-main);
+            font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+            font-size: 0.95rem;
+            line-height: 1.45;
+            resize: vertical;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        #live textarea:focus {
+            outline: none;
+            border-color: var(--accent-2);
+            box-shadow: 0 0 0 3px rgba(138, 43, 226, 0.2);
+        }
+
+        #live textarea::placeholder { color: rgba(154, 140, 184, 0.7); }
+
+        html[data-theme="light"] #live textarea { background: rgba(124, 58, 237, 0.05); }
+
+        .live-quick { margin-top: 14px; }
+        .live-quick .filter-btn { font-size: 0.86rem; }
+
+        .live-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .live-dot {
+            display: inline-block;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #ff2d3d;
+            box-shadow: 0 0 10px rgba(255, 45, 61, 0.7);
+            animation: liveBlink 1.5s steps(1, end) infinite;
+        }
+
+        @keyframes liveBlink {
+            0%, 55% { opacity: 1; }
+            56%, 100% { opacity: 0.2; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .live-dot { animation: none; }
+        }
+
+        table.keys td.live-cell { max-width: 44ch; overflow-wrap: anywhere; }
+        table.keys td.live-cell i { color: var(--text-muted); }
 
         .user-act {
             margin-top: 14px;
@@ -226,6 +284,7 @@
                 <a href="shop.html">Магазин</a>
                 <a href="music.html">Музыка</a>
                 <a href="profile.html">Профиль</a>
+                <a href="live.html" target="_blank" rel="noopener">📺 LIVE</a>
                 <a href="admin.html" class="is-current" aria-current="page">Админка</a>
             </nav>
             <div class="nav-tools">
@@ -248,13 +307,14 @@
         <div class="page-head">
             <span class="kicker">Админка</span>
             <h1>Управление</h1>
-            <p>Пользователи, ключи и промокоды. Всё — через RPC с проверкой прав.</p>
+            <p>Пользователи, ключи, промокоды и прямой эфир. Всё — через RPC с проверкой прав.</p>
         </div>
 
         <div class="filters" id="jump" role="navigation" aria-label="Разделы админки" hidden>
             <a class="filter-btn" href="#users">👥 Пользователи</a>
             <a class="filter-btn" href="#keys">🎁 Ключи</a>
             <a class="filter-btn" href="#promos">🎟 Промокоды</a>
+            <a class="filter-btn" href="#live">📺 LIVE</a>
         </div>
 
         <section class="gate" id="gate" hidden>
@@ -277,7 +337,7 @@ update public.users set is_admin = true
                 </code>
             </div>
             <p style="margin-top: 14px;">После этого обнови страницу (Ctrl+F5) —
-               появятся разделы «Пользователи», «Ключи» и «Промокоды».</p>
+               появятся разделы «Пользователи», «Ключи», «Промокоды» и «LIVE».</p>
         </section>
 
         <div id="admin" hidden>
@@ -482,6 +542,88 @@ update public.users set is_admin = true
 
                 <div class="empty" id="promoEmpty" hidden>Промокодов пока нет — создай первый.</div>
             </section>
+
+            <section class="pcard" id="live" aria-labelledby="liveTitle">
+                <div class="live-head">
+                    <h2 id="liveTitle" style="margin: 0;">📺 LIVE</h2>
+                    <span class="live-dot" aria-hidden="true"></span>
+                    <small style="color: var(--text-muted); font-size: 0.8rem;" id="liveState">канал не подключён</small>
+                </div>
+                <p>Всё, что здесь отправлено, мгновенно появляется на
+                   <a href="live.html" target="_blank" rel="noopener">live.html</a>
+                   у всех, кто сейчас смотрит. Писать может только админ —
+                   проверка <code>is_admin</code> живёт на сервере, а не в браузере.</p>
+
+                <form id="liveForm" novalidate>
+                    <label class="field" for="liveText">
+                        <span>Сообщение</span>
+                        <textarea id="liveText" maxlength="280" spellcheck="false"
+                                  placeholder="Текст, который увидит игрок… (Enter — отправить, Shift+Enter — новая строка)"></textarea>
+                    </label>
+
+                    <div class="field-row">
+                        <label class="field" for="liveMode">
+                            <span>Появление</span>
+                            <select id="liveMode">
+                                <option value="type">Печатная машинка — тихо и медленно</option>
+                                <option value="abrupt">Резко — сразу и целиком</option>
+                            </select>
+                        </label>
+
+                        <label class="field" for="liveTone">
+                            <span>Настроение</span>
+                            <select id="liveTone">
+                                <option value="info">Обычное</option>
+                                <option value="danger">🩸 Тревожное (красная пелена)</option>
+                                <option value="whisper">🕯 Шёпот (свет гаснет)</option>
+                            </select>
+                        </label>
+
+                        <label class="field" for="liveTtl">
+                            <span>На экране, сек</span>
+                            <input id="liveTtl" type="number" min="0" max="600" step="1" value="0">
+                        </label>
+
+                        <button class="btn" id="liveSend" type="submit">Отправить</button>
+                    </div>
+                    <p class="form-msg" style="margin-top: 6px;">
+                        <span id="liveCount">0</span>/280 · «На экране» <code>0</code> —
+                        сообщение висит, пока не заменишь следующим.
+                    </p>
+                </form>
+
+                <p class="form-msg" id="liveMsg" role="status" aria-live="polite"></p>
+
+                <div class="filters live-quick" id="liveQuick" role="group" aria-label="Быстрые сообщения">
+                    <button class="filter-btn" type="button" data-quick="see">👁 Я вижу тебя</button>
+                    <button class="filter-btn" type="button" data-quick="look">🚪 Оглянись</button>
+                    <button class="filter-btn" type="button" data-quick="near">🩸 Оно рядом</button>
+                    <button class="filter-btn" type="button" data-quick="lights">🕯 Свет гаснет</button>
+                    <button class="filter-btn" type="button" data-quick="clear" style="color: #ff8a8a;">🧹 Стереть экран</button>
+                    <button class="filter-btn" type="button" data-quick="reset">⏱ Начать эфир заново</button>
+                </div>
+
+                <p class="form-msg" id="liveClock" style="margin-top: 4px;">
+                    Отсчёт эфира: <code id="liveElapsed">—</code> · общий для всех зрителей,
+                    при перезаходе не обнуляется.
+                </p>
+
+                <h2 style="margin-top: 26px;">🗂 Журнал</h2>
+                <div class="table-wrap" id="liveLogWrap" hidden>
+                    <table class="keys">
+                        <thead>
+                            <tr>
+                                <th>Когда</th>
+                                <th>Что</th>
+                                <th>Появление</th>
+                                <th>Кто</th>
+                            </tr>
+                        </thead>
+                        <tbody id="liveLogRows"></tbody>
+                    </table>
+                </div>
+                <div class="empty" id="liveLogEmpty" hidden>Пока пусто — отправь первое сообщение.</div>
+            </section>
         </div>
     </main>
 
@@ -542,6 +684,21 @@ update public.users set is_admin = true
             var promoWrap = document.getElementById('promoWrap');
             var promoRows = document.getElementById('promoRows');
             var promoEmpty = document.getElementById('promoEmpty');
+
+            var liveForm = document.getElementById('liveForm');
+            var liveText = document.getElementById('liveText');
+            var liveMode = document.getElementById('liveMode');
+            var liveTone = document.getElementById('liveTone');
+            var liveTtl = document.getElementById('liveTtl');
+            var liveSendBtn = document.getElementById('liveSend');
+            var liveMsg = document.getElementById('liveMsg');
+            var liveState = document.getElementById('liveState');
+            var liveCount = document.getElementById('liveCount');
+            var liveQuick = document.getElementById('liveQuick');
+            var liveLogWrap = document.getElementById('liveLogWrap');
+            var liveLogRows = document.getElementById('liveLogRows');
+            var liveLogEmpty = document.getElementById('liveLogEmpty');
+            var liveElapsed = document.getElementById('liveElapsed');
 
             var VALUES = {
                 pro: [7, 30, 90],
@@ -1151,6 +1308,268 @@ update public.users set is_admin = true
                 });
             });
 
+            /* ---------- 📺 LIVE ---------- */
+            /* Пульт пишет через RPC (проверка is_admin на сервере), а
+               состояние канала слушаем обычным Realtime: так видно, что
+               сообщение реально дошло до базы, и если эфир открыт на
+               другом устройстве — это тоже видно. */
+            var LIVE_STATUS = {
+                forbidden: 'Нет доступа: этот аккаунт не админ',
+                bad_body:  S.adminStatus.bad_body,
+                too_long:  S.adminStatus.too_long,
+                bad_kind:  S.adminStatus.bad_kind
+            };
+
+            var LIVE_QUICK_LABEL = {
+                see:    'Я вижу тебя',
+                look:   'Оглянись',
+                near:   'Оно рядом',
+                lights: 'Свет гаснет'
+            };
+
+            var liveChannel = null;
+            var liveBooted = false;
+
+            function liveOk(res) {
+                if (!res || res.error) {
+                    say(liveMsg, '⚠️ ' + S.human(res && res.error), 'bad');
+                    return false;
+                }
+                if (res.status !== 'ok') {
+                    say(liveMsg, '❌ ' + (LIVE_STATUS[res.status] ||
+                                          'Сайт ответил: ' + res.status), 'bad');
+                    return false;
+                }
+                return true;
+            }
+
+            function syncLiveCount() {
+                liveCount.textContent = String(liveText.value.length);
+            }
+
+            function sendLive(body, mode, tone, ttl) {
+                body = String(body || '').trim();
+                if (!body) {
+                    say(liveMsg, 'Сначала введи текст.', 'bad');
+                    liveText.focus();
+                    return;
+                }
+
+                liveSendBtn.disabled = true;
+                say(liveMsg, 'Отправляю…');
+
+                S.liveSend(body, mode, ttl, tone).then(function (res) {
+                    liveSendBtn.disabled = false;
+                    if (!liveOk(res)) return;
+
+                    say(liveMsg, '✅ В эфире: «' + body + '»', 'ok');
+                    liveText.value = '';
+                    syncLiveCount();
+                    if (O.Snd) O.Snd.orb();
+                    loadLiveLog(true);
+                });
+            }
+
+            /* ---- общий отсчёт эфира ---- */
+            /* Тот же started_at, что видит live.html: цифра в пульте должна
+               совпадать с тем, что показывают игроки. */
+            function paintLiveElapsed(sec) {
+                if (!liveElapsed) return;
+                var s = Math.max(0, Math.floor(sec || 0));
+                var p = function (n) { return (n < 10 ? '0' : '') + n; };
+                var h = Math.floor(s / 3600);
+                liveElapsed.textContent = h > 0
+                    ? h + ':' + p(Math.floor((s % 3600) / 60)) + ':' + p(s % 60)
+                    : p(Math.floor(s / 60)) + ':' + p(s % 60);
+            }
+
+            var liveStartMS = null;
+
+            function syncLiveClock() {
+                S.liveStream().then(function (res) {
+                    if (!res || res.error || res.status === 'forbidden' || !res.started_at) return;
+
+                    var t = Date.parse(res.started_at);
+                    if (isNaN(t)) return;
+                    liveStartMS = t;
+                    paintLiveElapsed((Date.now() - t) / 1000);
+                });
+            }
+
+            function resetLiveStream() {
+                if (!window.confirm('Начать эфир заново? Таймер у всех зрителей вернётся к 00:00.')) return;
+
+                liveSendBtn.disabled = true;
+                say(liveMsg, 'Перезапускаю отсчёт…');
+
+                S.liveStreamReset().then(function (res) {
+                    liveSendBtn.disabled = false;
+                    if (!liveOk(res)) return;
+
+                    say(liveMsg, '⏱ Эфир начат заново — 00:00 у всех зрителей', 'ok');
+                    syncLiveClock();
+                    loadLiveLog(true);
+                });
+            }
+
+            function sendQuick(kind) {
+                liveSendBtn.disabled = true;
+                say(liveMsg, 'Отправляю…');
+
+                S.liveQuick(kind).then(function (res) {
+                    liveSendBtn.disabled = false;
+                    if (!liveOk(res)) return;
+
+                    say(liveMsg, '✅ В эфире: «' + (res.body || LIVE_QUICK_LABEL[kind] || kind) + '»', 'ok');
+                    if (O.Snd) O.Snd.orb();
+                    loadLiveLog(true);
+                });
+            }
+
+            function clearLive() {
+                if (!window.confirm('Стереть экран у всех зрителей? В журнале останется запись.')) return;
+
+                liveSendBtn.disabled = true;
+                say(liveMsg, 'Стираю…');
+
+                S.liveClear().then(function (res) {
+                    liveSendBtn.disabled = false;
+                    if (!liveOk(res)) return;
+
+                    say(liveMsg, '🧹 Экран очищен (сцен: ' + (res.cleared || 0) + ')', 'ok');
+                    loadLiveLog(true);
+                });
+            }
+
+            /* ---- журнал ---- */
+            function liveLogRow(m) {
+                var isClear = m.action === 'clear';
+                var isReset = m.action === 'reset';
+
+                var what = isClear ? '<i>— экран стёрт —</i>'
+                         : isReset ? '<i>— эфир начат заново —</i>'
+                         : esc(m.body || '');
+
+                var how = (isClear || isReset)
+                    ? '—'
+                    : (m.mode === 'abrupt'
+                        ? '<span class="tag tag-hot">резко</span>'
+                        : '<span class="tag tag-mute">машинка</span>') +
+                      (m.ttl_seconds > 0 ? ' <small>' + m.ttl_seconds + ' с</small>' : '');
+
+                return '' +
+                    '<tr>' +
+                        '<td><small>' + esc(S.fmtDateTime(m.created_at)) + '</small></td>' +
+                        '<td class="live-cell">' + what + '</td>' +
+                        '<td>' + how + '</td>' +
+                        '<td><small>' + esc(m.author || '—') + '</small></td>' +
+                    '</tr>';
+            }
+
+            function paintLiveLog(list) {
+                if (!list.length) {
+                    liveLogWrap.hidden = true;
+                    liveLogEmpty.hidden = false;
+                    return;
+                }
+                liveLogEmpty.hidden = true;
+                liveLogWrap.hidden = false;
+                liveLogRows.innerHTML = list.map(liveLogRow).join('');
+            }
+
+            function loadLiveLog(quiet) {
+                S.liveHistory(40).then(function (res) {
+                    if (!res || res.error) {
+                        paintLiveLog([]);
+                        if (!quiet) {
+                            liveLogEmpty.textContent = '⚠️ ' + S.human(res && res.error);
+                        }
+                        return;
+                    }
+                    if (res.status === 'forbidden') {
+                        paintLiveLog([]);
+                        return;
+                    }
+                    paintLiveLog(res.messages || []);
+                });
+            }
+
+            /* ---- состояние канала (Realtime) ---- */
+            function bootLiveChannel() {
+                if (liveBooted) return;
+                liveBooted = true;
+
+                O.cloud.connect().then(function (c) {
+                    if (!c) {
+                        liveState.textContent = 'канала нет: Supabase недоступен';
+                        return;
+                    }
+
+                    liveChannel = c.channel('orakul-admin-live');
+
+                    ['INSERT', 'DELETE'].forEach(function (evt) {
+                        liveChannel.on('postgres_changes',
+                            { event: evt, schema: 'public', table: 'live_messages' },
+                            function () {
+                                liveState.textContent = 'канал открыт · есть поток';
+                                loadLiveLog(true);
+                            });
+                    });
+
+                    /* «Начать эфир заново» с другого устройства — таймер
+                       в пульте тоже подхватывает новый старт. */
+                    liveChannel.on('postgres_changes',
+                        { event: 'UPDATE', schema: 'public', table: 'live_stream' },
+                        function (payload) {
+                            if (payload && payload.new && payload.new.started_at) {
+                                liveStartMS = Date.parse(payload.new.started_at);
+                                paintLiveElapsed((Date.now() - liveStartMS) / 1000);
+                            }
+                        });
+
+                    liveChannel.subscribe(function (status) {
+                        if (status === 'SUBSCRIBED') {
+                            liveState.textContent = 'канал открыт';
+                        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                            liveState.textContent = 'Realtime не отвечает — отправка всё равно работает';
+                        } else if (status === 'CLOSED') {
+                            liveState.textContent = 'канал закрыт';
+                        }
+                    });
+                });
+            }
+
+            liveText.addEventListener('input', syncLiveCount);
+
+            liveForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                sendLive(liveText.value, liveMode.value, liveTone.value,
+                         parseInt(liveTtl.value, 10) || 0);
+            });
+
+            /* Enter — отправить, Shift+Enter — новая строка */
+            liveText.addEventListener('keydown', function (e) {
+                if (e.key !== 'Enter' || e.shiftKey) return;
+                e.preventDefault();
+                if (!liveSendBtn.disabled) sendLive(liveText.value, liveMode.value,
+                                                    liveTone.value,
+                                                    parseInt(liveTtl.value, 10) || 0);
+            });
+
+            liveQuick.addEventListener('click', function (e) {
+                var btn = e.target.closest ? e.target.closest('[data-quick]') : null;
+                if (!btn) return;
+
+                var kind = btn.getAttribute('data-quick');
+                if (kind === 'clear') { clearLive(); return; }
+                if (kind === 'reset') { resetLiveStream(); return; }
+                if (!LIVE_QUICK_LABEL[kind]) return;
+
+                btn.classList.add('is-active');
+                setTimeout(function () { btn.classList.remove('is-active'); }, 700);
+                sendQuick(kind);
+            });
+
             /* ---------- старт ---------- */
             fillValues();
 
@@ -1172,6 +1591,8 @@ update public.users set is_admin = true
                         say(listMsg, '⚠️ ' + S.human(res && res.error), 'bad');
                         loadUsers(true);
                         loadPromos(true);
+                        syncLiveCount();
+                        syncLiveClock();
                         return;
                     }
                     if (!res.is_admin) {
@@ -1185,6 +1606,15 @@ update public.users set is_admin = true
                     loadList();
                     loadUsers();
                     loadPromos();
+                    syncLiveCount();
+                    syncLiveClock();
+                    setInterval(function () {
+                        if (document.hidden || liveStartMS == null) return;
+                        paintLiveElapsed((Date.now() - liveStartMS) / 1000);
+                    }, 1000);
+
+                    loadLiveLog(true);
+                    bootLiveChannel();
                 });
             });
 

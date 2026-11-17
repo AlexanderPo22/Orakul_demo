@@ -456,19 +456,37 @@
         .mq-bar {
             position: relative;
             flex: 1;
-            height: 4px;
+            height: 6px;
             border-radius: 999px;
-            background: rgba(255, 255, 255, 0.08);
+            background:
+                linear-gradient(90deg, var(--accent), var(--cat, var(--accent-2))) 0 0 / 0% 100% no-repeat,
+                rgba(255, 255, 255, 0.08);
             overflow: hidden;
+            cursor: pointer;
+            touch-action: none;
+            transition: height 0.15s ease;
         }
+
+        .mq-bar:hover { height: 9px; }
+        .mq-bar:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
 
         .mq-bar i {
             position: absolute;
-            inset: 0 auto 0 0;
-            width: 0;
-            border-radius: 999px;
-            background: linear-gradient(90deg, var(--accent), var(--cat, var(--accent-2)));
+            top: 50%;
+            left: 0;
+            width: 10px;
+            height: 10px;
+            margin-top: -5px;
+            border-radius: 50%;
+            background: var(--cat, var(--accent-2));
+            box-shadow: 0 0 0 2px rgba(15, 12, 27, 0.85);
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            pointer-events: none;
         }
+
+        .mq-bar:hover i,
+        .mq-bar.is-scrubbing i { opacity: 1; }
 
         .mq-vis {
             width: 120px;
@@ -562,7 +580,7 @@
         <div class="page-head">
             <span class="kicker">Музыка</span>
             <h1>Звук Петли</h1>
-            <p>Тридцать треков и ни одного аудиофайла: всё собирается на лету
+            <p>Тридцать шесть треков и ни одного аудиофайла: всё собирается на лету
                из синусов, треугольников и шума. Выбери настроение — остальное
                сделает WebAudio.</p>
         </div>
@@ -578,7 +596,8 @@
             и последний круг, <b>Темы сайта</b> — те самые мотивы со страниц,
             один в один. Пока играет трек, тема сайта молчит.<br>
             Пробел — пауза, ← → — соседние треки, <b>M</b> — тишина,
-            <b>F</b> — в избранное.
+            <b>F</b> — в избранное. Полосу под плеером можно тянуть —
+            перемотка работает и на паузе.
         </p>
     </main>
 
@@ -599,7 +618,10 @@
 
         <div class="mq-progress">
             <span class="mq-time" id="nowTime">0:00</span>
-            <div class="mq-bar"><i id="nowBar"></i></div>
+            <div class="mq-bar" id="seek" role="slider" tabindex="0"
+                 aria-label="Перемотка" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <i id="nowBar"></i>
+            </div>
             <span class="mq-time" id="nowLen">1:36</span>
         </div>
 
@@ -646,6 +668,8 @@
                   note: 'как на главной: тёплые пэды и медные арпеджио' },
                 { id: 'fn', title: 'Фортнайт', ico: '🪂', color: '#58c7ff',
                   note: 'автобус, последний круг и виктори рояль' },
+                { id: 'tense', title: 'Тревожное', ico: '🩸', color: '#ff3b57',
+                  note: 'нагнетает: сердце, диссонанс, вот-вот что-то случится' },
                 { id: 'loop', title: 'Петля', ico: '🌀', color: '#7dffa8',
                   note: 'виток за витком: одно и то же, но чуть иначе' },
                 { id: 'server', title: 'Серверная', ico: '🖧', color: '#8fb8ff',
@@ -730,6 +754,37 @@
                   sub: 'в следующем матче', bpm: 136, root: 53, scale: 'minor',
                   timbre: 'triangle', pad: 'soft', perc: 'beat', density: 0.64,
                   echo: 0.22, bright: 2200, seed: 127, len: 84 },
+
+                /* ---- тревожное: нагнетает, обороты медленно растут ---- */
+                { id: 'a1', cat: 'tense', title: 'Он уже в коридоре',
+                  sub: 'шаги слишком медленные', bpm: 58, root: 44, scale: 'phrygian',
+                  timbre: 'sawtooth', pad: 'soft', perc: 'heart', density: 0.34,
+                  echo: 0.3, bright: 820, seed: 201, len: 108 },
+
+                { id: 'a2', cat: 'tense', title: 'Дверь приоткрыта',
+                  sub: 'ясно только, что не ветер', bpm: 64, root: 46, scale: 'harm',
+                  timbre: 'triangle', pad: 'none', perc: 'heart', density: 0.38,
+                  echo: 0.34, bright: 900, seed: 203, len: 102 },
+
+                { id: 'a3', cat: 'tense', title: 'Тиканье под полом',
+                  sub: 'ровно, слишком ровно', bpm: 70, root: 40, scale: 'phrygian',
+                  timbre: 'sawtooth', pad: 'none', perc: 'heart', density: 0.46,
+                  echo: 0.26, bright: 1100, seed: 211, len: 96 },
+
+                { id: 'a4', cat: 'tense', title: 'Перед штормом',
+                  sub: 'самый тихий такт перед обрывом', bpm: 52, root: 43, scale: 'harm',
+                  timbre: 'sine', pad: 'soft', perc: 'heart', density: 0.28,
+                  echo: 0.4, bright: 700, seed: 223, len: 114 },
+
+                { id: 'a5', cat: 'tense', title: 'Не выключай свет',
+                  sub: 'он ближе, чем кажется', bpm: 74, root: 39, scale: 'minor',
+                  timbre: 'square', pad: 'soft', perc: 'heart', density: 0.5,
+                  echo: 0.3, bright: 1300, seed: 227, len: 96 },
+
+                { id: 'a6', cat: 'tense', title: 'Последний такт',
+                  sub: 'всё, тишина', bpm: 48, root: 41, scale: 'phrygian',
+                  timbre: 'sawtooth', pad: 'soft', perc: 'heart', density: 0.3,
+                  echo: 0.44, bright: 640, seed: 229, len: 120 },
 
                 { id: 'l1', cat: 'loop', title: 'Виток 1377',
                   sub: 'ты уже здесь был', bpm: 96, root: 55, scale: 'minor',
@@ -816,10 +871,11 @@
             var ctx = null, master = null, analyser = null, freqData = null;
             var bus = null, echoIn = null, chain = [];
             var droneNodes = [];
+            var keep = [];                  // узлы текущего шага: их гасим на следующем
             var timer = null, nextTime = 0, step = 0, seq = null;
             var cur = null;                 // текущий трек
             var playing = false;
-            var startedAt = 0, pausedAt = 0, elapsedBase = 0;
+            var lastFrameAt = 0;            // часы позиции: ставится в nowMs() при старте трека
             var volume = 0.7;
             var raf = 0;
 
@@ -838,6 +894,7 @@
                 time: document.getElementById('nowTime'),
                 len: document.getElementById('nowLen'),
                 bar: document.getElementById('nowBar'),
+                seek: document.getElementById('seek'),
                 vol: document.getElementById('vol'),
                 vis: document.getElementById('vis')
             };
@@ -971,6 +1028,15 @@
                 g.connect(bus);
                 if (echoIn) g.connect(echoIn);
 
+                /* Ноты короткие: в узле только «хвост» эха, поэтому убираем
+                   их из графа, когда они отзвучали. Иначе за длинный трек
+                   накапливаются тысячи живых узлов. */
+                o.onended = function () {
+                    try { o.disconnect(); } catch (e) {}
+                    try { f.disconnect(); } catch (e) {}
+                    try { g.disconnect(); } catch (e) {}
+                };
+
                 o.start(t);
                 o.stop(t + dur + 0.05);
             }
@@ -1020,6 +1086,10 @@
                 });
             }
 
+            /* Хэт/тик. Буфер короткий и сам заканчивается, но узел остаётся
+               подключённым к шине: за долгий трек их набегают сотни, и все
+               они висят в графе. Дисконнект по onended — заодно и память,
+               и процессор. */
             function tick(t) {
                 var len = Math.max(32, Math.floor(ctx.sampleRate * 0.035));
                 var buf = ctx.createBuffer(1, len, ctx.sampleRate);
@@ -1039,6 +1109,14 @@
 
                 src.connect(hp).connect(g).connect(bus);
                 if (echoIn) g.connect(echoIn);
+
+                src.onended = function () {
+                    try { src.disconnect(); } catch (e) {}
+                    try { hp.disconnect(); } catch (e) {}
+                    try { g.disconnect(); } catch (e) {}
+                };
+
+                try { src.stop(t + 0.4); } catch (e) {}
                 src.start(t);
             }
 
@@ -1057,11 +1135,64 @@
                 o.stop(t + 0.4);
             }
 
+            /* Удар сердца: глухой низкий тук, второй тише первого */
+            function heart(t, k) {
+                var o = ctx.createOscillator();
+                o.type = 'sine';
+                o.frequency.setValueAtTime(62, t);
+                o.frequency.exponentialRampToValueAtTime(41, t + 0.16);
+
+                var g = ctx.createGain();
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(0.26 * (k || 1), t + 0.012);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+
+                var lp = ctx.createBiquadFilter();
+                lp.type = 'lowpass';
+                lp.frequency.value = 320;
+
+                o.connect(lp).connect(g).connect(bus);
+                o.start(t);
+                o.stop(t + 0.24);
+            }
+
+            /* Нагнетание: шум, который медленно поднимается по частоте
+               и громкости — «вот-вот что-то случится» */
+            function riser(t, dur) {
+                var src = noiseSource(3);
+                var bp = ctx.createBiquadFilter();
+                bp.type = 'bandpass';
+                bp.Q.value = 3.2;
+                bp.frequency.setValueAtTime(240, t);
+                bp.frequency.exponentialRampToValueAtTime(2400, t + dur);
+
+                var g = ctx.createGain();
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(0.05, t + dur * 0.9);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.15);
+
+                src.connect(bp).connect(g).connect(bus);
+                src.start(t);
+                src.stop(t + dur + 0.2);
+            }
+
+            /* Подушка трека. Всё, что здесь создаётся, попадает в droneNodes —
+               и осцилляторы, и их усилители, и фильтры: раньше в списке были
+               только источники, а gain/lowpass оставались подключёнными
+               к отключённой шине и копились с каждым переключением трека. */
+            function keepNode() {
+                for (var i = 0; i < arguments.length; i++) {
+                    if (arguments[i]) droneNodes.push(arguments[i]);
+                }
+                return arguments[0];
+            }
+
             function drone() {
                 var f = mtof(cur.root - 24);
                 var base = ctx.createGain();
                 base.gain.value = 0.05;
                 base.connect(bus);
+                keepNode(base);
 
                 [0, 1].forEach(function (k) {
                     var o = ctx.createOscillator();
@@ -1081,7 +1212,7 @@
 
                     o.start();
                     lfo.start();
-                    droneNodes.push(o, lfo);
+                    keepNode(o, lfo, g, lfoGain);
                 });
             }
 
@@ -1104,6 +1235,13 @@
                     if (i % 8 === 0) thump(t);
                     if (i % 4 === 2) tick(t);
                     else if (i % 2 === 1 && Math.random() < 0.22) tick(t);
+                }
+
+                /* Тревога: сердцебиение — двойной удар, как в груди */
+                if (cur.perc === 'heart') {
+                    if (i % 8 === 0) { heart(t, 1); heart(t + 0.34, 0.62); }
+                    if (i % 8 === 4 && Math.random() < 0.45) heart(t, 0.5);
+                    if (cur.cat === 'tense' && i % 16 === 0) riser(t, stepDur * 16);
                 }
             }
 
@@ -1177,6 +1315,7 @@
                     lp.frequency.value = 240;
                     lp.Q.value = 0.7;
                     lp.connect(g);
+                    keepNode(g, lp);
 
                     [50, 100, 150].forEach(function (f, i) {
                         var o = ctx.createOscillator();
@@ -1186,7 +1325,7 @@
                         og.gain.value = i === 0 ? 0.05 : 0.028;
                         o.connect(og).connect(lp);
                         o.start();
-                        droneNodes.push(o);
+                        keepNode(o, og);
                     });
 
                     var fan = noiseSource(3);
@@ -1198,7 +1337,7 @@
                     ng.gain.value = 0.05;
                     fan.connect(bp).connect(ng).connect(g);
                     fan.start();
-                    droneNodes.push(fan);
+                    keepNode(fan, bp, ng);
                     return;
                 }
 
@@ -1211,7 +1350,7 @@
                     ag.gain.value = 0.06;
                     src.connect(alp).connect(ag).connect(bus);
                     src.start();
-                    droneNodes.push(src);
+                    keepNode(src, alp, ag);
                     return;
                 }
 
@@ -1219,6 +1358,7 @@
                     var sg = ctx.createGain();
                     sg.gain.value = 1;
                     sg.connect(bus);
+                    keepNode(sg);
 
                     [56, 84].forEach(function (f) {
                         var o = ctx.createOscillator();
@@ -1228,7 +1368,7 @@
                         og.gain.value = 0.045;
                         o.connect(og).connect(sg);
                         o.start();
-                        droneNodes.push(o);
+                        keepNode(o, og);
                     });
 
                     var sfan = noiseSource(3);
@@ -1240,7 +1380,7 @@
                     sng.gain.value = 0.05;
                     sfan.connect(sbp).connect(sng).connect(sg);
                     sfan.start();
-                    droneNodes.push(sfan);
+                    keepNode(sfan, sbp, sng);
                 }
             }
 
@@ -1259,6 +1399,13 @@
             function schedule() {
                 if (!playing || !ctx || !cur) return;
 
+                /* Планировщик ходит каждые 25 мс и знает про конец трека.
+                   Раньше этим заведовал только requestAnimationFrame: во
+                   вкладке, где кадры приостановлены (окно в фоне, экономия
+                   батареи, headless), автопереход и зацикливание не
+                   срабатывали вовсе — трек доигрывал и замолкал. */
+                if (checkEnd()) return;
+
                 var stepDur = cur.beat || (60 / cur.bpm / 4);
                 var total = cur.motif ? cur.motif.length : 32;
 
@@ -1269,6 +1416,29 @@
                     nextTime += stepDur;
                     step = (step + 1) % total;
                 }
+            }
+
+            /* Конец трека: либо следующий, либо новый виток. Возвращает
+               true, если трек сменился и старое планирование больше не нужно. */
+            function checkEnd() {
+                if (!playing || !cur) return false;
+                stepPos();
+                if (pos < cur.len) return false;
+
+                /* Позиция не растёт выше длины: иначе после первого же
+                   конца трека pos остаётся в «конце» и следующий заход
+                   в планировщик переключал бы трек заново — по кругу,
+                   без конца. Ставим точно на длину. */
+                pos = cur.len;
+
+                if (autoplay) {
+                    var nx = neighbours(1);
+                    if (nx) { startTrack(nx); return true; }
+                }
+
+                seek(0);
+                step = 0;
+                return false;
             }
 
             function teardown() {
@@ -1303,13 +1473,24 @@
                 chain = [];
                 bus = null;
                 echoIn = null;
+                seq = null;
+                keep = [];              // узлы одного шага прежнего трека
             }
 
+            /* Перейти на трек с самого начала. Карточку подсвечивает
+               paintNow() → markCards(), а подсветка ВСЕГДА сверяется
+               с cur.id — так что старая карточка не может остаться
+               «играющей» после выбора новой. */
             function startTrack(track) {
+                if (!track) return;
                 if (!ensure()) return;
 
                 /* Своя музыка играет — тема сайта уходит в тишину */
                 if (O && O.Snd && O.Snd.ambientLevel) O.Snd.ambientLevel(0);
+
+                /* Старый планировщик снимаем ДО teardown: иначе его
+                   вызов успевает спланировать ноту в уже отключённую шину */
+                if (timer) { clearInterval(timer); timer = null; }
 
                 teardown();
 
@@ -1321,7 +1502,7 @@
                 bus.gain.setValueAtTime(0.0001, ctx.currentTime);
                 bus.gain.exponentialRampToValueAtTime(0.9, ctx.currentTime + 0.6);
 
-                setMaster(volume);
+                setMaster(effVolume());
                 if (track.bed) bed(track.bed); else drone();
 
                 playing = true;
@@ -1329,19 +1510,21 @@
                 timer = setInterval(schedule, 25);
                 schedule();
 
-                elapsedBase = 0;
-                pausedAt = 0;
-                startedAt = Date.now();
+                pos = 0;
+                seekLastFrac = 0;
+                lastFrameAt = nowMs();
 
                 paintNow();
+                paintTime();
                 startLoop();
             }
 
             /* Пауза — не suspend() контекста (он любит «залипнуть»),
-               а тишина на мастере и остановка планировщика. */
+               а тишина на мастере и остановка планировщика.
+               Позиция `pos` при этом остаётся как была. */
             function pause() {
                 if (!playing || !ctx) return;
-                pausedAt = elapsed();
+                stepPos();
                 playing = false;
                 if (timer) { clearInterval(timer); timer = null; }
                 setMaster(0);
@@ -1350,6 +1533,7 @@
                 if (O && O.Snd && O.Snd.ambientLevel) O.Snd.ambientLevel(1);
 
                 paintNow();
+                paintTime();
             }
 
             function resume() {
@@ -1359,19 +1543,48 @@
                     try { ctx.resume(); } catch (e) {}
                 }
 
-                setMaster(volume);
+                setMaster(effVolume());
 
                 if (O && O.Snd && O.Snd.ambientLevel) O.Snd.ambientLevel(0);
+
+                /* Трек уже закончился, пока стоял на паузе — начинаем
+                   его заново, а не с пустоты последней секунды */
+                if (pos >= cur.len - 0.05) {
+                    pos = 0;
+                    step = 0;
+                    seek(0);
+                }
 
                 if (!playing) {
                     playing = true;
                     nextTime = ctx.currentTime + 0.08;
                     if (!timer) timer = setInterval(schedule, 25);
                     schedule();
-                    startedAt = Date.now() - pausedAt;
+                    lastFrameAt = nowMs();
                     paintNow();
+                    paintTime();
                     startLoop();
                 }
+            }
+
+            /* Продвинуть позицию по часам (до паузы, до перемотки, кадр).
+               Ограничитель сверху — по звуковым часам, а не по настенным:
+               если упадёт производительность и планировщик задержится,
+               полоса не должна перескакивать вперёд быстрее музыки. */
+            function stepPos() {
+                if (!playing || !cur) return;
+
+                var now = nowMs();
+                var real = Math.max(0, (now - lastFrameAt) / 1000);
+                lastFrameAt = now;
+
+                var limit = 0.6;
+                if (ctx && nextTime) {
+                    limit = Math.max(0.25, Math.min(2, nextTime - ctx.currentTime + 0.35));
+                }
+
+                var dt = Math.min(real, limit);
+                if (dt > 0) pos += dt;
             }
 
             function setMaster(v) {
@@ -1384,10 +1597,154 @@
                 }
             }
 
-            function elapsed() {
-                if (!playing) return pausedAt || 0;
-                return elapsedBase + (Date.now() - startedAt) / 1000;
+            /* Время трека — одна величина `pos` (секунды), а не
+               elapsedBase + (now - startedAt): такая арифметика и давала
+               скачок в ноль после паузы. Пока играем — pos растёт от
+               последнего кадра, а за сменой следит планировщик (checkEnd),
+               кадровый цикл только рисует. */
+            var pos = 0;
+
+            /* Часы позиции. Date.now() может прыгнуть на любую величину:
+               перевод системного времени, синхронизация NTP, сон ноутбука.
+               Раньше часы питались сразу из двух источников (кадр — из
+               requestAnimationFrame, пауза и перемотка — из Date.now), и
+               после такого прыжка полоса уезжала в конец или в ноль, а
+               трек «сам переключался». nowMs() — один монотонный источник,
+               а шаг клампится по времени музыкального контекста. */
+            function nowMs() {
+                return (window.performance && window.performance.now)
+                    ? window.performance.now()
+                    : Date.now();
             }
+
+            function elapsed() {
+                if (!cur) return 0;
+                return Math.max(0, Math.min(cur.len - 0.01, pos));
+            }
+
+            /* ---- ползунок перемотки ---- */
+            var seeking = false;
+            var seekLastFrac = 0;   // последняя показанная доля — на случай pointerup без clientX
+
+            function seekFrac(x) {
+                var r = el.seek.getBoundingClientRect();
+                if (!r.width) return elapsed() / (cur ? cur.len : 1);
+                /* Без координаты (клавиатура, синтетическое событие) —
+                   берём текущую позицию трека */
+                if (typeof x !== 'number' || !isFinite(x)) return elapsed() / (cur ? cur.len : 1);
+                return Math.max(0, Math.min(1, (x - r.left) / r.width));
+            }
+
+            function seekPreview(frac) {
+                if (!cur) return;
+                seekLastFrac = frac;
+                el.seek.style.backgroundSize = (frac * 100).toFixed(2) + '% 100%';
+                el.bar.style.left = (frac * 100).toFixed(2) + '%';
+                el.time.textContent = fmt(frac * cur.len);
+                el.seek.setAttribute('aria-valuenow', Math.round(frac * 100));
+            }
+
+            el.seek.addEventListener('pointerdown', function (e) {
+                if (!cur) return;
+                /* Правая кнопка и средняя — не начало перетаскивания */
+                if (typeof e.button === 'number' && e.button !== 0) return;
+
+                seeking = true;
+                el.seek.classList.add('is-scrubbing');
+                if (el.seek.setPointerCapture) {
+                    try { el.seek.setPointerCapture(e.pointerId); } catch (err) {}
+                }
+                seekPreview(seekFrac(e.clientX));
+                e.preventDefault();
+            });
+
+            el.seek.addEventListener('pointermove', function (e) {
+                if (!seeking) return;
+                seekPreview(seekFrac(e.clientX));
+            });
+
+            /* Отпускание полосы. Раньше здесь читался только e.clientX:
+               при отпускании за пределами окна, потере захвата указателя
+               (lostpointercapture) и в тач-браузерах, где pointerup вовсе
+               не приходит, `seeking` оставался true навсегда — и тогда
+               полоса прогресса замирала, а перемотка больше не работала
+               до перезагрузки. Теперь отпускание ловится на четырёх
+               событиях, а без координат берётся последняя показанная доля.
+
+               Флаг `commit`: отпускание за пределами окна и потеря захвата
+               приходят с clientX=-1 (или 0) — это «доскроллил до края»,
+               а не «прыгнуть в ноль» и не «назад на показанную долю». */
+            function endSeek(e, commit) {
+                if (!seeking) return;
+                seeking = false;
+                el.seek.classList.remove('is-scrubbing');
+
+                var frac = seekLastFrac;
+                var hasX = e && typeof e.clientX === 'number' && isFinite(e.clientX) && e.clientX > 0;
+
+                if (hasX) frac = seekFrac(e.clientX);
+                else if (commit === false) frac = seekLastFrac;
+
+                seek(frac);
+            }
+
+            el.seek.addEventListener('pointerup', function (e) { endSeek(e); });
+            el.seek.addEventListener('pointercancel', function (e) { endSeek(e); });
+            el.seek.addEventListener('lostpointercapture', function (e) { endSeek(e, false); });
+
+            /* Страховка: указатель отпущен где угодно — полоса не залипает */
+            window.addEventListener('pointerup', function (e) {
+                if (seeking) endSeek(e);
+            }, true);
+            window.addEventListener('pointercancel', function (e) {
+                if (seeking) endSeek(e);
+            }, true);
+            /* Окно потеряло фокус посреди перетаскивания — отпускание
+               может не прийти вовсе. Подтверждаем последнюю показанную долю. */
+            window.addEventListener('blur', function () {
+                if (seeking) endSeek(null, false);
+            });
+
+            /* Клик по полосе — тоже перемотка (мышь без pointer-событий).
+               После настоящего перетаскивания клик приходит тем же жестом,
+               и второй seek давал рывок на пиксель — поэтому жест,
+               который уже подтвердил перемотку, гасим флагом. */
+            var seekHandledAt = 0;
+
+            el.seek.addEventListener('click', function (e) {
+                if (!cur) return;
+                if (seeking) { endSeek(e); return; }
+
+                var now = Date.now();
+                if (now - seekHandledAt < 400) return;   // хвост того же жеста
+                seekHandledAt = now;
+
+                seek(seekFrac(e.clientX));
+            });
+
+            /* Клавиатура: ← → внутри ползунка — перемотка на 5 %.
+               Остальные «горячие» клавиши плеера отсюда уходим наружу:
+               stopPropagation() на всё подряд съедал M и F, когда фокус
+               стоял на полосе, хотя подсказка их обещает везде. */
+            el.seek.addEventListener('keydown', function (e) {
+                if (!cur) return;
+
+                if (e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); seek(seekFrac() + 0.05); return; }
+                if (e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); seek(seekFrac() - 0.05); return; }
+                if (e.key === 'Home') { e.preventDefault(); e.stopPropagation(); seek(0); return; }
+                if (e.key === 'End') { e.preventDefault(); e.stopPropagation(); seek(0.99); return; }
+                if (e.key === ' ' || e.key === 'Spacebar') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (playing) pause(); else resume();
+                    return;
+                }
+                /* Enter на полосе раньше всплывал на карточку/страницу и
+                   включал трек заново с нуля */
+                if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); }
+            });
+
+            el.time.title = 'перетащи полосу, чтобы перемотать';
 
             /* ================= ИНТЕРФЕЙС ================= */
 
@@ -1525,6 +1882,10 @@
                     card.addEventListener('keydown', function (e) {
                         if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
+                            /* Без этого пробел на карточке играл трек здесь,
+                               а потом всплывал в общий обработчик и тут же
+                               ставил на паузу — «пробел не работал». */
+                            e.stopPropagation();
                             play(t);
                         }
                     });
@@ -1594,20 +1955,18 @@
                 (function frame() {
                     raf = requestAnimationFrame(frame);
 
-                    /* Конец цикла: либо следующий трек, либо новый виток */
-                    if (playing && cur && elapsed() >= cur.len) {
-                        if (autoplay) {
-                            var nx = neighbours(1);
-                            if (nx) { startTrack(nx); return; }
-                        }
-                        startedAt = Date.now();
-                        pausedAt = 0;
-                    }
-
+                    /* Кадр только рисует: и часы, и конец трека считает
+                       планировщик — иначе при остановленных кадрах трек
+                       замолкал на конце. */
                     if (cur) {
-                        var e = elapsed() % cur.len;
+                        var e = elapsed();
                         el.time.textContent = fmt(e);
-                        el.bar.style.width = ((e / cur.len) * 100).toFixed(2) + '%';
+                        el.bar.style.left = ((e / cur.len) * 100).toFixed(2) + '%';
+                        if (!seeking) {
+                            el.seek.style.backgroundSize =
+                                ((e / cur.len) * 100).toFixed(2) + '% 100%';
+                            el.seek.setAttribute('aria-valuenow', Math.round(e / cur.len * 100));
+                        }
                     }
 
                     if (!visCtx || !el.vis) return;
@@ -1637,6 +1996,77 @@
                 })();
             }
 
+            /* ================= ПЕРЕМОТКА ================= */
+            /* Треки синтезируются, а не играют из файла, поэтому перемотка
+               бесшумно передвигает «головку»: шаг рисунка и мысленное время.
+               Ноты начнут звучать со следующих шагов.
+
+               Шаг считается внутри одного оборота: трек повторяется, и
+               шагать на `len / stepDur` (как было) — значит уезжать в
+               случайную ноту рисунка. У «тем сайта» мотив ещё короче, и
+               перемотка на 90 % ставила самую первую ноту. */
+            function seek(frac) {
+                if (!cur) return;
+
+                var f = Math.max(0, Math.min(1, Number(frac) || 0));
+                var cycleLen = cur.beat || (60 / cur.bpm / 4) || 0.25;
+                var cycleTotal = cur.motif ? cur.motif.length : 32;
+
+                /* Конец трека показываем честно: если ползунок упёрся
+                   вправо, на экране должна быть длина трека, а не
+                   «длина минус хвостик». Хвостик в 0.05 секунды нужен
+                   только чтобы концевой отсчёт не сработал в тот же миг.
+                   Допуск в половину пикселя — чтобы край полосы,
+                   отпущенный за последним пикселем, тоже считался концом. */
+                var atEnd = f > 0.999 || f > 1 - (0.5 / Math.max(1, cur.len));
+                var e = atEnd ? cur.len : Math.max(0, Math.min(cur.len - 0.05, cur.len * f));
+
+                /* Границы трека по шагам рисунка: до полушага и до
+                   последнего шага поверх него. Дальше грузить нечего —
+                   коллекция в конце возвращается в первую ноту, а не
+                   заводит на 90 % со вступления (так было у «тем сайта»:
+                   мотив в 6–8 нот, и перемотка почти в конец ставила
+                   самую первую ноту). */
+                var cycle = cycleLen * cycleTotal;
+
+                (function () {
+                    var inCycle = cycle > 0 ? (e % cycle) : 0;
+                    step = Math.floor(inCycle / cycleLen) % cycleTotal;
+                    if (step < 0) step = 0;
+                })();
+
+                pos = e;
+                seekLastFrac = f;
+
+                if (playing) {
+                    lastFrameAt = nowMs();
+                    nextTime = (ctx ? ctx.currentTime : 0) + 0.05;
+
+                    /* Главная причина «странной перемотки»: планировщик
+                       заходит на 120 мс вперёд, и ноты, отданные ДО
+                       перемотки, всё ещё в очереди у звукового потока.
+                       Игрок слышал обрывок старого места сразу после
+                       перемотки — «перемотал, а играет не то». Гасим
+                       звук нового трека на мгновение и запрещаем тику
+                       звучать раньше новой позиции: так слышно только
+                       новое место. */
+                    if (bus && ctx) {
+                        try {
+                            var at = ctx.currentTime;
+                            var g = bus.gain;
+                            g.cancelScheduledValues(at);
+                            g.setValueAtTime(0.0001, at);
+                            g.exponentialRampToValueAtTime(0.9, at + 0.14);
+                        } catch (err) {}
+                    }
+
+                    if (timer) { clearInterval(timer); timer = null; }
+                    timer = setInterval(schedule, 25);
+                }
+
+                paintTime();
+            }
+
             function play(track) {
                 if (cur && cur.id === track.id) {
                     if (playing) { pause(); return; }
@@ -1646,10 +2076,35 @@
                 startTrack(track);
             }
 
+            function paintTime() {
+                if (!cur) return;
+                var e = elapsed();
+                el.time.textContent = fmt(e);
+                el.bar.style.left = ((e / cur.len) * 100).toFixed(2) + '%';
+                if (el.seek) {
+                    el.seek.style.backgroundSize =
+                        ((e / cur.len) * 100).toFixed(2) + '% 100%';
+                    el.seek.setAttribute('aria-valuenow', Math.round(e / cur.len * 100));
+                }
+            }
+
+            /* Соседний трек. Если открыта вкладка «Избранное» и играющий
+               трек в избранном — листаем избранное: раньше стрелка уводила
+               в категорию трека, то есть из списка, который видит игрок.
+               Автопереход в конце трека тоже идёт сюда — поэтому, когда
+               избранное закрыто, порядок остаётся по категории трека. */
             function neighbours(dir) {
-                var catId = cur ? cur.cat : activeCat;
-                var list = TRACKS.filter(function (t) { return t.cat === catId; });
-                if (!list.length) return null;
+                var list;
+
+                if (favOnly && cur && isFav(cur.id)) {
+                    list = visibleList();
+                } else if (cur) {
+                    list = TRACKS.filter(function (t) { return t.cat === cur.cat; });
+                } else {
+                    list = visibleList();
+                }
+
+                if (!list || !list.length) return null;
 
                 var i = 0;
                 for (var k = 0; k < list.length; k++) if (cur && list[k].id === cur.id) i = k;
@@ -1695,10 +2150,23 @@
             /* ---- громкость ---- */
             var lastVol = 0.7;
 
+            /* Громкость самого плеера и «Звук сайта» — две разные вещи,
+               но слышно одну. Если звук сайта выключен, плеер должен молчать
+               и играть с нулевой громкостью, даже если ползунок стоит
+               на 70 %; иначе выходило «звук выключен», а плеер поёт.
+               effVolume() — то, что реально уходит на мастер. */
+            function siteMuted() {
+                return !!(O && O.Snd && O.Snd.isOn && !O.Snd.isOn());
+            }
+
+            function effVolume() {
+                return siteMuted() ? 0 : volume;
+            }
+
             function setVolume(v, save) {
                 volume = Math.max(0, Math.min(1, v));
                 el.vol.value = String(Math.round(volume * 100));
-                if (playing) setMaster(volume);
+                if (playing) setMaster(effVolume());
                 if (save !== false) storeSet('vol', volume);
             }
 
@@ -1741,7 +2209,15 @@
 
                 var k = String(e.key).toLowerCase();
                 if (k === 'm' || k === 'ь') { toggleMute(); return; }
-                if ((k === 'f' || k === 'а') && cur) { toggleFav(cur.id); }
+
+                /* F — в избранное. Раньше работало только когда трек уже
+                   играет; на стоящем плеере клавиша молчала, хотя в
+                   подсказке обещана. Теперь берём текущий трек, а если
+                   плеер не запускали — первый видимый в списке. */
+                if (k === 'f' || k === 'а') {
+                    var t = cur || visibleList()[0];
+                    if (t) { toggleFav(t.id); e.preventDefault(); }
+                }
             });
 
             /* ---- системные клавиши медиаплеера ---- */
@@ -1761,23 +2237,18 @@
             }
 
             /* Кнопка «Звук» из шапки сайта глушит и плеер: иначе выходит
-               «звук выключен», а музыка играет */
+               «звук выключен», а музыка играет.
+               Громкость ползунка при этом не теряется: она остаётся в `volume`
+               (и в localStorage), а на мастер уходит только effVolume(). */
             document.addEventListener('click', function (e) {
                 var t = e.target.closest && e.target.closest('#soundToggle');
                 if (!t || !O || !O.Snd || !O.Snd.isOn) return;
 
-                if (!O.Snd.isOn()) {
-                    if (playing) pause();
-                    if (volume > 0.001) {
-                        lastVol = volume;
-                        volume = 0;
-                        el.vol.value = '0';
-                        setMaster(0);
-                    }
-                } else if (volume < 0.001) {
-                    volume = lastVol;
-                    el.vol.value = String(Math.round(lastVol * 100));
-                    if (playing) setMaster(volume);
+                if (siteMuted()) {
+                    if (playing) pause();          // тема сайта вернулась — плеер молчит
+                    setMaster(0);
+                } else if (playing) {
+                    setMaster(effVolume());
                 }
             });
 
@@ -1830,12 +2301,11 @@
             el.loopBtn.classList.toggle('is-on', autoplay);
             el.loopBtn.setAttribute('aria-pressed', autoplay ? 'true' : 'false');
 
-            /* Звук сайта был выключен раньше — плеер стартует тихо */
-            if (O && O.Snd && O.Snd.isOn && !O.Snd.isOn()) {
-                lastVol = volume || 0.7;
-                volume = 0;
-                el.vol.value = '0';
-            }
+            /* Звук сайта выключен раньше — ползунок остаётся на месте,
+               а на мастер уходит ноль через effVolume(): раньше здесь
+               обнулялась сама громкость, и после включения звука обратно
+               плеер оставался беззвучным при ползунке на 70 %. */
+            if (siteMuted()) setMaster(0);
 
             buildCats();
             buildGrid();
@@ -1844,6 +2314,32 @@
             if (/[?&]test=1/.test(location.search)) {
                 window.__mq = {
                     play: play,
+                    pause: pause,
+                    resume: resume,
+                    /* Подкрутить позицию: в headless-режиме часы идут
+                       рывками, и «конец трека» иначе не поймать. Только
+                       под ?test=1. */
+                    setPos: function (v) {
+                        pos = Math.max(0, Number(v) || 0);
+                        lastFrameAt = nowMs();
+                    },
+                    seeking: function () { return seeking; },
+                    seek: seek,
+                    /* Какие карточки подсвечены как «играет»: их должна
+                       быть максимум одна и именно текущий трек */
+                    cardState: function () {
+                        var out = [];
+                        Array.prototype.forEach.call(
+                            el.grid.querySelectorAll('.mq-card'),
+                            function (b) {
+                                out.push({
+                                    id: b.getAttribute('data-id'),
+                                    on: b.classList.contains('is-playing'),
+                                    ico: (b.querySelector('.mq-ico') || {}).textContent
+                                });
+                            });
+                        return out;
+                    },
                     state: function () {
                         return {
                             playing: playing,
@@ -1851,11 +2347,16 @@
                             cat: activeCat,
                             ctx: ctx ? ctx.state : 'none',
                             step: step,
+                            pos: Math.round(pos * 10) / 10,
+                            len: cur ? cur.len : 0,
                             nodes: droneNodes.length,
                             vol: volume,
+                            siteMuted: siteMuted(),
                             cards: el.grid.querySelectorAll('.mq-card').length,
                             player: !el.player.hidden,
                             title: el.title.textContent,
+                            barLeft: el.bar.style.left,
+                            time: el.time.textContent,
                             fav: fav.length,
                             favOnly: favOnly,
                             autoplay: autoplay,

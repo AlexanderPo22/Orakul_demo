@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#05060a">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="description" content="Прямая трансляция Оракула.">
+    <title>LIVE — Оракул</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📺</text></svg>">
+    <style>
+        /* ===================================================================
+           LIVE — страница игрока. Свои стили, не common.css: тёмный экран
+           на всю площадь, никаких кнопок, никакой шапки сайта.
+           =================================================================== */
+        :root {
+            --lp-red: #ff2d3d;
+            --lp-bone: #e8efe9;
+            --lp-dim: #7b8a80;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: #05060a;
+            color: var(--lp-bone);
+            overflow: hidden;
+            font-family: ui-monospace, 'Cascadia Mono', 'Consolas', 'SF Mono', monospace;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body.live-body {
+            position: fixed;
+            inset: 0;
+            touch-action: manipulation;
+            cursor: pointer;
+        }
+
+        /* ================= ШУМ ================= */
+        #noise {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            z-index: 0;
+            background: #05060a;
+        }
+
+        /* Пасхалка: медленно проступающий силуэт лежит ПОД шумом,
+           поэтому в белом шуме он «складывается» сам собой. */
+        #ghost {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            font-size: min(46vh, 46vw);
+            line-height: 1;
+            opacity: 0;
+            text-shadow: 0 0 60px rgba(255, 250, 240, 0.35);
+            pointer-events: none;
+            user-select: none;
+            transition: opacity 2.4s ease;
+            filter: blur(1.5px) contrast(1.2);
+        }
+
+        /* Медленный «взгляд»: призрак чуть меняет выражение */
+        #ghost span { display: inline-block; transition: transform 2.4s ease, filter 1.2s ease; }
+
+        /* ================= ВИНЬЕТКА и МЕРЦАНИЕ ================= */
+        .vignette {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            background:
+                radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.72) 100%),
+                radial-gradient(ellipse at 50% 40%, rgba(120, 150, 130, 0.05), transparent 70%);
+        }
+
+        .flicker {
+            position: fixed;
+            inset: 0;
+            z-index: 3;
+            pointer-events: none;
+            background: rgba(255, 255, 255, 0.035);
+            animation: flicker 6.2s steps(1, end) infinite;
+            mix-blend-mode: screen;
+        }
+
+        @keyframes flicker {
+            0%, 41%, 43%, 45%, 62%, 64%, 100% { opacity: 0; }
+            42% { opacity: 0.9; }
+            44% { opacity: 0.35; }
+            63% { opacity: 0.55; }
+            79% { opacity: 0.15; }
+            92% { opacity: 0.5; }
+        }
+
+        /* ================= СКАНЛАЙНЫ ================= */
+        .scanlines {
+            position: fixed;
+            inset: 0;
+            z-index: 4;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0) 0,
+                rgba(0, 0, 0, 0) 2px,
+                rgba(0, 0, 0, 0.34) 3px,
+                rgba(0, 0, 0, 0.34) 4px
+            );
+            mix-blend-mode: multiply;
+            opacity: 0.85;
+        }
+
+        /* Ползущая полоса развёртки, как на старом мониторе */
+        .sweep {
+            position: fixed;
+            left: 0;
+            right: 0;
+            z-index: 5;
+            height: 26vh;
+            pointer-events: none;
+            background: linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.028) 45%,
+                rgba(255, 255, 255, 0.06) 50%,
+                rgba(255, 255, 255, 0.028) 55%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            animation: sweep 9.5s linear infinite;
+        }
+
+        @keyframes sweep {
+            0%   { transform: translateY(-30vh); }
+            100% { transform: translateY(110vh); }
+        }
+
+        /* ================= HUD: LIVE и таймер ================= */
+        .hud {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 8;
+            padding: max(14px, env(safe-area-inset-top)) 18px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--lp-dim);
+            pointer-events: none;
+            background: linear-gradient(to bottom, rgba(5, 6, 10, 0.82), rgba(5, 6, 10, 0));
+        }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 11px 5px 9px;
+            border-radius: 4px;
+            background: #8c0d18;
+            border: 1px solid rgba(255, 45, 61, 0.75);
+            color: #ffe9ea;
+            font-weight: 800;
+            font-size: 0.78rem;
+            letter-spacing: 2.4px;
+            box-shadow: 0 0 22px rgba(255, 45, 61, 0.35), inset 0 0 12px rgba(255, 45, 61, 0.2);
+            animation: livePulse 2.4s ease-in-out infinite;
+        }
+
+        .live-badge .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff5764;
+            box-shadow: 0 0 10px #ff2d3d;
+            animation: dotBlink 1.4s steps(1, end) infinite;
+        }
+
+        @keyframes dotBlink {
+            0%, 55% { opacity: 1; }
+            56%, 100% { opacity: 0.25; }
+        }
+
+        @keyframes livePulse {
+            0%, 100% { box-shadow: 0 0 18px rgba(255, 45, 61, 0.28), inset 0 0 10px rgba(255, 45, 61, 0.18); }
+            50%      { box-shadow: 0 0 30px rgba(255, 45, 61, 0.5), inset 0 0 16px rgba(255, 45, 61, 0.3); }
+        }
+
+        .timer {
+            font-variant-numeric: tabular-nums;
+            color: var(--lp-bone);
+            opacity: 0.82;
+            font-size: 0.82rem;
+        }
+
+        .hud-right {
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.7rem;
+            opacity: 0.6;
+        }
+
+        .signal { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }
+        .signal i {
+            display: block;
+            width: 3px;
+            background: currentColor;
+            animation: signal 1.6s ease-in-out infinite;
+        }
+        .signal i:nth-child(1) { height: 4px;  animation-delay: 0s; }
+        .signal i:nth-child(2) { height: 7px;  animation-delay: 0.18s; }
+        .signal i:nth-child(3) { height: 9px;  animation-delay: 0.36s; }
+        .signal i:nth-child(4) { height: 12px; animation-delay: 0.54s; }
+
+        @keyframes signal {
+            0%, 100% { opacity: 0.2; }
+            50%      { opacity: 1; }
+        }
+
+        /* ================= ТЕКСТ ОРАКУЛА ================= */
+        .stage {
+            position: fixed;
+            inset: 0;
+            z-index: 6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16vh 7vw;
+            pointer-events: none;
+        }
+
+        #text {
+            max-width: 22ch;
+            min-height: 4.4em;
+            margin: 0;
+            text-align: center;
+            font-size: clamp(1.5rem, 5.4vw, 3.4rem);
+            line-height: 1.32;
+            letter-spacing: 0.06em;
+            font-weight: 600;
+            color: var(--lp-bone);
+            text-shadow:
+                0 0 2px rgba(255, 255, 255, 0.85),
+                0 0 18px rgba(210, 255, 225, 0.35),
+                0 0 44px rgba(150, 255, 190, 0.16);
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            transition: opacity 0.6s ease, filter 0.6s ease, transform 0.6s ease;
+        }
+
+        /* Курсор печатной машинки */
+        #text.is-typing::after {
+            content: '▌';
+            margin-left: 0.08em;
+            opacity: 0.9;
+            animation: caret 1s steps(1, end) infinite;
+            text-shadow: 0 0 10px rgba(210, 255, 225, 0.6);
+        }
+
+        @keyframes caret {
+            0%, 49% { opacity: 0.9; }
+            50%, 100% { opacity: 0; }
+        }
+
+        #text.is-out { opacity: 0; filter: blur(6px); transform: scale(0.985); }
+
+        /* Резкое сообщение: вспышка и «провал» когерентности */
+        #text.is-hard {
+            animation: hardIn 0.42s steps(3, end);
+            text-shadow:
+                0 0 3px #ffffff,
+                0 0 30px rgba(255, 90, 90, 0.55),
+                0 0 70px rgba(255, 40, 60, 0.3);
+        }
+
+        @keyframes hardIn {
+            0%   { opacity: 0; transform: translateY(-3px) scale(1.06); filter: blur(7px); }
+            40%  { opacity: 1; transform: translateY(2px) scale(0.995); filter: blur(0.6px); }
+            70%  { transform: translateY(-1px) scale(1.004); filter: blur(0); }
+            100% { opacity: 1; transform: none; filter: none; }
+        }
+
+        /* «Свет гаснет»: экран уходит в почти чёрное */
+        body.tone-whisper #text {
+            color: #cbd8cf;
+            opacity: 0.72;
+            text-shadow: 0 0 8px rgba(180, 220, 200, 0.25);
+        }
+
+        body.tone-whisper .flicker { animation-duration: 1.9s; }
+
+        /* «Оно рядом»: красная пелена поверх экрана */
+        body.tone-danger #text {
+            color: #ffd9dc;
+            text-shadow:
+                0 0 3px #fff,
+                0 0 26px rgba(255, 45, 61, 0.6),
+                0 0 64px rgba(255, 20, 40, 0.4);
+        }
+
+        .blood {
+            position: fixed;
+            inset: 0;
+            z-index: 7;
+            pointer-events: none;
+            opacity: 0;
+            background: radial-gradient(ellipse at center, rgba(120, 0, 0, 0) 30%, rgba(140, 0, 12, 0.55) 100%);
+            transition: opacity 1.6s ease;
+        }
+
+        body.tone-danger .blood { opacity: 1; }
+
+        /* ================= ПОДСКАЗКА «СТАРТ» ================= */
+        .hint {
+            position: fixed;
+            left: 50%;
+            bottom: max(4vh, env(safe-area-inset-bottom));
+            transform: translateX(-50%);
+            z-index: 9;
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(200, 215, 205, 0.45);
+            text-align: center;
+            pointer-events: none;
+            transition: opacity 0.7s ease;
+        }
+
+        .hint.is-gone { opacity: 0; }
+
+        /* Пасхалка: белая «вспышка даты» без объяснений */
+        .glitch {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            font-size: clamp(0.8rem, 2.6vw, 1.4rem);
+            letter-spacing: 0.4em;
+            color: #ff3b46;
+            text-shadow: 0 0 18px rgba(255, 59, 70, 0.8);
+            opacity: 0;
+        }
+
+        .glitch.is-on { animation: glitchOn 1.35s steps(1, end); }
+
+        @keyframes glitchOn {
+            0%, 8%, 16%, 24%, 100% { opacity: 0; }
+            4%  { opacity: 0.95; transform: translateX(-4px) skewX(2deg); }
+            12% { opacity: 0.7;  transform: translateX(5px) skewX(-3deg); }
+            20% { opacity: 0.9;  transform: translateX(-2px); }
+        }
+
+        /* ================= ПАУЗА / СКРЫТАЯ ВКЛАДКА ================= */
+        body.is-hidden #text { opacity: 0.35; }
+
+        /* ================= МОБИЛЬНОЕ ================= */
+        @media (max-width: 520px) {
+            .hud { font-size: 0.68rem; letter-spacing: 1.4px; padding-left: 12px; padding-right: 12px; }
+            .live-badge { font-size: 0.68rem; letter-spacing: 1.8px; }
+            .hud-right { display: none; }
+            .stage { padding: 15vh 8vw; }
+            #text { max-width: 18ch; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .flicker, .sweep, .live-badge, .signal i, .live-badge .dot { animation: none !important; }
+            .sweep { display: none; }
+        }
+    </style>
+</head>
+<body class="live-body">
+
+    <canvas id="noise" aria-hidden="true"></canvas>
+
+    <!-- Пасхалка: силуэт живёт под шумом -->
+    <div id="ghost" aria-hidden="true"><span>🜃</span></div>
+
+    <div class="blood" aria-hidden="true"></div>
+
+    <div class="stage">
+        <p id="text" aria-live="polite" aria-atomic="true"></p>
+    </div>
+
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="flicker" aria-hidden="true"></div>
+    <div class="scanlines" aria-hidden="true"></div>
+    <div class="sweep" aria-hidden="true"></div>
+
+    <header class="hud">
+        <span class="live-badge"><i class="dot" aria-hidden="true"></i>LIVE</span>
+        <span class="timer" id="timer" aria-label="Время в эфире">00:00</span>
+        <span class="hud-right">
+            <span class="signal" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+            <span id="signalText">СИГНАЛ</span>
+        </span>
+    </header>
+
+    <div class="hint" id="hint">нажми, чтобы включить звук</div>
+
+    <div class="glitch" id="glitch" aria-hidden="true">ОН СМОТРИТ</div>
+
+    <script>
+    /* ===================================================================
+       LIVE — страница игрока.
+
+       Что здесь есть:
+         1. Белый шум на canvas (чем дольше смотришь — тем сильнее),
+         2. сканлайны, полоса развёртки, мерцание — всё на CSS;
+         3. текст от Оракула: печатная машинка или резкий выброс;
+         4. пасхалка: через 5 минут шум начинает складываться в силуэт;
+            через 8 — лицо, через 9:30 — жетон. На 10 минутах шум
+            на мгновение гаснет и в просвете появляется одно слово.
+
+       Источник сообщений — Supabase Realtime (таблица live_messages).
+       Читать может кто угодно, писать — только админ (проверка на сервере).
+       Если базы/Realtime нет, страница не падает: шум идёт, в консоли
+       остаётся причина.
+       =================================================================== */
+    (function () {
+        'use strict';
+
+        var CLOUD = {
+            url: 'https://pwipcizehwvekdqczdqb.supabase.co',
+            key: 'sb_publishable_h-mU0vammjvWGZ0ecYj4Bg_65FrGqsW',
+            sdk: 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js',
+            table: 'live_messages',
+            stream: 'live_stream'
+        };
+
+        var reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        /* ---------- элементы ---------- */
+        var canvas = document.getElementById('noise');
+        var ctx = canvas.getContext('2d', { alpha: false });
+        var textEl = document.getElementById('text');
+        var timerEl = document.getElementById('timer');
+        var hintEl = document.getElementById('hint');
+        var ghostEl = document.getElementById('ghost');
+        var ghostGlyph = ghostEl.firstElementChild;
+        var glitchEl = document.getElementById('glitch');
+        var signalEl = document.getElementById('signalText');
+        var bodyEl = document.body;
+
+        /* ---------- состояние ---------- */
+        /* Таймер — общий на всех: считаем не «сколько я смотрю», а
+           «сколько идёт эфир». Источник — started_at из live_stream
+           (серверное время), поэтому у каждого зрителя цифра одна и та же
+           и не обнуляется при перезаходе. Локальные часы используются
+           только как смещение, чтобы ровно тикать между запросами. */
+        var elapsedMS = 0;            // серверный отсчёт: секунды эфира
+        var streamOK = false;         // удалось ли прочитать общий отсчёт
+        var streamStartedAt = null;   // ISO-время старта эфира
+        var tickTimer = null;
+
+        /* Свой «наблюдаемый» счёт на странице: он же гоняет пасхалки.
+           Считается от локального времени открытия — так пасхалка
+           остаётся наградой за то, что игрок реально смотрит. */
+        var watchedMS = 0;
+
+        var curText = '';             // что сейчас на экране
+        var typeTimer = null;         // печатная машинка
+        var outTimer = null;          // сокрытие текста (и пауза перед ним)
+
+        var ghostLevel = 0;           // 0..1 — насколько виден силуэт
+        var seen = {};                // какие пасхалки уже показывали
+        var soundOn = false;
+
+        /* ---------- 1. БЕЛЫЙ ШУМ ---------- */
+        /* Рисуем в маленький offscreen и растягиваем: так шум дешевле,
+           чем попиксельно по размеру экрана, и выглядит «крупнее». */
+        var FIELD_W = 240;
+        var FIELD_H = 135;
+        var field = document.createElement('canvas');
+        field.width = FIELD_W;
+        field.height = FIELD_H;
+        var fctx = field.getContext('2d');
+        var image = fctx.createImageData(FIELD_W, FIELD_H);
+        var pixels = image.data;
+
+        var dpr = 1;
+        var cssW = 0;
+        var cssH = 0;
+
+        function resize() {
+            dpr = Math.min(window.devicePixelRatio || 1, 2);
+            cssW = window.innerWidth;
+            cssH = window.innerHeight;
+            canvas.width = Math.round(cssW * dpr);
+            canvas.height = Math.round(cssH * dpr);
+            canvas.style.width = cssW + 'px';
+            canvas.style.height = cssH + 'px';
+        }
+
+        /* Кадр шума. intensity 0..1 — «насколько всё плохо».
+           На высоких значениях вместо серого статики появляются
+           редкие яркие точки и горизонтальные «срывы». */
+        function drawNoise(intensity) {
+            var n = pixels.length;
+            var base = 26 + intensity * 26;
+            var spread = 70 + intensity * 120;
+
+            for (var i = 0; i < n; i += 4) {
+                var v = (Math.random() - 0.5) * spread + base;
+
+                // Изредка — резкий выброс в белое: так шум «кипит»
+                if (Math.random() < 0.0016 + intensity * 0.004) v += 130;
+
+                if (v < 0) v = 0;
+                else if (v > 255) v = 255;
+
+                pixels[i] = v * 0.92;      // чуть зеленим — как старый кинескоп
+                pixels[i + 1] = v;
+                pixels[i + 2] = v * 0.94;
+                pixels[i + 3] = 255;
+            }
+
+            fctx.putImageData(image, 0, 0);
+
+            ctx.imageSmoothingEnabled = true;
+            ctx.drawImage(field, 0, 0, canvas.width, canvas.height);
+
+            // Горизонтальный срыв строки: у шума проступает «сдвиг»
+            if (intensity > 0.35 && Math.random() < intensity * 0.5) {
+                var y = Math.random() * canvas.height;
+                var h = 2 + Math.random() * 14 * intensity;
+                var dx = (Math.random() - 0.5) * 34 * intensity;
+                ctx.drawImage(canvas, 0, y, canvas.width, h, dx, y, canvas.width, h);
+            }
+        }
+
+        /* Слабый «дыхательный» ритм шума: амплитуда плавно гуляет */
+        var breath = 0;
+
+        function intensity() {
+            // Шум растёт от времени в эфире — а оно одинаковое у всех,
+            // кто смотрит сейчас. Пять минут — тот же рубеж, что у пасхалки.
+            var minutes = elapsedMS / 60;
+            var t = Math.min(minutes / 10, 1);
+            var level = 0.12 + t * 0.55 + ghostLevel * 0.28;
+            return Math.min(level, 1);
+        }
+
+        var rafId = 0;
+        var lastFrame = 0;
+        var frameStep = reduceMotion ? 1000 / 12 : 1000 / 30;
+
+        function loop(now) {
+            rafId = requestAnimationFrame(loop);
+
+            /* В скрытой вкладке браузер и так притормозит анимацию, а
+               явный выход экономит батарею: шум рисуется только когда
+               его кто-то видит. */
+            if (document.hidden) return;
+
+            if (now - lastFrame < frameStep) return;
+            lastFrame = now;
+
+            breath += 0.012;
+            var pulse = Math.sin(breath) * 0.04;
+            drawNoise(Math.max(0, Math.min(intensity() + pulse, 1)));
+
+            // Призрак живёт под шумом: на медленном «дыхании» он то чётче,
+            // то почти растворяется. Выражение лица при этом не меняется.
+            if (!reduceMotion) {
+                var g = ghostLevel > 0
+                    ? ghostLevel * (0.52 + 0.3 * Math.sin(breath * 1.7))
+                    : 0;
+                ghostEl.style.opacity = String(Math.max(0, g).toFixed(3));
+            }
+        }
+
+        /* ---------- 2. ТАЙМЕР ЭФИРА ---------- */
+        function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+        function paintTimer() {
+            var s = Math.floor(elapsedMS);
+            var h = Math.floor(s / 3600);
+            var m = Math.floor((s % 3600) / 60);
+            var sec = s % 60;
+
+            timerEl.textContent = h > 0
+                ? h + ':' + pad(m) + ':' + pad(sec)
+                : pad(m) + ':' + pad(sec);
+        }
+
+        /* Общий отсчёт эфира. Строка одна на всех (live_stream, id = 1),
+           поэтому у каждого зрителя та же цифра — и она не обнуляется
+           при перезаходе: время считается не от открытия страницы,
+           а от started_at, которое поставил сервер. */
+        function applyStream(row) {
+            if (!row || !row.started_at) return;
+
+            var startedMS = Date.parse(row.started_at);
+            if (isNaN(startedMS)) return;
+
+            streamOK = true;
+            streamStartedAt = row.started_at;
+
+            elapsedMS = Math.max(0, (Date.now() - startedMS) / 1000);
+            paintTimer();
+        }
+
+        function tick() {
+            // Пасхалки — по своему времени наблюдения: они про то,
+            // сколько игрок смотрит, а не про то, когда включили эфир.
+            watchedMS += 1;
+
+            if (streamOK && streamStartedAt) {
+                // Таймер в углу — по общему отсчёту эфира
+                elapsedMS = Math.max(0, (Date.now() - Date.parse(streamStartedAt)) / 1000);
+                paintTimer();
+            } else if (watchedMS > 12) {
+                /* Общий отсчёт не пришёл (нет строки в live_stream или
+                   нет связи) — чтобы таймер не замер на 00:00, считаем
+                   сами. Как только база ответит, снова берём её время. */
+                elapsedMS += 1;
+                paintTimer();
+            }
+
+            checkEggs();
+        }
+
+        tickTimer = setInterval(tick, 1000);
+
+        document.addEventListener('visibilitychange', function () {
+            bodyEl.classList.toggle('is-hidden', document.hidden);
+            if (!document.hidden) {
+                paintTimer();
+                /* Вернулись на вкладку — заново сверяемся с сервером:
+                   пока вкладка спала, эфир мог идти (или начаться заново). */
+                if (streamReady) readStream(streamReady);
+            }
+        });
+
+        /* ---------- 3. ПОДСКАЗКА ---------- */
+        /* Браузер не даёт включить звук до первого касания. Подсказка
+           висит внизу, пока вкладку никто не трогал (см. раздел 5). */
+
+        /* ---------- 4. ТЕКСТ ОРАКУЛА ---------- */
+        function clearTextTimers() {
+            clearInterval(typeTimer);
+            clearTimeout(outTimer);
+            typeTimer = null;
+            outTimer = null;
+            textEl.classList.remove('is-typing', 'is-hard', 'is-out');
+        }
+
+        function setTone(tone) {
+            bodyEl.classList.remove('tone-whisper', 'tone-danger');
+            if (tone === 'whisper' || tone === 'danger') bodyEl.classList.add('tone-' + tone);
+        }
+
+        function hideText(delay) {
+            clearTimeout(outTimer);
+            outTimer = setTimeout(function () {
+                textEl.classList.add('is-out');
+                setTimeout(function () {
+                    curText = '';
+                    textEl.textContent = '';
+                    textEl.classList.remove('is-out');
+                }, 640);
+            }, delay || 0);
+        }
+
+        function showTyped(str) {
+            var i = 0;
+            textEl.classList.add('is-typing');
+
+            // Скорость зависит от настроения: длинный текст печатается
+            // ровнее, короткий — тревожнее.
+            var perChar = str.length > 60 ? 78 : str.length > 24 ? 105 : 148;
+            if (reduceMotion) perChar = 20;
+
+            typeTimer = setInterval(function () {
+                i += 1;
+                textEl.textContent = str.slice(0, i);
+
+                if (i >= str.length) {
+                    clearInterval(typeTimer);
+                    typeTimer = null;
+                    textEl.classList.remove('is-typing');
+                }
+            }, perChar);
+        }
+
+        function showAbrupt(str) {
+            textEl.classList.remove('is-out');
+            textEl.textContent = str;
+            textEl.classList.remove('is-hard');
+            void textEl.offsetWidth;      // перезапуск анимации
+            textEl.classList.add('is-hard');
+        }
+
+        function showMessage(msg) {
+            if (!msg || typeof msg.body !== 'string') return;
+
+            var str = msg.body;
+            var mode = msg.mode === 'abrupt' ? 'abrupt' : 'type';
+            var ttl = Number(msg.ttl_seconds || msg.ttl || 0);
+
+            clearTextTimers();
+            setTone(msg.tone);
+            curText = str;
+
+            if (mode === 'abrupt') showAbrupt(str);
+            else showTyped(str);
+
+            beep();
+
+            // Сообщение с ограниченным временем само уходит в тень
+            if (ttl > 0) hideText(ttl * 1000);
+        }
+
+        function clearScreen() {
+            clearTextTimers();
+            setTone('info');
+            textEl.classList.add('is-out');
+            setTimeout(function () {
+                curText = '';
+                textEl.textContent = '';
+                textEl.classList.remove('is-out');
+            }, 620);
+        }
+
+        /* ---------- 5. ЗВУК (только по нажатию: браузеры иначе глушат) ---------- */
+        var audio = null;
+
+        function ensureAudio() {
+            if (audio) return audio;
+            var AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return null;
+            try { audio = new AC(); } catch (e) { audio = null; }
+            return audio;
+        }
+
+        /* Короткий шумовой выдох: «динамик что-то сказал» */
+        function beep() {
+            if (!soundOn || !audio || audio.state !== 'running') return;
+
+            var dur = 0.09;
+            var buf = audio.createBuffer(1, Math.ceil(audio.sampleRate * dur), audio.sampleRate);
+            var data = buf.getChannelData(0);
+            for (var i = 0; i < data.length; i++) {
+                data[i] = (Math.random() * 2 - 1) * (1 - i / data.length) * 0.16;
+            }
+            var src = audio.createBufferSource();
+            src.buffer = buf;
+            var g = audio.createGain();
+            g.gain.value = 0.5;
+            src.connect(g);
+            g.connect(audio.destination);
+            src.start();
+        }
+
+        function enableSound() {
+            var a = ensureAudio();
+            if (a && a.state === 'suspended') a.resume();
+            soundOn = true;
+            hintEl.classList.add('is-gone');
+        }
+
+        document.addEventListener('pointerdown', enableSound, { once: true });
+        document.addEventListener('keydown', enableSound, { once: true });
+
+        /* ---------- 6. ПАСХАЛКА ---------- */
+        /* 5:00 — шум начинает складываться в силуэт (🜃);
+           8:00 — на секунду проступает лицо;
+           9:30 — на секунду проступает жетон;
+          10:00 — шум гаснет, в просвете одно слово. */
+        var EGG = {
+            glyph: 5 * 60,
+            face:  8 * 60,
+            token: 9.5 * 60,
+            glitch: 10 * 60
+        };
+
+        function once(key) {
+            if (seen[key]) return false;
+            seen[key] = true;
+            return true;
+        }
+
+        function flashFace() {
+            ghostGlyph.textContent = '👁';
+            ghostGlyph.style.filter = 'invert(1) brightness(1.5)';
+            ghostLevel = 0.85;
+
+            setTimeout(function () {
+                ghostLevel = 0.35;
+                ghostGlyph.style.filter = '';
+            }, 1600);
+        }
+
+        function flashToken() {
+            ghostGlyph.textContent = '⬤';
+            ghostGlyph.style.color = '#e6d7a8';
+            ghostLevel = 0.9;
+
+            setTimeout(function () {
+                ghostGlyph.style.color = '';
+                ghostLevel = 0.42;
+            }, 1500);
+        }
+
+        function checkEggs() {
+            if (watchedMS >= EGG.glyph && once('glyph')) {
+                // Силуэт начинается медленно и остаётся
+                ghostGlyph.textContent = '🜃';
+                ghostLevel = 0.22;
+                setTimeout(function () { ghostLevel = 0.34; }, 12000);
+                setTimeout(function () { ghostLevel = 0.44; }, 40000);
+            }
+
+            if (watchedMS >= EGG.face && once('face')) flashFace();
+            if (watchedMS >= EGG.token && once('token')) flashToken();
+
+            if (watchedMS >= EGG.glitch && once('glitch')) {
+                glitchEl.classList.add('is-on');
+                setTimeout(function () { glitchEl.classList.remove('is-on'); }, 1400);
+                // И сразу после — снова тишина, но шум уже не такой, как раньше
+                ghostLevel = 0.6;
+                setTone('whisper');
+            }
+        }
+
+        /* ---------- 7. SUPABASE: чтение ---------- */
+        function loadSdk() {
+            return new Promise(function (resolve) {
+                if (window.supabase && window.supabase.createClient) {
+                    resolve(window.supabase);
+                    return;
+                }
+                var s = document.createElement('script');
+                s.src = CLOUD.sdk;
+                s.async = true;
+                s.onload = function () { resolve(window.supabase || null); };
+                s.onerror = function () { resolve(null); };
+                document.head.appendChild(s);
+            });
+        }
+
+        function setSignal(ok, label) {
+            signalEl.textContent = label;
+            signalEl.style.color = ok ? '' : 'var(--lp-red)';
+        }
+
+        var streamReady = null;   // клиент Supabase, когда он уже есть
+
+        /* Общий отсчёт эфира: одна строка live_stream с серверным
+           started_at. Эфир один на весь сайт — читаем его при загрузке,
+           после возврата на вкладку и раз в минуту, чтобы расхождение
+           часов устройства не копилось. Часы зрителя не важны: важно
+           только started_at из базы. */
+        function readStream(client) {
+            if (!client) return;
+
+            Promise.resolve(client.from(CLOUD.stream).select('started_at').eq('id', 1).maybeSingle())
+                .then(function (res) {
+                    if (!res || res.error || !res.data) return;
+                    applyStream(res.data);
+                })
+                .catch(function () {});
+        }
+
+        /* Первичная загрузка: оставляем только самое свежее сообщение,
+           которое ещё не истекло по ttl. */
+        function loadLast(client) {
+            return client
+                .from(CLOUD.table)
+                .select('id, body, mode, kind, tone, ttl_seconds, created_at')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .then(function (res) {
+                    if (res.error || !res.data || !res.data.length) return;
+
+                    var row = res.data[0];
+                    var ttl = Number(row.ttl_seconds || 0);
+                    var age = (Date.now() - Date.parse(row.created_at)) / 1000;
+
+                    if (ttl > 0 && age > ttl) return;   // уже отжило своё
+                    showMessage(row);
+                });
+        }
+
+        function connect() {
+            setSignal(false, 'ПОИСК');
+
+            loadSdk().then(function (lib) {
+                if (!lib || !lib.createClient) {
+                    setSignal(false, 'НЕТ СВЯЗИ');
+                    return;
+                }
+
+                var client = lib.createClient(CLOUD.url, CLOUD.key, {
+                    auth: { persistSession: false, autoRefreshToken: false }
+                });
+
+                streamReady = client;
+
+                client
+                    .channel('orakul-live-public')
+                    .on('postgres_changes',
+                        { event: 'INSERT', schema: 'public', table: CLOUD.table },
+                        function (payload) {
+                            if (payload && payload.new) showMessage(payload.new);
+                        })
+                    .on('postgres_changes',
+                        { event: 'DELETE', schema: 'public', table: CLOUD.table },
+                        function () { clearScreen(); })
+                    /* Админ нажал «начать эфир заново» — таймер у всех
+                       разом возвращается к 00:00. */
+                    .on('postgres_changes',
+                        { event: 'UPDATE', schema: 'public', table: CLOUD.stream },
+                        function (payload) {
+                            if (!payload || !payload.new) return;
+                            applyStream(payload.new, 0);
+                        })
+                    .subscribe(function (status) {
+                        if (status === 'SUBSCRIBED') setSignal(true, 'СИГНАЛ');
+                        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                            setSignal(false, 'ПОМЕХИ');
+                        } else if (status === 'CLOSED') {
+                            setSignal(false, 'ПАУЗА');
+                        }
+                    });
+
+                loadLast(client);
+                readStream(client);
+            });
+        }
+
+        /* ---------- 8. СТАРТ ---------- */
+        resize();
+        window.addEventListener('resize', resize);
+        setTimeout(resize, 240);          // адресная строка на мобильном
+
+        paintTimer();
+        rafId = requestAnimationFrame(loop);
+        connect();
+
+        /* Сверка с сервером раз в минуту: даже если Realtime молчит,
+           общий таймер не уедет */
+        setInterval(function () { readStream(streamReady); }, 60000);
+
+        /* Честная подсказка: если звук и так не нужен — она тихо уйдёт */
+        setTimeout(function () { hintEl.classList.add('is-gone'); }, 12000);
+
+        /* Уборка при уходе со страницы */
+        window.addEventListener('pagehide', function () {
+            cancelAnimationFrame(rafId);
+            clearInterval(tickTimer);
+            clearTextTimers();
+        });
+    })();
+    </script>
+</body>
+</html>

@@ -6191,10 +6191,26 @@
             /* ---- 2. Злой Викторович мстит (через 10 минут) ---- */
             function maybeBossUnblock() {
                 var b = branches.all();
-                if (!b.bossAt || b.bossTask || b.bossDone) return false;
+                if (b.bossDone) return false;
+
+                /* Задание уже выдано, а файла нет: сейф, шифр и компромат
+                   могли обнулиться (clear/reset, обнуление рассудка), и
+                   задание осталось висеть на пустом месте. Повторяем его,
+                   чтобы ветка не превратилась в тупик, но не чаще раза
+                   в десять минут. */
+                if (b.bossTask) {
+                    if (!b.kompromat && !b.bossRemindAt) {
+                        branches.patch({ bossRemindAt: Date.now() });
+                        remindBossTask(b);
+                        return true;
+                    }
+                    return false;
+                }
+
+                if (!b.bossAt) return false;
                 if (Date.now() - b.bossAt < BOSS_DELAY) return false;
 
-                branches.patch({ bossTask: true });
+                branches.patch({ bossTask: true, bossRemindAt: Date.now() });
                 if (Phone && Phone.unblock) Phone.unblock();
 
                 /* Сейф без шифра не открыть, а шифр — у анонима. Босс
@@ -6221,6 +6237,32 @@
                 return true;
             }
 
+            /* Напоминание о задании, если файла так и нет. Сейф, шифр и
+               компромат живут в plot.branches и сбрасываются вместе с
+               сюжетом — без напоминания игрок оставался с заданием, которое
+               физически нечем выполнить. */
+            function remindBossTask(b) {
+                var hint;
+                if (!b.cipherAt) {
+                    hint = 'Аноним молчит? Напиши ему в «???» — он обещал шифр.';
+                } else if (!b.cipherOk) {
+                    hint = 'Код у анонима. Его шифр уже в мессенджере.';
+                } else if (!b.safe) {
+                    hint = 'Шифр принят. Код сейфа: 45-SERVER-7731 — в серверной: safe <код>';
+                } else {
+                    hint = 'Сейф открыт. Забери папку в серверной: take';
+                }
+
+                if (Phone && Phone.say) {
+                    Phone.say('boss', 'them', hint, { title: 'Босс', ico: '👔' });
+                }
+
+                line('[БОСС] ' + hint, 'line-dim', { instant: true });
+                think('он ждёт файл. без него задание не закрыть.', true);
+                if (Snd.beep) Snd.beep(240, 0.03, 0.14);
+                return true;
+            }
+
             /* ---- 3. Жетон Пиратского Магазина ---- */
             var TOKEN_LORE = [
                 ['Жетон Пиратского Магазина', 'title'],
@@ -6235,6 +6277,14 @@
             ];
 
             function tokenCmd() {
+                /* Жетон — прогресс сюжета, а награда «Пират» живёт в профиле
+                   и синхронизируется через облако. На другом устройстве
+                   получалось: награда есть, а жетона «нет» — ветка вроде бы
+                   пройдена, а консоль отправляла искать стойку заново. */
+                if (!branches.get('token') && O.has('pirate')) {
+                    branches.patch({ token: true });
+                }
+
                 if (!branches.get('token')) {
                     line('> Жетона нет.', 'line-dialog');
                     line('один лежит в серверной. между стойками, под пылью.', 'line-dim');
@@ -6351,6 +6401,13 @@
                звонков не трогаются — этим clear/reset отличаются от
                полного сброса на странице достижений. */
             function resetPlotOnly() {
+                /* Окно «Глюк в матрице» живёт своим таймером. Если игрок
+                   набрал clear/reset, пока оно горит, таймер продолжал
+                   тикать и через пять секунд вызывал finishBreak() — то есть
+                   сбрасывал сюжет второй раз и снова писал «Разум разрушен»,
+                   уже без причины. Снимаем окно первым делом. */
+                cancelGlitch45();
+
                 clearScreen();
                 lockOptions();
                 autoBusy = false;
@@ -6493,7 +6550,13 @@
 
             /* ================= СКРЫТАЯ КОМАНДА «Я ПОМНЮ» ================= */
             /* remember или 45. Даёт награду «Я помню» и ровно +100 маны.
-               Повторный ввод ничего не начисляет. */
+               Повторный ввод ничего не начисляет.
+
+               Мана идёт через тот же журнал, что у наград второго сезона:
+               O.unlock → awardMana → site.reward (сервер помнит выдачу),
+               а без входа — локально. Раньше здесь был прямой mana.claim,
+               и у вошедшего игрока +100 оставались только в localStorage:
+               на другом устройстве они пропадали. */
             function rememberCmd() {
                 if (O.has('remember')) {
                     line('> Ты и так помнишь.', 'line-dim');
@@ -6502,17 +6565,10 @@
 
                 grant('remember');
 
-                var gained = (O.mana && O.mana.claim) ? O.mana.claim('remember') : 0;
-                if (!gained && O.mana) {
-                    O.mana.setBalance(O.mana.balance() + 100);
-                    O.mana.markClaimed('remember');
-                    gained = 100;
-                }
-
                 lineHTML('<span class="p">[ ПАМЯТЬ ВОССТАНОВЛЕНА ]</span>', 'line-title');
                 line('сюжет можно начать заново. ты всё ещё помнишь.', 'line-ok');
                 lineHTML('+ скрытая награда <span class="p">«Я помню»</span> 🧠', 'granted');
-                if (gained) lineHTML('+ <span class="p">' + gained + ' ✨</span> маны', 'granted');
+                lineHTML('+ <span class="p">100 ✨</span> маны', 'granted');
 
                 Snd.beep(660, 0.03, 0.12);
                 setTimeout(function () { Snd.beep(880, 0.03, 0.14); }, 140);
@@ -6881,6 +6937,11 @@
             function startGlitch45() {
                 glitch45.active = true;
 
+                /* Метка «окно было открыто»: если игрок перезагрузит
+                   страницу посреди пяти секунд, detectReload() по ней
+                   поймёт, что бесплатного выхода из сбоя нет. */
+                O.store.set('console.glitch45', Date.now());
+
                 if (Snd.glitchSound) Snd.glitchSound();
                 if (Snd.serverHum) Snd.serverHum(true);
 
@@ -6918,10 +6979,40 @@
                 }, 100);
             }
 
+            /* Снять окно «Глюк в матрице» без последствий: нужен, когда сюжет
+               сбрасывают вручную (clear/reset) прямо во время окна. Иначе
+               таймер дотикивал и вызывал finishBreak() вторым разом. */
+            function cancelGlitch45() {
+                if (!glitch45.active) return;
+                glitch45.active = false;
+                clearInterval(glitch45.timer);
+                O.store.set('console.glitch45', 0);
+
+                if (Snd.serverHum) Snd.serverHum(false);
+                document.body.classList.remove('is-glitch45');
+
+                var fx = document.querySelector('.fx-glitch45');
+                if (fx) {
+                    fx.classList.add('is-out');
+                    setTimeout(function () { fx.remove(); }, 520);
+                }
+
+                sanityBroken = false;
+                eventBusy = false;
+                eventTicket++;
+
+                /* Окно прервали — рассудок не оставляем на нуле, иначе
+                   первый же ивент снова запустит обнуление */
+                sanity = SANITY_AFTER_BREAK;
+                saveSanity();
+                renderSanity();
+            }
+
             function endGlitch45(saved) {
                 if (!glitch45.active) return;
                 glitch45.active = false;
                 clearInterval(glitch45.timer);
+                O.store.set('console.glitch45', 0);
 
                 if (Snd.serverHum) Snd.serverHum(false);
                 document.body.classList.remove('is-glitch45');
@@ -6937,6 +7028,7 @@
                 branches.patch({ glitch45: true });
                 sanityBroken = false;
                 eventBusy = false;
+                eventTicket++;      // таймеры прерванных ивентов больше не хозяева
                 sanity = 50;
                 saveSanity();
                 renderSanity();
@@ -6997,6 +7089,7 @@
                     sanity = SANITY_AFTER_BREAK;
                     sanityBroken = false;
                     eventBusy = false;
+                    eventTicket++;
                     saveSanity();
                     renderSanity();
                     sanityPop('+' + SANITY_AFTER_BREAK + '% · восстановление');
@@ -7021,7 +7114,15 @@
             }, 5000);
 
             /* Перезагрузка страницы = полное восстановление рассудка.
-               Обычный переход из консоли даёт +5–10% (см. pagehide ниже). */
+               Обычный переход из консоли даёт +5–10% (см. pagehide ниже).
+
+               Отдельный случай — перезагрузка внутри окна «Глюк в матрице»:
+               sanityBreak() уже записал 0, окно висело, игрок нажал F5.
+               Раньше это молча давало 50 % и целый сюжет, но награду
+               «Связь с 45» получить было уже нельзя — окно не вернуть.
+               Теперь такой перезагрузке награда не достаётся, но и
+               бесплатного выхода из сбоя нет: сюжет обнуляется, как и
+               должно было случиться без ответа. */
             (function detectReload() {
                 var reload = false;
                 try {
@@ -7030,8 +7131,24 @@
                     else if (performance.navigation) reload = performance.navigation.type === 1;
                 } catch (e) {}
 
-                if (reload) sanity = 100;
-                else if (sanity <= 0) sanity = SANITY_AFTER_BREAK;   // вышли во время сбоя
+                var leftMidGlitch = O.store.get('console.glitch45', 0) > 0;
+
+                if (reload) {
+                    sanity = 100;
+
+                    /* Выход из окна перезагрузкой — сюжет не сохраняем */
+                    if (leftMidGlitch) {
+                        O.store.set('console.glitch45', 0);
+                        try {
+                            O.resetPlot();
+                            plot = readPlot();
+                        } catch (e) {}
+                    }
+                } else if (sanity <= 0) {
+                    sanity = SANITY_AFTER_BREAK;    // вышли во время сбоя
+                }
+
+                if (!leftMidGlitch && sanity > 0) O.store.set('console.glitch45', 0);
 
                 saveSanity();
                 renderSanity();
@@ -7085,6 +7202,7 @@
                50% при 10. У каждого есть секретная команда для вызова. */
             var fxLayerEl = document.getElementById('fxLayer');
             var eventBusy = false;
+            var eventTicket = 0;    // чей таймер снимает eventBusy
             var lastHorrorAt = 0;
 
             function fxClear() {
@@ -7369,7 +7487,15 @@
                 if (sanityBroken) return true;
 
                 ev.run();
-                setTimeout(function () { eventBusy = false; }, ev.dur || 4000);
+
+                /* Снимает занятость только «свой» таймер: раньше здесь просто
+                   ставился eventBusy = false, и таймер от ивента, который
+                   прервало окно «Глюк в матрице», снимал флаг уже у нового
+                   ивента — два тяжёлых эффекта шли одновременно. */
+                var myTicket = ++eventTicket;
+                setTimeout(function () {
+                    if (myTicket === eventTicket) eventBusy = false;
+                }, ev.dur || 4000);
                 return true;
             }
 

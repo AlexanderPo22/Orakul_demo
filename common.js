@@ -138,7 +138,8 @@
           hint: 'Согласись помочь с поиском 45 — и с тобой свяжется аноним.' },
         { id: 'login',         icon: '🔑', title: 'Аутентификация', rarity: 'silver',
           hint: 'Кто-то должен был это сделать.' },
-        { id: 'remember',      icon: '🧠', title: 'Я помню', secret: true, rarity: 'gold', mana: 100,
+        { id: 'remember',      icon: '🧠', title: 'Я помню', secret: true, rarity: 'gold',
+          mana: 100, auto: true,
           hint: 'Разум можно разрушить. Но кто-то в консоли всё ещё помнит. Спроси у пустой строки.' },
 
         /* ---- новые ветки (сюжет после автомата) ---- */
@@ -290,6 +291,7 @@
             bossAt: 0,          // когда босс заблокировал (мс)
             bossTask: false,    // босс дал задание на компромат
             bossDone: false,
+            bossRemindAt: 0,    // когда в последний раз напомнил о задании
             glitch45: false     // связь с 45 состоялась
         };
 
@@ -2551,6 +2553,28 @@
             return rpc('orakul_admin_delete_promo', { p_code: code });
         }
 
+        /* ---- 📺 LIVE (sql/live_messages.sql) ----
+           Пульт в админке пишет только через эти функции: проверка is_admin
+           внутри, напрямую в live_messages не пишет никто. live.html читает
+           таблицу своим Realtime-каналом и этих вызовов не касается. */
+        function liveSend(body, mode, ttl, tone) {
+            return rpc('orakul_live_send', {
+                p_body: String(body == null ? '' : body),
+                p_mode: mode === 'abrupt' ? 'abrupt' : 'type',
+                p_ttl_seconds: Math.min(Math.max(parseInt(ttl, 10) || 0, 0), 600),
+                p_tone: tone === 'danger' || tone === 'whisper' ? tone : 'info'
+            });
+        }
+        function liveQuick(kind) {
+            return rpc('orakul_live_send_kind', { p_kind: String(kind || '') });
+        }
+        function liveClear()    { return rpc('orakul_live_clear'); }
+        function liveHistory(n) { return rpc('orakul_live_history', { p_limit: n || 40 }); }
+        /* Общий отсчёт эфира: started_at по серверным часам. Гостям тоже
+           доступен — таймер в углу live.html у всех одинаковый. */
+        function liveStream()      { return rpc('orakul_live_stream'); }
+        function liveStreamReset() { return rpc('orakul_live_stream_reset'); }
+
         /* ---- мана сайта → счётчик в шапке ----
            Счётчик [data-mana-value] живёт в localStorage и копит ману за
            достижения. Мана, купленная или выданная ключом/промокодом, лежит
@@ -2579,7 +2603,8 @@
             }
             if (/does not exist|schema cache|function .* not found/i.test(m)) {
                 return 'База ещё не настроена: примените sql/gift_keys.sql, ' +
-                       'sql/admin_users.sql и sql/promocodes.sql в Supabase.';
+                       'sql/admin_users.sql, sql/promocodes.sql и ' +
+                       'sql/live_messages.sql в Supabase.';
             }
             if (/JWT|not authenticated|401/i.test(m)) {
                 return 'Нужно войти в аккаунт.';
@@ -2622,7 +2647,11 @@
             bad_expires:'Дата уже прошла',
             exists:     'Такой код уже есть',
             has_uses:   'Код уже активировали — удалять нельзя',
-            self:       'Снять админку с самого себя нельзя'
+            self:       'Снять админку с самого себя нельзя',
+            /* 📺 live */
+            bad_body:   'Пустое сообщение отправлять нечего',
+            too_long:   'Слишком длинно: до 280 символов',
+            bad_kind:   'Такой быстрой фразы нет в базе'
         };
 
         /* Ждём, пока восстановится сессия, и отдаём пользователя (или null) */
@@ -2664,6 +2693,12 @@
             adminPromos: adminPromos,
             adminCreatePromo: adminCreatePromo,
             adminDeletePromo: adminDeletePromo,
+            liveSend: liveSend,
+            liveQuick: liveQuick,
+            liveClear: liveClear,
+            liveHistory: liveHistory,
+            liveStream: liveStream,
+            liveStreamReset: liveStreamReset,
             syncMana: syncMana,
             refreshMana: refreshMana,
             human: human,
